@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 7 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 8 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -23,6 +23,15 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		spice.Module != "github.com/spice-framework/spice" ||
 		spice.CanonicalModule != "" {
 		t.Fatalf("Spice repository identity = %#v", spice)
+	}
+	starterSMTP := requireRepository(t, value.Repositories, "starter-smtp")
+	if starterSMTP.Status != "active" ||
+		starterSMTP.CanonicalURL != "https://github.com/spice-framework/starter-smtp" ||
+		starterSMTP.CloneURL != "https://github.com/spice-framework/starter-smtp.git" ||
+		starterSMTP.Module != "github.com/spice-framework/starter-smtp" ||
+		!slices.Equal(starterSMTP.Dependencies, []string{".github", "development", "spice"}) ||
+		len(starterSMTP.Fast) != 1 || len(starterSMTP.Full) != 1 {
+		t.Fatalf("SMTP starter repository identity = %#v", starterSMTP)
 	}
 	zed := requireRepository(t, value.Repositories, "zed")
 	if zed.Status != "active" ||

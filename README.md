@@ -39,7 +39,10 @@ The core repository is resolved from `github.com/spice-framework/spice`; catalog
 tests pin both its Git clone URL and Go module path to prevent a return to the
 retired personal namespace. Repository status and canonical/source locations
 remain distinct fields so future migrations are never presented as completed
-before their own acceptance gates pass. The active Petclinic repository is the
+before their own acceptance gates pass. The active SMTP starter is an
+independently versioned Go module with its own complete quality gate, vendor
+proof, and authenticated verified-STARTTLS Mailpit acceptance path. The active
+Petclinic repository is the
 cross-platform reference application and owns its complete generated-code,
 security, race, coverage, offline, PostgreSQL, and MySQL verification contract.
 The active Commerce repository is the production-shaped modular application;

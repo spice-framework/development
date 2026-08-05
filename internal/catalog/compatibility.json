@@ -85,6 +85,42 @@
       ]
     },
     {
+      "name": "starter-smtp",
+      "directory": "starter-smtp",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-smtp",
+      "clone_url": "https://github.com/spice-framework/starter-smtp.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-smtp",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
       "name": "petclinic",
       "directory": "petclinic",
       "status": "active",
