@@ -42,6 +42,11 @@ remain distinct fields so future migrations are never presented as completed
 before their own acceptance gates pass. The active SMTP starter is an
 independently versioned Go module with its own complete quality gate, vendor
 proof, and authenticated verified-STARTTLS Mailpit acceptance path. The active
+PostgreSQL starter is independently versioned as well; it owns migrations,
+transactions, batch operations, durable outbox behavior, SQL test slices, and
+a pinned real-PostgreSQL acceptance path. Go repository linters serialize on
+golangci-lint's shared process lock, so concurrently orchestrated repository
+gates remain deterministic without oversubscribing the host. The active
 Petclinic repository is the
 cross-platform reference application and owns its complete generated-code,
 security, race, coverage, offline, PostgreSQL, and MySQL verification contract.

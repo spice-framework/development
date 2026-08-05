@@ -121,6 +121,42 @@
       ]
     },
     {
+      "name": "starter-postgres",
+      "directory": "starter-postgres",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-postgres",
+      "clone_url": "https://github.com/spice-framework/starter-postgres.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-postgres",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
       "name": "petclinic",
       "directory": "petclinic",
       "status": "active",
@@ -131,7 +167,8 @@
       "dependencies": [
         ".github",
         "development",
-        "spice"
+        "spice",
+        "starter-postgres"
       ],
       "fast": [
         {
@@ -168,6 +205,7 @@
         ".github",
         "development",
         "spice",
+        "starter-postgres",
         "starter-smtp"
       ],
       "fast": [

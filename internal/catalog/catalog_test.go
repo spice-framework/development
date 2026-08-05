@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 8 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 9 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -33,6 +33,15 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		len(starterSMTP.Fast) != 1 || len(starterSMTP.Full) != 1 {
 		t.Fatalf("SMTP starter repository identity = %#v", starterSMTP)
 	}
+	starterPostgres := requireRepository(t, value.Repositories, "starter-postgres")
+	if starterPostgres.Status != "active" ||
+		starterPostgres.CanonicalURL != "https://github.com/spice-framework/starter-postgres" ||
+		starterPostgres.CloneURL != "https://github.com/spice-framework/starter-postgres.git" ||
+		starterPostgres.Module != "github.com/spice-framework/starter-postgres" ||
+		!slices.Equal(starterPostgres.Dependencies, []string{".github", "development", "spice"}) ||
+		len(starterPostgres.Fast) != 1 || len(starterPostgres.Full) != 1 {
+		t.Fatalf("PostgreSQL starter repository identity = %#v", starterPostgres)
+	}
 	zed := requireRepository(t, value.Repositories, "zed")
 	if zed.Status != "active" ||
 		zed.CanonicalURL != "https://github.com/spice-framework/zed" ||
@@ -46,7 +55,10 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		petclinic.CanonicalURL != "https://github.com/spice-framework/petclinic" ||
 		petclinic.CloneURL != "https://github.com/spice-framework/petclinic.git" ||
 		petclinic.Module != "github.com/spice-framework/petclinic" ||
-		!slices.Equal(petclinic.Dependencies, []string{".github", "development", "spice"}) ||
+		!slices.Equal(
+			petclinic.Dependencies,
+			[]string{".github", "development", "spice", "starter-postgres"},
+		) ||
 		len(petclinic.Fast) != 1 || len(petclinic.Full) != 1 {
 		t.Fatalf("Petclinic repository identity = %#v", petclinic)
 	}
@@ -57,7 +69,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		commerce.Module != "github.com/spice-framework/commerce" ||
 		!slices.Equal(
 			commerce.Dependencies,
-			[]string{".github", "development", "spice", "starter-smtp"},
+			[]string{".github", "development", "spice", "starter-postgres", "starter-smtp"},
 		) ||
 		len(commerce.Fast) != 1 || len(commerce.Full) != 1 {
 		t.Fatalf("Commerce repository identity = %#v", commerce)
