@@ -121,6 +121,42 @@
       ]
     },
     {
+      "name": "commerce",
+      "directory": "commerce",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/commerce",
+      "clone_url": "https://github.com/spice-framework/commerce.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/commerce",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
       "name": "goland",
       "directory": "goland",
       "status": "active",

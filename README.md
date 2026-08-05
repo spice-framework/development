@@ -42,6 +42,10 @@ remain distinct fields so future migrations are never presented as completed
 before their own acceptance gates pass. The active Petclinic repository is the
 cross-platform reference application and owns its complete generated-code,
 security, race, coverage, offline, PostgreSQL, and MySQL verification contract.
+The active Commerce repository is the production-shaped modular application;
+it independently proves configuration, generated DI, HTTP, security,
+transactions, PostgreSQL, mail, lifecycle, and zero-network development
+defaults against an immutable core pseudo-version.
 Schema 2 also records safe per-command working directories, allowing the active
 Zed repository to verify both its locked Rust extension and nested canonical
 Spice fixture without a shell or a repository-local path assumption.

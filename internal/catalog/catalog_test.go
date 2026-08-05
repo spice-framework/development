@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 6 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 7 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -40,6 +40,15 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		!slices.Equal(petclinic.Dependencies, []string{".github", "development", "spice"}) ||
 		len(petclinic.Fast) != 1 || len(petclinic.Full) != 1 {
 		t.Fatalf("Petclinic repository identity = %#v", petclinic)
+	}
+	commerce := requireRepository(t, value.Repositories, "commerce")
+	if commerce.Status != "active" ||
+		commerce.CanonicalURL != "https://github.com/spice-framework/commerce" ||
+		commerce.CloneURL != "https://github.com/spice-framework/commerce.git" ||
+		commerce.Module != "github.com/spice-framework/commerce" ||
+		!slices.Equal(commerce.Dependencies, []string{".github", "development", "spice"}) ||
+		len(commerce.Fast) != 1 || len(commerce.Full) != 1 {
+		t.Fatalf("Commerce repository identity = %#v", commerce)
 	}
 	goland := requireRepository(t, value.Repositories, "goland")
 	if goland.Status != "active" ||
