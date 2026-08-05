@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -33,6 +34,7 @@ func (ExecRunner) Run(
 	// #nosec G204 -- allowedExecutable restricts the binary and CommandContext receives discrete arguments without a shell.
 	command := exec.CommandContext(ctx, arguments[0], arguments[1:]...)
 	command.Dir = directory
+	command.Env = independentEnvironment()
 	command.Stdout = &output
 	command.Stderr = &output
 	err := command.Run()
@@ -88,4 +90,17 @@ func commandDetail(output string) string {
 		return ""
 	}
 	return ":\n" + output
+}
+
+func independentEnvironment() []string {
+	environment := os.Environ()
+	result := make([]string, 0, len(environment)+1)
+	for _, entry := range environment {
+		name, _, _ := strings.Cut(entry, "=")
+		if strings.EqualFold(name, "GOWORK") {
+			continue
+		}
+		result = append(result, entry)
+	}
+	return append(result, "GOWORK=off")
 }

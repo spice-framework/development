@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -18,6 +21,26 @@ func TestExecRunnerUsesDiscreteAllowedCommands(t *testing.T) {
 	}
 	if _, err := (ExecRunner{}).Run(nil, ".", "go", "version"); err == nil { //nolint:staticcheck // Intentional fail-closed boundary case.
 		t.Fatal("Run(nil) error = nil")
+	}
+}
+
+func TestExecRunnerIsolatesRepositoryFromParentGoWorkspace(t *testing.T) {
+	t.Parallel()
+	parent := t.TempDir()
+	module := filepath.Join(parent, "module")
+	if err := os.Mkdir(module, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(parent, "go.work"),
+		[]byte("go 1.26.0\n\nuse ./module\n"),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	output, err := (ExecRunner{}).Run(t.Context(), module, "go", "env", "GOWORK")
+	if err != nil || strings.TrimSpace(output) != "off" {
+		t.Fatalf("Run(go env GOWORK) = %q, %v", output, err)
 	}
 }
 

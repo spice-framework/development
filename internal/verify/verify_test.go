@@ -69,9 +69,25 @@ func TestRunCancelsAfterRepositoryFailure(t *testing.T) {
 	results, err := Run(t.Context(), value, Options{
 		Root: root, Mode: Fast, Jobs: 1,
 	}, runner)
-	if err == nil || !strings.Contains(err.Error(), "repository a") ||
+	if err == nil || !strings.Contains(err.Error(), "failed") ||
 		len(results) != 2 || results[0].Err == nil || results[1].Err == nil {
 		t.Fatalf("Run(failure) = %#v, %v", results, err)
+	}
+}
+
+func TestRunReportsActualFailureBeforeCanceledSibling(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	value := verificationCatalog(t, root)
+	runner := &namedFailureRunner{failedArgument: "b"}
+	for index := range value.Repositories {
+		value.Repositories[index].Fast[0].Arguments = []string{"go", value.Repositories[index].Name}
+	}
+	_, err := Run(t.Context(), value, Options{
+		Root: root, Mode: Fast, Jobs: 2,
+	}, runner)
+	if err == nil || !strings.Contains(err.Error(), "repository b") {
+		t.Fatalf("Run(actual failure) error = %v", err)
 	}
 }
 
@@ -79,6 +95,22 @@ type recordingRunner struct {
 	mu      sync.Mutex
 	calls   [][]string
 	failure error
+}
+
+type namedFailureRunner struct {
+	failedArgument string
+}
+
+func (runner *namedFailureRunner) Run(
+	ctx context.Context,
+	_ string,
+	arguments ...string,
+) (string, error) {
+	if len(arguments) > 1 && arguments[1] == runner.failedArgument {
+		return "", errors.New("failed")
+	}
+	<-ctx.Done()
+	return "", ctx.Err()
 }
 
 func (runner *recordingRunner) Run(

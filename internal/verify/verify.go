@@ -96,10 +96,24 @@ func Run(
 		}()
 	}
 	group.Wait()
+	var canceled *Result
 	for _, result := range results {
+		if result.Err == nil {
+			continue
+		}
+		if errors.Is(result.Err, context.Canceled) {
+			if canceled == nil {
+				copy := result
+				canceled = &copy
+			}
+			continue
+		}
 		if result.Err != nil {
 			return results, fmt.Errorf("verify repository %s: %w", result.Repository, result.Err)
 		}
+	}
+	if canceled != nil {
+		return results, fmt.Errorf("verify repository %s: %w", canceled.Repository, canceled.Err)
 	}
 	return results, nil
 }
