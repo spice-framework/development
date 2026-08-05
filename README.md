@@ -35,13 +35,16 @@ and dependency caches explicitly before running a full gate.
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).
-The core repository is resolved from `github.com/spice-framework/spice`; catalog
-tests pin both its Git clone URL and Go module path to prevent a return to the
-retired personal namespace. Repository status and canonical/source locations
-remain distinct fields so future migrations are never presented as completed
-before their own acceptance gates pass. The path-filtered toolchain repository
-is recorded as planned until its own module, standalone gate, and consumer
-cutover are green. The active SMTP starter is an
+The core repository is resolved from `github.com/spice-framework/spice`, and
+the active compiler/CLI/LSP repository is resolved from
+`github.com/spice-framework/toolchain`. Catalog tests pin both clone URLs and
+Go module paths and require applications/editors to depend explicitly on the
+toolchain rather than a retired core `cmd` path. The toolchain compatibility
+pair is core `v0.0.0-20260805222830-a2ecd56df246` with standalone toolchain
+`v0.0.0-20260805222344-fd87027fc195`; editor and application fixtures must pin
+both exact public versions without a local replacement. Repository status and
+canonical/source locations remain distinct fields so migrations are never
+presented as completed before their acceptance gates pass. The active SMTP starter is an
 independently versioned Go module with its own complete quality gate, vendor
 proof, and authenticated verified-STARTTLS Mailpit acceptance path. The active
 PostgreSQL starter is independently versioned as well; it owns migrations,

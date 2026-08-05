@@ -33,7 +33,7 @@ func TestRenderAndApplyDeterministicNativeWorkspace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"./development", "./spice", goWorkMarker} {
+	for _, expected := range []string{"./development", "./spice", "./toolchain", goWorkMarker} {
 		if !strings.Contains(string(plan.GoWork), expected) {
 			t.Fatalf("go.work missing %q:\n%s", expected, plan.GoWork)
 		}

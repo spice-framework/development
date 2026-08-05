@@ -87,7 +87,7 @@
     {
       "name": "toolchain",
       "directory": "toolchain",
-      "status": "planned",
+      "status": "active",
       "canonical_url": "https://github.com/spice-framework/toolchain",
       "clone_url": "https://github.com/spice-framework/toolchain.git",
       "artifact": "go-module",
@@ -492,6 +492,7 @@
         ".github",
         "development",
         "spice",
+        "toolchain",
         "starter-mysql",
         "starter-postgres"
       ],
@@ -530,6 +531,7 @@
         ".github",
         "development",
         "spice",
+        "toolchain",
         "starter-postgres",
         "starter-smtp"
       ],
@@ -567,6 +569,7 @@
         ".github",
         "development",
         "spice",
+        "toolchain",
         "petclinic"
       ],
       "fast": [
@@ -581,6 +584,7 @@
             "--no-parallel",
             "--console=plain",
             "-PspiceCorePath=../spice",
+            "-PspiceToolchainPath=../toolchain",
             "-PpetclinicPath=../petclinic",
             "test"
           ]
@@ -598,6 +602,7 @@
             "--no-parallel",
             "--console=plain",
             "-PspiceCorePath=../spice",
+            "-PspiceToolchainPath=../toolchain",
             "-PpetclinicPath=../petclinic",
             "verifyRepository"
           ]
@@ -614,7 +619,8 @@
       "dependencies": [
         ".github",
         "development",
-        "spice"
+        "spice",
+        "toolchain"
       ],
       "fast": [
         {
@@ -672,7 +678,7 @@
           "arguments": [
             "go",
             "tool",
-            "github.com/spice-framework/spice/cmd/spice",
+            "github.com/spice-framework/toolchain/cmd/spice",
             "verify",
             "--format=json",
             "./..."

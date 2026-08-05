@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 17 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 18 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -25,7 +25,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatalf("Spice repository identity = %#v", spice)
 	}
 	toolchain := requireRepository(t, value.Repositories, "toolchain")
-	if toolchain.Status != "planned" ||
+	if toolchain.Status != "active" ||
 		toolchain.CanonicalURL != "https://github.com/spice-framework/toolchain" ||
 		toolchain.CloneURL != "https://github.com/spice-framework/toolchain.git" ||
 		toolchain.Module != "github.com/spice-framework/toolchain" ||
@@ -92,7 +92,14 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		zed.CanonicalURL != "https://github.com/spice-framework/zed" ||
 		zed.CloneURL != "https://github.com/spice-framework/zed.git" ||
 		zed.Artifact != "zed-extension" || len(zed.Full) != 5 ||
-		zed.Full[4].Directory != "fixture" {
+		zed.Full[4].Directory != "fixture" ||
+		!slices.Equal(
+			zed.Dependencies,
+			[]string{".github", "development", "spice", "toolchain"},
+		) || !slices.Contains(
+		zed.Full[len(zed.Full)-1].Arguments,
+		"github.com/spice-framework/toolchain/cmd/spice",
+	) {
 		t.Fatalf("Zed repository identity = %#v", zed)
 	}
 	petclinic := requireRepository(t, value.Repositories, "petclinic")
@@ -102,7 +109,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		petclinic.Module != "github.com/spice-framework/petclinic" ||
 		!slices.Equal(
 			petclinic.Dependencies,
-			[]string{".github", "development", "spice", "starter-mysql", "starter-postgres"},
+			[]string{".github", "development", "spice", "toolchain", "starter-mysql", "starter-postgres"},
 		) ||
 		len(petclinic.Fast) != 1 || len(petclinic.Full) != 1 {
 		t.Fatalf("Petclinic repository identity = %#v", petclinic)
@@ -114,7 +121,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		commerce.Module != "github.com/spice-framework/commerce" ||
 		!slices.Equal(
 			commerce.Dependencies,
-			[]string{".github", "development", "spice", "starter-postgres", "starter-smtp"},
+			[]string{".github", "development", "spice", "toolchain", "starter-postgres", "starter-smtp"},
 		) ||
 		len(commerce.Fast) != 1 || len(commerce.Full) != 1 {
 		t.Fatalf("Commerce repository identity = %#v", commerce)
@@ -126,7 +133,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		goland.Artifact != "goland-plugin" ||
 		!slices.Equal(
 			goland.Dependencies,
-			[]string{".github", "development", "spice", "petclinic"},
+			[]string{".github", "development", "spice", "toolchain", "petclinic"},
 		) || len(goland.Fast) != 1 || len(goland.Full) != 1 ||
 		goland.Fast[0].Arguments[0] != "java" ||
 		goland.Full[0].Arguments[len(goland.Full[0].Arguments)-1] != "verifyRepository" {
