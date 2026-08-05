@@ -167,7 +167,8 @@
       "dependencies": [
         ".github",
         "development",
-        "spice"
+        "spice",
+        "starter-smtp"
       ],
       "fast": [
         {

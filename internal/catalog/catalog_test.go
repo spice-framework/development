@@ -55,7 +55,10 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		commerce.CanonicalURL != "https://github.com/spice-framework/commerce" ||
 		commerce.CloneURL != "https://github.com/spice-framework/commerce.git" ||
 		commerce.Module != "github.com/spice-framework/commerce" ||
-		!slices.Equal(commerce.Dependencies, []string{".github", "development", "spice"}) ||
+		!slices.Equal(
+			commerce.Dependencies,
+			[]string{".github", "development", "spice", "starter-smtp"},
+		) ||
 		len(commerce.Fast) != 1 || len(commerce.Full) != 1 {
 		t.Fatalf("Commerce repository identity = %#v", commerce)
 	}
