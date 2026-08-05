@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 10 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 11 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -50,6 +50,15 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		!slices.Equal(starterMySQL.Dependencies, []string{".github", "development", "spice"}) ||
 		len(starterMySQL.Fast) != 1 || len(starterMySQL.Full) != 1 {
 		t.Fatalf("MySQL starter repository identity = %#v", starterMySQL)
+	}
+	starterRedis := requireRepository(t, value.Repositories, "starter-redis")
+	if starterRedis.Status != "active" ||
+		starterRedis.CanonicalURL != "https://github.com/spice-framework/starter-redis" ||
+		starterRedis.CloneURL != "https://github.com/spice-framework/starter-redis.git" ||
+		starterRedis.Module != "github.com/spice-framework/starter-redis" ||
+		!slices.Equal(starterRedis.Dependencies, []string{".github", "development", "spice"}) ||
+		len(starterRedis.Fast) != 1 || len(starterRedis.Full) != 1 {
+		t.Fatalf("Redis starter repository identity = %#v", starterRedis)
 	}
 	zed := requireRepository(t, value.Repositories, "zed")
 	if zed.Status != "active" ||

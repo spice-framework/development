@@ -46,8 +46,11 @@ PostgreSQL starter is independently versioned as well; it owns migrations,
 transactions, batch operations, durable outbox behavior, SQL test slices, and
 a pinned real-PostgreSQL acceptance path. The independent MySQL starter owns
 secure pool configuration, cancellation and recovery behavior, and a pinned
-real-MySQL acceptance path without adding its driver to core. Go repository
-linters serialize on
+real-MySQL acceptance path without adding its driver to core. The independent
+Redis starter owns authenticated client configuration, independent pools,
+typed JSON cache operations, expiry, cancellation, and a pinned real-Redis
+acceptance path without adding its client graph to core. Go repository linters
+serialize on
 golangci-lint's shared process lock, so concurrently orchestrated repository
 gates remain deterministic without oversubscribing the host. The active
 Petclinic repository is the
