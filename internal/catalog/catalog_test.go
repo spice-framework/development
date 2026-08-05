@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 4 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 5 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -31,6 +31,15 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		zed.Artifact != "zed-extension" || len(zed.Full) != 5 ||
 		zed.Full[4].Directory != "fixture" {
 		t.Fatalf("Zed repository identity = %#v", zed)
+	}
+	petclinic := requireRepository(t, value.Repositories, "petclinic")
+	if petclinic.Status != "active" ||
+		petclinic.CanonicalURL != "https://github.com/spice-framework/petclinic" ||
+		petclinic.CloneURL != "https://github.com/spice-framework/petclinic.git" ||
+		petclinic.Module != "github.com/spice-framework/petclinic" ||
+		!slices.Equal(petclinic.Dependencies, []string{".github", "development", "spice"}) ||
+		len(petclinic.Fast) != 1 || len(petclinic.Full) != 1 {
+		t.Fatalf("Petclinic repository identity = %#v", petclinic)
 	}
 }
 
