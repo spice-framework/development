@@ -30,7 +30,9 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		toolchain.CloneURL != "https://github.com/spice-framework/toolchain.git" ||
 		toolchain.Module != "github.com/spice-framework/toolchain" ||
 		!slices.Equal(toolchain.Dependencies, []string{".github", "development", "spice"}) ||
-		len(toolchain.Fast) != 1 || len(toolchain.Full) != 1 {
+		len(toolchain.Fast) != 1 || len(toolchain.Full) != 1 ||
+		!slices.Contains(toolchain.Fast[0].Arguments, "./internal/boundarygate/cmd") ||
+		!slices.Contains(toolchain.Full[0].Arguments, "./internal/boundarygate/cmd") {
 		t.Fatalf("Toolchain repository identity = %#v", toolchain)
 	}
 	starterSMTP := requireRepository(t, value.Repositories, "starter-smtp")

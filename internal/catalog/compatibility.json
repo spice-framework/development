@@ -103,7 +103,7 @@
           "arguments": [
             "go",
             "run",
-            "./internal/qualitygate",
+            "./internal/boundarygate/cmd",
             "-mode=check"
           ]
         }
@@ -114,7 +114,7 @@
           "arguments": [
             "go",
             "run",
-            "./internal/qualitygate",
+            "./internal/boundarygate/cmd",
             "-mode=verify"
           ]
         }
