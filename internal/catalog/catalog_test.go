@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 11 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 17 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -23,6 +23,15 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		spice.Module != "github.com/spice-framework/spice" ||
 		spice.CanonicalModule != "" {
 		t.Fatalf("Spice repository identity = %#v", spice)
+	}
+	toolchain := requireRepository(t, value.Repositories, "toolchain")
+	if toolchain.Status != "planned" ||
+		toolchain.CanonicalURL != "https://github.com/spice-framework/toolchain" ||
+		toolchain.CloneURL != "https://github.com/spice-framework/toolchain.git" ||
+		toolchain.Module != "github.com/spice-framework/toolchain" ||
+		!slices.Equal(toolchain.Dependencies, []string{".github", "development", "spice"}) ||
+		len(toolchain.Fast) != 1 || len(toolchain.Full) != 1 {
+		t.Fatalf("Toolchain repository identity = %#v", toolchain)
 	}
 	starterSMTP := requireRepository(t, value.Repositories, "starter-smtp")
 	if starterSMTP.Status != "active" ||
@@ -59,6 +68,24 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		!slices.Equal(starterRedis.Dependencies, []string{".github", "development", "spice"}) ||
 		len(starterRedis.Fast) != 1 || len(starterRedis.Full) != 1 {
 		t.Fatalf("Redis starter repository identity = %#v", starterRedis)
+	}
+	for _, name := range []string{
+		"starter-otel",
+		"starter-oauth2client",
+		"starter-oidc",
+		"starter-websocket",
+		"starter-grpc",
+		"starter-kafka",
+	} {
+		starter := requireRepository(t, value.Repositories, name)
+		if starter.Status != "active" ||
+			starter.CanonicalURL != "https://github.com/spice-framework/"+name ||
+			starter.CloneURL != "https://github.com/spice-framework/"+name+".git" ||
+			starter.Module != "github.com/spice-framework/"+name ||
+			!slices.Equal(starter.Dependencies, []string{".github", "development", "spice"}) ||
+			len(starter.Fast) != 1 || len(starter.Full) != 1 {
+			t.Fatalf("%s repository identity = %#v", name, starter)
+		}
 	}
 	zed := requireRepository(t, value.Repositories, "zed")
 	if zed.Status != "active" ||

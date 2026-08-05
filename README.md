@@ -39,7 +39,9 @@ The core repository is resolved from `github.com/spice-framework/spice`; catalog
 tests pin both its Git clone URL and Go module path to prevent a return to the
 retired personal namespace. Repository status and canonical/source locations
 remain distinct fields so future migrations are never presented as completed
-before their own acceptance gates pass. The active SMTP starter is an
+before their own acceptance gates pass. The path-filtered toolchain repository
+is recorded as planned until its own module, standalone gate, and consumer
+cutover are green. The active SMTP starter is an
 independently versioned Go module with its own complete quality gate, vendor
 proof, and authenticated verified-STARTTLS Mailpit acceptance path. The active
 PostgreSQL starter is independently versioned as well; it owns migrations,
@@ -49,7 +51,19 @@ secure pool configuration, cancellation and recovery behavior, and a pinned
 real-MySQL acceptance path without adding its driver to core. The independent
 Redis starter owns authenticated client configuration, independent pools,
 typed JSON cache operations, expiry, cancellation, and a pinned real-Redis
-acceptance path without adding its client graph to core. Go repository linters
+acceptance path without adding its client graph to core. The independently
+versioned OpenTelemetry starter keeps tracing and metrics providers caller
+owned, the OAuth2 client starter fails closed around transport and redirect
+policy, and the OIDC resource-server starter validates signed tokens against a
+deterministic TLS/JWKS acceptance service. Each publishes strict minimum and
+current Spice compatibility boundaries without moving its dependency graph
+back into core. The WebSocket starter adds authenticated, bounded, verified
+TLS client/server behavior with deterministic local interoperability evidence
+and no ambient listener, connection, or credential ownership. The gRPC starter
+likewise owns verified TLS/mTLS channels, health, message limits, observations,
+and graceful/forced server shutdown outside core. The Kafka starter owns
+authenticated, ordered, manually committed broker delivery against a pinned
+Redpanda acceptance environment. Go repository linters
 serialize on
 golangci-lint's shared process lock, so concurrently orchestrated repository
 gates remain deterministic without oversubscribing the host. The active

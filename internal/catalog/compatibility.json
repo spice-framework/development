@@ -85,6 +85,42 @@
       ]
     },
     {
+      "name": "toolchain",
+      "directory": "toolchain",
+      "status": "planned",
+      "canonical_url": "https://github.com/spice-framework/toolchain",
+      "clone_url": "https://github.com/spice-framework/toolchain.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/toolchain",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
       "name": "starter-smtp",
       "directory": "starter-smtp",
       "status": "active",
@@ -200,6 +236,222 @@
       "clone_url": "https://github.com/spice-framework/starter-redis.git",
       "artifact": "go-module",
       "module": "github.com/spice-framework/starter-redis",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "starter-otel",
+      "directory": "starter-otel",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-otel",
+      "clone_url": "https://github.com/spice-framework/starter-otel.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-otel",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "starter-oauth2client",
+      "directory": "starter-oauth2client",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-oauth2client",
+      "clone_url": "https://github.com/spice-framework/starter-oauth2client.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-oauth2client",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "starter-oidc",
+      "directory": "starter-oidc",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-oidc",
+      "clone_url": "https://github.com/spice-framework/starter-oidc.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-oidc",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "starter-websocket",
+      "directory": "starter-websocket",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-websocket",
+      "clone_url": "https://github.com/spice-framework/starter-websocket.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-websocket",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "starter-grpc",
+      "directory": "starter-grpc",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-grpc",
+      "clone_url": "https://github.com/spice-framework/starter-grpc.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-grpc",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "starter-kafka",
+      "directory": "starter-kafka",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-kafka",
+      "clone_url": "https://github.com/spice-framework/starter-kafka.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-kafka",
       "dependencies": [
         ".github",
         "development",
