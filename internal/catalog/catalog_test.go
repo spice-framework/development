@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 5 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 6 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -40,6 +40,19 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		!slices.Equal(petclinic.Dependencies, []string{".github", "development", "spice"}) ||
 		len(petclinic.Fast) != 1 || len(petclinic.Full) != 1 {
 		t.Fatalf("Petclinic repository identity = %#v", petclinic)
+	}
+	goland := requireRepository(t, value.Repositories, "goland")
+	if goland.Status != "active" ||
+		goland.CanonicalURL != "https://github.com/spice-framework/goland" ||
+		goland.CloneURL != "https://github.com/spice-framework/goland.git" ||
+		goland.Artifact != "goland-plugin" ||
+		!slices.Equal(
+			goland.Dependencies,
+			[]string{".github", "development", "spice", "petclinic"},
+		) || len(goland.Fast) != 1 || len(goland.Full) != 1 ||
+		goland.Fast[0].Arguments[0] != "java" ||
+		goland.Full[0].Arguments[len(goland.Full[0].Arguments)-1] != "verifyRepository" {
+		t.Fatalf("GoLand repository identity = %#v", goland)
 	}
 }
 

@@ -27,9 +27,11 @@ automation to require freshness without writing.
 `verify` runs repository-owned commands. Fast mode is the default; `--full`
 runs complete gates. Independent repositories run concurrently up to `--jobs`,
 while output is reported deterministically in catalog order. Verification is
-offline and shell-free: Go uses `GOPROXY=off`, Cargo uses offline mode, and
-rustup automatic toolchain installation is disabled. Bootstrap or install the
-pinned toolchains and dependency caches explicitly before running a full gate.
+offline and shell-free: Go uses `GOPROXY=off`, Cargo uses offline mode, rustup
+automatic toolchain installation is disabled, and Java-based repositories are
+invoked through their checked-in Gradle wrapper JAR instead of an
+operating-system-specific script. Bootstrap or install the pinned toolchains
+and dependency caches explicitly before running a full gate.
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).
@@ -43,3 +45,7 @@ security, race, coverage, offline, PostgreSQL, and MySQL verification contract.
 Schema 2 also records safe per-command working directories, allowing the active
 Zed repository to verify both its locked Rust extension and nested canonical
 Spice fixture without a shell or a repository-local path assumption.
+The active GoLand repository is likewise verified from the shared workspace
+against the catalog-selected core and Petclinic checkouts. Its installed-IDE
+visual and interaction suite remains a repository-owned Windows and Linux CI
+gate because it launches a real pinned GoLand distribution.

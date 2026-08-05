@@ -121,6 +121,54 @@
       ]
     },
     {
+      "name": "goland",
+      "directory": "goland",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/goland",
+      "clone_url": "https://github.com/spice-framework/goland.git",
+      "artifact": "goland-plugin",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice",
+        "petclinic"
+      ],
+      "fast": [
+        {
+          "name": "plugin tests",
+          "arguments": [
+            "java",
+            "-classpath",
+            "gradle/wrapper/gradle-wrapper.jar",
+            "org.gradle.wrapper.GradleWrapperMain",
+            "--no-daemon",
+            "--no-parallel",
+            "--console=plain",
+            "-PspiceCorePath=../spice",
+            "-PpetclinicPath=../petclinic",
+            "test"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete plugin verification",
+          "arguments": [
+            "java",
+            "-classpath",
+            "gradle/wrapper/gradle-wrapper.jar",
+            "org.gradle.wrapper.GradleWrapperMain",
+            "--no-daemon",
+            "--no-parallel",
+            "--console=plain",
+            "-PspiceCorePath=../spice",
+            "-PpetclinicPath=../petclinic",
+            "verifyRepository"
+          ]
+        }
+      ]
+    },
+    {
       "name": "zed",
       "directory": "zed",
       "status": "active",
