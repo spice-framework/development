@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 9 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 10 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := requireRepository(t, value.Repositories, "spice")
@@ -42,6 +42,15 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		len(starterPostgres.Fast) != 1 || len(starterPostgres.Full) != 1 {
 		t.Fatalf("PostgreSQL starter repository identity = %#v", starterPostgres)
 	}
+	starterMySQL := requireRepository(t, value.Repositories, "starter-mysql")
+	if starterMySQL.Status != "active" ||
+		starterMySQL.CanonicalURL != "https://github.com/spice-framework/starter-mysql" ||
+		starterMySQL.CloneURL != "https://github.com/spice-framework/starter-mysql.git" ||
+		starterMySQL.Module != "github.com/spice-framework/starter-mysql" ||
+		!slices.Equal(starterMySQL.Dependencies, []string{".github", "development", "spice"}) ||
+		len(starterMySQL.Fast) != 1 || len(starterMySQL.Full) != 1 {
+		t.Fatalf("MySQL starter repository identity = %#v", starterMySQL)
+	}
 	zed := requireRepository(t, value.Repositories, "zed")
 	if zed.Status != "active" ||
 		zed.CanonicalURL != "https://github.com/spice-framework/zed" ||
@@ -57,7 +66,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		petclinic.Module != "github.com/spice-framework/petclinic" ||
 		!slices.Equal(
 			petclinic.Dependencies,
-			[]string{".github", "development", "spice", "starter-postgres"},
+			[]string{".github", "development", "spice", "starter-mysql", "starter-postgres"},
 		) ||
 		len(petclinic.Fast) != 1 || len(petclinic.Full) != 1 {
 		t.Fatalf("Petclinic repository identity = %#v", petclinic)

@@ -44,7 +44,10 @@ independently versioned Go module with its own complete quality gate, vendor
 proof, and authenticated verified-STARTTLS Mailpit acceptance path. The active
 PostgreSQL starter is independently versioned as well; it owns migrations,
 transactions, batch operations, durable outbox behavior, SQL test slices, and
-a pinned real-PostgreSQL acceptance path. Go repository linters serialize on
+a pinned real-PostgreSQL acceptance path. The independent MySQL starter owns
+secure pool configuration, cancellation and recovery behavior, and a pinned
+real-MySQL acceptance path without adding its driver to core. Go repository
+linters serialize on
 golangci-lint's shared process lock, so concurrently orchestrated repository
 gates remain deterministic without oversubscribing the host. The active
 Petclinic repository is the

@@ -157,6 +157,42 @@
       ]
     },
     {
+      "name": "starter-mysql",
+      "directory": "starter-mysql",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/starter-mysql",
+      "clone_url": "https://github.com/spice-framework/starter-mysql.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/starter-mysql",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
       "name": "petclinic",
       "directory": "petclinic",
       "status": "active",
@@ -168,6 +204,7 @@
         ".github",
         "development",
         "spice",
+        "starter-mysql",
         "starter-postgres"
       ],
       "fast": [
