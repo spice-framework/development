@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "toolchains": {
+    "go": "1.26.5",
+    "java": "25",
+    "goland": "2026.2"
+  },
+  "repositories": [
+    {
+      "name": ".github",
+      "directory": ".github",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/.github",
+      "clone_url": "https://github.com/spice-framework/.github.git",
+      "artifact": "governance",
+      "dependencies": [],
+      "fast": [],
+      "full": []
+    },
+    {
+      "name": "development",
+      "directory": "development",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/development",
+      "clone_url": "https://github.com/spice-framework/development.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/development",
+      "dependencies": [
+        ".github"
+      ],
+      "fast": [
+        {
+          "name": "tests",
+          "arguments": [
+            "go",
+            "test",
+            "./..."
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spice",
+      "directory": "spice",
+      "status": "migrating",
+      "canonical_url": "https://github.com/spice-framework/spice",
+      "clone_url": "https://github.com/StevenBuglione/spice.git",
+      "artifact": "go-module",
+      "module": "github.com/StevenBuglione/spice",
+      "canonical_module": "github.com/spice-framework/spice",
+      "dependencies": [
+        ".github",
+        "development"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,296 @@
+// Package cli exposes the cross-platform spice-dev command boundary.
+package cli
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"runtime"
+	"strings"
+
+	"github.com/spice-framework/development/internal/bootstrap"
+	"github.com/spice-framework/development/internal/catalog"
+	"github.com/spice-framework/development/internal/process"
+	"github.com/spice-framework/development/internal/verify"
+	"github.com/spice-framework/development/internal/workspace"
+)
+
+var Version = "0.1.0-dev"
+
+type Runtime struct {
+	Catalog catalog.Catalog
+	Runner  process.Runner
+}
+
+func Main(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	value, err := catalog.Default()
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "spice-dev failed: %v\n", err)
+		return 1
+	}
+	return Runtime{Catalog: value, Runner: process.ExecRunner{}}.Run(
+		ctx,
+		arguments,
+		stdout,
+		stderr,
+	)
+}
+
+func (runtime Runtime) Run(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	if ctx == nil || stdout == nil || stderr == nil {
+		return 1
+	}
+	if len(arguments) == 0 || arguments[0] == "help" || arguments[0] == "-h" ||
+		arguments[0] == "--help" {
+		if err := printHelp(stdout); err != nil {
+			return 1
+		}
+		return 0
+	}
+	var code int
+	switch arguments[0] {
+	case "version":
+		code = writeVersion(stdout)
+	case "catalog":
+		code = runtime.catalogCommand(arguments[1:], stdout, stderr)
+	case "bootstrap":
+		code = runtime.bootstrapCommand(ctx, arguments[1:], stdout, stderr)
+	case "workspace":
+		code = runtime.workspaceCommand(arguments[1:], stdout, stderr)
+	case "verify":
+		code = runtime.verifyCommand(ctx, arguments[1:], stdout, stderr)
+	default:
+		if _, err := fmt.Fprintf(stderr, "spice-dev: unknown command %q\n", arguments[0]); err != nil {
+			return 1
+		}
+		code = 2
+	}
+	return code
+}
+
+func (runtime Runtime) catalogCommand(
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	flags := flag.NewFlagSet("catalog", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	asJSON := flags.Bool("json", false, "print the exact compatibility catalog as JSON")
+	if err := flags.Parse(arguments); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "catalog accepts no positional arguments")
+	}
+	if *asJSON {
+		content, err := json.MarshalIndent(runtime.Catalog, "", "  ")
+		if err != nil {
+			return commandError(stderr, "catalog", err)
+		}
+		content = append(content, '\n')
+		if _, err := stdout.Write(content); err != nil {
+			return 1
+		}
+		return 0
+	}
+	for _, repository := range runtime.Catalog.Repositories {
+		if _, err := fmt.Fprintf(
+			stdout,
+			"%s\t%s\t%s\t%s\n",
+			repository.Name,
+			repository.Status,
+			repository.Artifact,
+			repository.CanonicalURL,
+		); err != nil {
+			return 1
+		}
+	}
+	return 0
+}
+
+func (runtime Runtime) bootstrapCommand(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	flags := flag.NewFlagSet("bootstrap", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	root := flags.String("root", "", "workspace root")
+	offline := flags.Bool("offline", false, "validate without cloning or fetching")
+	if err := flags.Parse(arguments); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "bootstrap accepts no positional arguments")
+	}
+	results, err := bootstrap.Ensure(ctx, *root, runtime.Catalog, *offline, runtime.Runner)
+	if err != nil {
+		return commandError(stderr, "bootstrap", err)
+	}
+	for _, result := range results {
+		if _, err := fmt.Fprintf(
+			stdout,
+			"%s\t%s\t%s\n",
+			result.Repository,
+			result.Action,
+			result.Directory,
+		); err != nil {
+			return 1
+		}
+	}
+	return 0
+}
+
+func (runtime Runtime) workspaceCommand(
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	flags := flag.NewFlagSet("workspace", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	root := flags.String("root", "", "workspace root")
+	check := flags.Bool("check", false, "require current generated workspace files")
+	if err := flags.Parse(arguments); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "workspace accepts no positional arguments")
+	}
+	plan, err := workspace.Render(*root, runtime.Catalog)
+	if err != nil {
+		return commandError(stderr, "workspace", err)
+	}
+	if err := workspace.Apply(*root, plan, *check); err != nil {
+		return commandError(stderr, "workspace", err)
+	}
+	action := "updated"
+	if *check {
+		action = "current"
+	}
+	if _, err := fmt.Fprintf(stdout, "workspace %s: go.work, spice.code-workspace\n", action); err != nil {
+		return 1
+	}
+	return 0
+}
+
+func (runtime Runtime) verifyCommand(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	flags := flag.NewFlagSet("verify", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	root := flags.String("root", "", "workspace root")
+	full := flags.Bool("full", false, "run complete repository gates")
+	jobs := flags.Int("jobs", min(4, runtime2GOMAXPROCS()), "maximum concurrent repositories")
+	var repositories stringList
+	flags.Var(&repositories, "repo", "repository to verify; repeat to select multiple")
+	if err := flags.Parse(arguments); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "verify accepts no positional arguments")
+	}
+	mode := verify.Fast
+	if *full {
+		mode = verify.Full
+	}
+	results, err := verify.Run(ctx, runtime.Catalog, verify.Options{
+		Root: *root, Mode: mode, Repositories: repositories, Jobs: *jobs,
+	}, runtime.Runner)
+	for _, result := range results {
+		status := "passed"
+		if result.Err != nil {
+			status = "failed"
+		}
+		if _, writeErr := fmt.Fprintf(
+			stdout,
+			"%s\t%s\t%d command(s)\t%s\n",
+			result.Repository,
+			status,
+			result.Commands,
+			result.Duration.Round(10_000_000),
+		); writeErr != nil {
+			return 1
+		}
+		if result.Output != "" {
+			if _, writeErr := fmt.Fprintln(stdout, result.Output); writeErr != nil {
+				return 1
+			}
+		}
+	}
+	if err != nil {
+		return commandError(stderr, "verify", err)
+	}
+	return 0
+}
+
+type stringList []string
+
+func (values *stringList) String() string { return strings.Join(*values, ",") }
+
+func (values *stringList) Set(value string) error {
+	if strings.TrimSpace(value) == "" {
+		return errors.New("repository name must not be empty")
+	}
+	*values = append(*values, value)
+	return nil
+}
+
+func runtime2GOMAXPROCS() int { return runtime.GOMAXPROCS(0) }
+
+func writeVersion(writer io.Writer) int {
+	if _, err := fmt.Fprintln(writer, Version); err != nil {
+		return 1
+	}
+	return 0
+}
+
+func printHelp(writer io.Writer) error {
+	_, err := io.WriteString(writer, `spice-dev manages the Spice multi-repository workspace.
+
+Usage:
+  spice-dev version
+  spice-dev catalog [--json]
+  spice-dev bootstrap --root path [--offline]
+  spice-dev workspace --root path [--check]
+  spice-dev verify --root path [--full] [--jobs n] [--repo name ...]
+`)
+	return err
+}
+
+func usageError(writer io.Writer, message string) int {
+	if _, err := fmt.Fprintf(writer, "spice-dev: %s\n", message); err != nil {
+		return 1
+	}
+	return 2
+}
+
+func commandError(writer io.Writer, command string, err error) int {
+	if _, writeErr := fmt.Fprintf(writer, "spice-dev %s failed: %v\n", command, err); writeErr != nil {
+		return 1
+	}
+	return 1
+}
+
+func flagCode(err error) int {
+	if errors.Is(err, flag.ErrHelp) {
+		return 0
+	}
+	return 2
+}
