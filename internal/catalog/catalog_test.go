@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestDefaultCatalogIsValidAndMigrationIsExplicit(t *testing.T) {
+func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
 	if err != nil {
@@ -16,9 +16,12 @@ func TestDefaultCatalogIsValidAndMigrationIsExplicit(t *testing.T) {
 		t.Fatalf("Default() = %#v", value)
 	}
 	spice := value.Repositories[2]
-	if spice.Status != "migrating" || spice.CloneURL == spice.CanonicalURL ||
-		spice.Module == spice.CanonicalModule {
-		t.Fatalf("Spice migration provenance = %#v", spice)
+	if spice.Status != "active" ||
+		spice.CanonicalURL != "https://github.com/spice-framework/spice" ||
+		spice.CloneURL != "https://github.com/spice-framework/spice.git" ||
+		spice.Module != "github.com/spice-framework/spice" ||
+		spice.CanonicalModule != "" {
+		t.Fatalf("Spice repository identity = %#v", spice)
 	}
 }
 

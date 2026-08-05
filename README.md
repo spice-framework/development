@@ -30,5 +30,8 @@ while output is reported deterministically in catalog order.
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).
-Repository status and canonical/source locations are distinct during migration,
-so the tool never presents a planned move as completed.
+The core repository is resolved from `github.com/spice-framework/spice`; catalog
+tests pin both its Git clone URL and Go module path to prevent a return to the
+retired personal namespace. Repository status and canonical/source locations
+remain distinct fields so future migrations are never presented as completed
+before their own acceptance gates pass.

@@ -52,12 +52,11 @@
     {
       "name": "spice",
       "directory": "spice",
-      "status": "migrating",
+      "status": "active",
       "canonical_url": "https://github.com/spice-framework/spice",
-      "clone_url": "https://github.com/StevenBuglione/spice.git",
+      "clone_url": "https://github.com/spice-framework/spice.git",
       "artifact": "go-module",
-      "module": "github.com/StevenBuglione/spice",
-      "canonical_module": "github.com/spice-framework/spice",
+      "module": "github.com/spice-framework/spice",
       "dependencies": [
         ".github",
         "development"

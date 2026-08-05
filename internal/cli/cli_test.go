@@ -37,7 +37,7 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 	}
 	stdout.Reset()
 	if code := runtime.Run(t.Context(), []string{"catalog"}, &stdout, &stderr); code != 0 ||
-		!strings.Contains(stdout.String(), "spice\tmigrating") {
+		!strings.Contains(stdout.String(), "spice\tactive") {
 		t.Fatalf("catalog text code=%d stdout=%q", code, stdout.String())
 	}
 }
