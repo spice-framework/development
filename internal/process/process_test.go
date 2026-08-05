@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -18,6 +19,9 @@ func TestExecRunnerUsesDiscreteAllowedCommands(t *testing.T) {
 	}
 	if _, err := (ExecRunner{}).Run(t.Context(), ".", "powershell", "echo"); err == nil {
 		t.Fatal("Run(unapproved) error = nil")
+	}
+	if !allowedExecutable("cargo") {
+		t.Fatal("cargo is not an approved repository verification executable")
 	}
 	if _, err := (ExecRunner{}).Run(nil, ".", "go", "version"); err == nil { //nolint:staticcheck // Intentional fail-closed boundary case.
 		t.Fatal("Run(nil) error = nil")
@@ -38,9 +42,19 @@ func TestExecRunnerIsolatesRepositoryFromParentGoWorkspace(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
-	output, err := (ExecRunner{}).Run(t.Context(), module, "go", "env", "GOWORK")
-	if err != nil || strings.TrimSpace(output) != "off" {
-		t.Fatalf("Run(go env GOWORK) = %q, %v", output, err)
+	output, err := (ExecRunner{}).Run(t.Context(), module, "go", "env", "GOWORK", "GOPROXY")
+	if fields := strings.Fields(output); err != nil ||
+		!slices.Equal(fields, []string{"off", "off"}) {
+		t.Fatalf("Run(go env GOWORK GOPROXY) = %q, %v", output, err)
+	}
+	values := make(map[string]string)
+	for _, entry := range independentEnvironment() {
+		name, value, _ := strings.Cut(entry, "=")
+		values[strings.ToUpper(name)] = value
+	}
+	if values["CARGO_NET_OFFLINE"] != "true" ||
+		values["RUSTUP_AUTO_INSTALL"] != "0" {
+		t.Fatalf("offline Rust environment = %#v", values)
 	}
 }
 

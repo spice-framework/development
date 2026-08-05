@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 )
 
-const CurrentSchema = 1
+const CurrentSchema = 2
 
 //go:embed compatibility.json
 var defaultContent []byte
@@ -47,6 +48,7 @@ type Repository struct {
 
 type Invocation struct {
 	Name      string   `json:"name"`
+	Directory string   `json:"directory,omitempty"`
 	Arguments []string `json:"arguments"`
 }
 
@@ -158,6 +160,26 @@ func validateRepository(repository Repository) error {
 			invocation.Arguments[0] == "" {
 			return fmt.Errorf("repository %q has an invalid verification invocation", repository.Name)
 		}
+		if err := validateInvocationDirectory(invocation.Directory); err != nil {
+			return fmt.Errorf(
+				"repository %q invocation %q directory: %w",
+				repository.Name,
+				invocation.Name,
+				err,
+			)
+		}
+	}
+	return nil
+}
+
+func validateInvocationDirectory(directory string) error {
+	if directory == "" {
+		return nil
+	}
+	if strings.ContainsAny(directory, `\:`) || strings.ContainsRune(directory, 0) ||
+		path.IsAbs(directory) || path.Clean(directory) != directory ||
+		directory == "." || directory == ".." || strings.HasPrefix(directory, "../") {
+		return fmt.Errorf("%q must be a clean relative slash-separated path", directory)
 	}
 	return nil
 }

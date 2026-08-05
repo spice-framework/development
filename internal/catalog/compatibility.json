@@ -1,9 +1,9 @@
 {
-  "schema": 1,
+  "schema": 2,
   "toolchains": {
     "go": "1.26.5",
     "java": "25",
-    "goland": "2026.2"
+    "goland": "2026.2.0.1"
   },
   "repositories": [
     {
@@ -80,6 +80,82 @@
             "run",
             "./internal/qualitygate",
             "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "zed",
+      "directory": "zed",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/zed",
+      "clone_url": "https://github.com/spice-framework/zed.git",
+      "artifact": "zed-extension",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice"
+      ],
+      "fast": [
+        {
+          "name": "locked Rust tests",
+          "arguments": [
+            "cargo",
+            "test",
+            "--locked"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "Rust formatting",
+          "arguments": [
+            "cargo",
+            "fmt",
+            "--check"
+          ]
+        },
+        {
+          "name": "Rust lint",
+          "arguments": [
+            "cargo",
+            "clippy",
+            "--locked",
+            "--all-targets",
+            "--",
+            "-D",
+            "warnings"
+          ]
+        },
+        {
+          "name": "locked Rust tests",
+          "arguments": [
+            "cargo",
+            "test",
+            "--locked"
+          ]
+        },
+        {
+          "name": "release WASI build",
+          "arguments": [
+            "cargo",
+            "build",
+            "--locked",
+            "--release",
+            "--target",
+            "wasm32-wasip2"
+          ]
+        },
+        {
+          "name": "offline Spice fixture",
+          "directory": "fixture",
+          "arguments": [
+            "go",
+            "tool",
+            "github.com/spice-framework/spice/cmd/spice",
+            "verify",
+            "--format=json",
+            "./..."
           ]
         }
       ]

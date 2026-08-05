@@ -22,7 +22,8 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 		t.Fatalf("catalog code=%d stderr=%q", code, stderr.String())
 	}
 	var decoded catalog.Catalog
-	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil || decoded.Schema != 1 {
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil ||
+		decoded.Schema != catalog.CurrentSchema {
 		t.Fatalf("catalog JSON = %#v, %v", decoded, err)
 	}
 	stdout.Reset()

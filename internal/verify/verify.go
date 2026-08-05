@@ -143,7 +143,15 @@ func runRepository(
 	}
 	var output []string
 	for _, invocation := range commands {
-		text, runErr := runner.Run(ctx, directory, invocation.Arguments...)
+		workingDirectory, directoryErr := invocationDirectory(
+			directory,
+			invocation.Directory,
+		)
+		if directoryErr != nil {
+			result.Err = fmt.Errorf("%s: %w", invocation.Name, directoryErr)
+			break
+		}
+		text, runErr := runner.Run(ctx, workingDirectory, invocation.Arguments...)
 		result.Commands++
 		if text != "" {
 			output = append(output, invocation.Name+":\n"+text)
@@ -156,6 +164,24 @@ func runRepository(
 	result.Duration = time.Since(started)
 	result.Output = strings.Join(output, "\n")
 	return result
+}
+
+func invocationDirectory(root string, relative string) (string, error) {
+	if relative == "" {
+		return root, nil
+	}
+	current := root
+	for _, segment := range strings.Split(relative, "/") {
+		current = filepath.Join(current, segment)
+		info, err := os.Lstat(current)
+		if err != nil {
+			return "", fmt.Errorf("inspect working directory %q: %w", relative, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			return "", fmt.Errorf("working directory %q is not a real directory", relative)
+		}
+	}
+	return current, nil
 }
 
 func requireRoot(root string) (string, error) {

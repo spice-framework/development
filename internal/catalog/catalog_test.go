@@ -12,10 +12,11 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if value.Toolchains.Go != "1.26.5" || len(value.Active()) != 3 {
+	if value.Toolchains.Go != "1.26.5" ||
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 4 {
 		t.Fatalf("Default() = %#v", value)
 	}
-	spice := value.Repositories[2]
+	spice := requireRepository(t, value.Repositories, "spice")
 	if spice.Status != "active" ||
 		spice.CanonicalURL != "https://github.com/spice-framework/spice" ||
 		spice.CloneURL != "https://github.com/spice-framework/spice.git" ||
@@ -23,13 +24,21 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		spice.CanonicalModule != "" {
 		t.Fatalf("Spice repository identity = %#v", spice)
 	}
+	zed := requireRepository(t, value.Repositories, "zed")
+	if zed.Status != "active" ||
+		zed.CanonicalURL != "https://github.com/spice-framework/zed" ||
+		zed.CloneURL != "https://github.com/spice-framework/zed.git" ||
+		zed.Artifact != "zed-extension" || len(zed.Full) != 5 ||
+		zed.Full[4].Directory != "fixture" {
+		t.Fatalf("Zed repository identity = %#v", zed)
+	}
 }
 
 func TestParseRejectsMalformedCatalogs(t *testing.T) {
 	t.Parallel()
 	base := `{
-  "schema": 1,
-  "toolchains": {"go":"1.26.5","java":"25","goland":"2026.2"},
+  "schema": 2,
+  "toolchains": {"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
   "repositories": [%s]
 }`
 	repository := `{
@@ -45,6 +54,12 @@ func TestParseRejectsMalformedCatalogs(t *testing.T) {
 		"insecure URL":   strings.Replace(repository, "https://github.com", "http://github.com", 1),
 		"unknown status": strings.Replace(repository, `"status":"active"`, `"status":"unknown"`, 1),
 		"missing module": strings.Replace(repository, `"module":"github.com/spice-framework/core",`, "", 1),
+		"unsafe invocation directory": strings.Replace(
+			repository,
+			`"fast":[]`,
+			`"fast":[{"name":"test","directory":"../escape","arguments":["go","test"]}]`,
+			1,
+		),
 	}
 	for name, entry := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -59,8 +74,8 @@ func TestParseRejectsMalformedCatalogs(t *testing.T) {
 func TestParseRejectsMissingDependenciesAndCycles(t *testing.T) {
 	t.Parallel()
 	content := `{
-  "schema":1,
-  "toolchains":{"go":"1.26.5","java":"25","goland":"2026.2"},
+  "schema":2,
+  "toolchains":{"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
   "repositories":[
     {"name":"a","directory":"a","status":"active","canonical_url":"https://github.com/spice-framework/a","clone_url":"https://github.com/spice-framework/a.git","artifact":"docs","dependencies":["b"],"fast":[],"full":[]},
     {"name":"b","directory":"b","status":"active","canonical_url":"https://github.com/spice-framework/b","clone_url":"https://github.com/spice-framework/b.git","artifact":"docs","dependencies":["a"],"fast":[],"full":[]}
@@ -85,4 +100,15 @@ func TestParseRejectsTrailingJSONValue(t *testing.T) {
 
 func fmtCatalog(format, repository string) string {
 	return strings.Replace(format, "%s", repository, 1)
+}
+
+func requireRepository(t *testing.T, repositories []Repository, name string) Repository {
+	t.Helper()
+	index := slices.IndexFunc(repositories, func(repository Repository) bool {
+		return repository.Name == name
+	})
+	if index < 0 {
+		t.Fatalf("repository %q is absent from %#v", name, repositories)
+	}
+	return repositories[index]
 }

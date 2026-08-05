@@ -17,6 +17,11 @@ func TestRunReportsInCatalogOrderAndSelectsMode(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
 	value := verificationCatalog(t, root)
+	nested := filepath.Join(root, "b", "fixture")
+	if err := os.Mkdir(nested, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	value.Repositories[1].Full[0].Directory = "fixture"
 	runner := new(recordingRunner)
 	results, err := Run(t.Context(), value, Options{
 		Root: root, Mode: Full, Jobs: 2,
@@ -33,6 +38,33 @@ func TestRunReportsInCatalogOrderAndSelectsMode(t *testing.T) {
 		if !slices.Contains(call, "full") {
 			t.Fatalf("full mode call = %v", call)
 		}
+	}
+	if !slices.Contains(runner.directories, nested) {
+		t.Fatalf("working directories = %v, want %s", runner.directories, nested)
+	}
+}
+
+func TestRunRejectsMissingOrNonDirectoryInvocationDirectory(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	value := verificationCatalog(t, root)
+	value.Repositories[0].Fast[0].Directory = "missing"
+	_, err := Run(t.Context(), value, Options{
+		Root: root, Mode: Fast, Jobs: 1, Repositories: []string{"a"},
+	}, new(recordingRunner))
+	if err == nil || !strings.Contains(err.Error(), "inspect working directory") {
+		t.Fatalf("Run(missing directory) error = %v", err)
+	}
+	file := filepath.Join(root, "a", "fixture")
+	if err := os.WriteFile(file, []byte("not a directory\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	value.Repositories[0].Fast[0].Directory = "fixture"
+	_, err = Run(t.Context(), value, Options{
+		Root: root, Mode: Fast, Jobs: 1, Repositories: []string{"a"},
+	}, new(recordingRunner))
+	if err == nil || !strings.Contains(err.Error(), "not a real directory") {
+		t.Fatalf("Run(file directory) error = %v", err)
 	}
 }
 
@@ -92,9 +124,10 @@ func TestRunReportsActualFailureBeforeCanceledSibling(t *testing.T) {
 }
 
 type recordingRunner struct {
-	mu      sync.Mutex
-	calls   [][]string
-	failure error
+	mu          sync.Mutex
+	calls       [][]string
+	directories []string
+	failure     error
 }
 
 type namedFailureRunner struct {
@@ -115,7 +148,7 @@ func (runner *namedFailureRunner) Run(
 
 func (runner *recordingRunner) Run(
 	ctx context.Context,
-	_ string,
+	directory string,
 	arguments ...string,
 ) (string, error) {
 	if err := ctx.Err(); err != nil {
@@ -123,6 +156,7 @@ func (runner *recordingRunner) Run(
 	}
 	runner.mu.Lock()
 	runner.calls = append(runner.calls, slices.Clone(arguments))
+	runner.directories = append(runner.directories, directory)
 	failure := runner.failure
 	runner.failure = nil
 	runner.mu.Unlock()
@@ -149,9 +183,9 @@ func verificationCatalog(t *testing.T, root string) catalog.Catalog {
 		})
 	}
 	return catalog.Catalog{
-		Schema: 1,
+		Schema: catalog.CurrentSchema,
 		Toolchains: catalog.Toolchains{
-			Go: "1.26.5", Java: "25", GoLand: "2026.2",
+			Go: "1.26.5", Java: "25", GoLand: "2026.2.0.1",
 		},
 		Repositories: repositories,
 	}

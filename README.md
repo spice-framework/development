@@ -26,7 +26,10 @@ automation to require freshness without writing.
 
 `verify` runs repository-owned commands. Fast mode is the default; `--full`
 runs complete gates. Independent repositories run concurrently up to `--jobs`,
-while output is reported deterministically in catalog order.
+while output is reported deterministically in catalog order. Verification is
+offline and shell-free: Go uses `GOPROXY=off`, Cargo uses offline mode, and
+rustup automatic toolchain installation is disabled. Bootstrap or install the
+pinned toolchains and dependency caches explicitly before running a full gate.
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).
@@ -34,4 +37,7 @@ The core repository is resolved from `github.com/spice-framework/spice`; catalog
 tests pin both its Git clone URL and Go module path to prevent a return to the
 retired personal namespace. Repository status and canonical/source locations
 remain distinct fields so future migrations are never presented as completed
-before their own acceptance gates pass.
+before their own acceptance gates pass. Schema 2 also records safe per-command
+working directories, allowing the active Zed repository to verify both its
+locked Rust extension and nested canonical Spice fixture without a shell or a
+repository-local path assumption.

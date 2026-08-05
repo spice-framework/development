@@ -82,7 +82,7 @@ func (buffer *boundedBuffer) String() string {
 }
 
 func allowedExecutable(name string) bool {
-	return name == "git" || name == "go" || name == "gofmt"
+	return name == "cargo" || name == "git" || name == "go" || name == "gofmt"
 }
 
 func commandDetail(output string) string {
@@ -94,13 +94,22 @@ func commandDetail(output string) string {
 
 func independentEnvironment() []string {
 	environment := os.Environ()
-	result := make([]string, 0, len(environment)+1)
+	result := make([]string, 0, len(environment)+4)
 	for _, entry := range environment {
 		name, _, _ := strings.Cut(entry, "=")
-		if strings.EqualFold(name, "GOWORK") {
+		if strings.EqualFold(name, "GOWORK") ||
+			strings.EqualFold(name, "GOPROXY") ||
+			strings.EqualFold(name, "CARGO_NET_OFFLINE") ||
+			strings.EqualFold(name, "RUSTUP_AUTO_INSTALL") {
 			continue
 		}
 		result = append(result, entry)
 	}
-	return append(result, "GOWORK=off")
+	return append(
+		result,
+		"GOWORK=off",
+		"GOPROXY=off",
+		"CARGO_NET_OFFLINE=true",
+		"RUSTUP_AUTO_INSTALL=0",
+	)
 }

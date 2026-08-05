@@ -39,6 +39,7 @@ func TestRenderAndApplyDeterministicNativeWorkspace(t *testing.T) {
 		}
 	}
 	if !strings.Contains(string(plan.Editor), `"name": ".github"`) ||
+		!strings.Contains(string(plan.Editor), `"name": "zed"`) ||
 		!strings.Contains(string(plan.Editor), `"spiceGenerated": true`) {
 		t.Fatalf("editor workspace:\n%s", plan.Editor)
 	}
@@ -79,9 +80,9 @@ func TestRenderRejectsModuleIdentityMismatch(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
 	value := catalog.Catalog{
-		Schema: 1,
+		Schema: catalog.CurrentSchema,
 		Toolchains: catalog.Toolchains{
-			Go: "1.26.5", Java: "25", GoLand: "2026.2",
+			Go: "1.26.5", Java: "25", GoLand: "2026.2.0.1",
 		},
 		Repositories: []catalog.Repository{{
 			Name: "core", Directory: "core", Status: "active",
@@ -194,9 +195,9 @@ func TestReadModulePathRejectsMissingDirective(t *testing.T) {
 
 func documentationCatalog() catalog.Catalog {
 	return catalog.Catalog{
-		Schema: 1,
+		Schema: catalog.CurrentSchema,
 		Toolchains: catalog.Toolchains{
-			Go: "1.26.5", Java: "25", GoLand: "2026.2",
+			Go: "1.26.5", Java: "25", GoLand: "2026.2.0.1",
 		},
 		Repositories: []catalog.Repository{{
 			Name: "docs", Directory: "docs", Status: "active",

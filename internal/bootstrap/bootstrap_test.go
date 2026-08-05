@@ -227,9 +227,9 @@ func testRepository() catalog.Repository {
 
 func testCatalog(repository catalog.Repository) catalog.Catalog {
 	return catalog.Catalog{
-		Schema: 1,
+		Schema: catalog.CurrentSchema,
 		Toolchains: catalog.Toolchains{
-			Go: "1.26.5", Java: "25", GoLand: "2026.2",
+			Go: "1.26.5", Java: "25", GoLand: "2026.2.0.1",
 		},
 		Repositories: []catalog.Repository{repository},
 	}
