@@ -256,22 +256,50 @@ func assertLegacyOracleProvenance(t *testing.T, fixture parityFixture, oracle le
 	if err != nil {
 		t.Fatal(err)
 	}
+	if bytes.Contains(harness, []byte{'\r'}) {
+		t.Fatal("legacy oracle harness is not LF-normalized; check .gitattributes")
+	}
 	harnessSum := sha256.Sum256(harness)
 	remoteMatches, err := sameGitRemote(oracle.BuilderRepository, fixture.Plan.Source)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if oracle.Generation != fixture.Generation || !remoteMatches ||
-		oracle.BuilderPackage != "internal/release" ||
-		oracle.GoVersion != "go1.26.5" || oracle.Platform != "windows/amd64" ||
-		oracle.HarnessSHA256 != hex.EncodeToString(harnessSum[:]) ||
-		!commitPattern.MatchString(oracle.BuilderCommit) ||
-		!commitPattern.MatchString(oracle.BuilderReleaseTree) ||
-		oracle.FixtureCommit != fixture.Plan.Commit ||
-		oracle.Version != fixture.Plan.Version ||
-		oracle.SourceDateEpoch != fixture.Plan.SourceDateEpoch ||
-		len(oracle.OutputSHA256) != len(fixture.Plan.Artifacts) {
-		t.Fatalf("legacy oracle provenance does not match fixture: %#v", oracle)
+	if oracle.Generation != fixture.Generation {
+		t.Fatalf("legacy oracle generation = %q, want %q", oracle.Generation, fixture.Generation)
+	}
+	if !remoteMatches {
+		t.Fatalf("legacy oracle builder repository = %q, want remote equivalent to %q", oracle.BuilderRepository, fixture.Plan.Source)
+	}
+	if oracle.BuilderPackage != "internal/release" {
+		t.Fatalf("legacy oracle builder package = %q, want %q", oracle.BuilderPackage, "internal/release")
+	}
+	if oracle.GoVersion != "go1.26.5" {
+		t.Fatalf("legacy oracle Go version = %q, want %q", oracle.GoVersion, "go1.26.5")
+	}
+	if oracle.Platform != "windows/amd64" {
+		t.Fatalf("legacy oracle platform = %q, want %q", oracle.Platform, "windows/amd64")
+	}
+	wantHarnessSum := hex.EncodeToString(harnessSum[:])
+	if oracle.HarnessSHA256 != wantHarnessSum {
+		t.Fatalf("legacy oracle harness SHA-256 = %q, want %q", oracle.HarnessSHA256, wantHarnessSum)
+	}
+	if !commitPattern.MatchString(oracle.BuilderCommit) {
+		t.Fatalf("legacy oracle builder commit is not a full Git commit: %q", oracle.BuilderCommit)
+	}
+	if !commitPattern.MatchString(oracle.BuilderReleaseTree) {
+		t.Fatalf("legacy oracle builder release tree is not a full Git tree: %q", oracle.BuilderReleaseTree)
+	}
+	if oracle.FixtureCommit != fixture.Plan.Commit {
+		t.Fatalf("legacy oracle fixture commit = %q, want %q", oracle.FixtureCommit, fixture.Plan.Commit)
+	}
+	if oracle.Version != fixture.Plan.Version {
+		t.Fatalf("legacy oracle version = %q, want %q", oracle.Version, fixture.Plan.Version)
+	}
+	if oracle.SourceDateEpoch != fixture.Plan.SourceDateEpoch {
+		t.Fatalf("legacy oracle source date epoch = %d, want %d", oracle.SourceDateEpoch, fixture.Plan.SourceDateEpoch)
+	}
+	if len(oracle.OutputSHA256) != len(fixture.Plan.Artifacts) {
+		t.Fatalf("legacy oracle has %d artifact hashes, want %d", len(oracle.OutputSHA256), len(fixture.Plan.Artifacts))
 	}
 	for _, artifact := range fixture.Plan.Artifacts {
 		hash := oracle.OutputSHA256[artifact]
