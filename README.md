@@ -15,7 +15,8 @@ go run ./cmd/spice-dev workspace --root ../spice-workspace
 go run ./cmd/spice-dev verify --root ../spice-workspace
 go run ./cmd/spice-dev library-release plan --root ../starter-smtp --repo starter-smtp --version v1.2.3 --rehearsal > plan.json
 go run ./cmd/spice-dev library-release render --root ../starter-smtp --plan plan.json --output dist/rehearsal
-go run ./cmd/spice-dev library-release sign --root ../starter-smtp --plan production-plan.json --output ../releases/starter-smtp-v1.2.3 --signing-key ../release-keys/starter-smtp.key --trusted-public-key ../release-keys/starter-smtp.pub
+go run ./cmd/spice-dev library-release public-key --signing-key ../release-keys/starter-smtp.key --output ../starter-smtp/security/release/ed25519-public.pem
+go run ./cmd/spice-dev library-release sign --root ../starter-smtp --plan production-plan.json --output ../releases/starter-smtp-v1.2.3 --signing-key ../release-keys/starter-smtp.key --trusted-public-key ../starter-smtp/security/release/ed25519-public.pem
 ```
 
 `bootstrap` is the only network-capable command. Add `--offline` to validate
@@ -68,6 +69,15 @@ trusted matching public key. The public trust anchor may be a reviewed
 committed file. It signs the exact checksum bytes, revalidates the checkout
 immediately before an atomic no-replace commit, and emits exactly the archive,
 SBOM, checksums, canonical public-key PEM, and raw detached signature.
+
+`library-release public-key` is the narrow trust-anchor bootstrap boundary.
+The maintainer creates and retains the Ed25519 private key through a separate
+external key-management process, then uses this command to derive one canonical
+PKIX public-key PEM for review and commit before the release tag is created.
+The command never generates, prints, or persists private material and atomically
+creates, but never replaces, the public output. Configure any GitHub Environment
+signing secret separately after reviewing the committed public anchor; never
+put the private key in the repository, command output, or release artifacts.
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).

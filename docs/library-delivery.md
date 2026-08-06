@@ -114,6 +114,32 @@ trust anchor rather than trust the release directory itself. Publication,
 tag creation, hosted key custody, and a separate toolchain verifier remain
 outside this slice.
 
+### Bootstrapping a production trust anchor
+
+Private-key creation and custody are intentionally outside Spice. A maintainer
+must create the Ed25519 private key using an approved external key-management
+process, keep its file outside the source checkout, and restrict it to the
+owner on Unix. Spice accepts canonical PKCS#8 PEM or canonical standard-base64
+seed/private-key bytes; it never generates or prints private material.
+
+Before creating the release tag, derive the reviewable public trust anchor:
+
+```text
+spice-dev library-release public-key \
+  --signing-key ../release-keys/starter-smtp.key \
+  --output security/release/ed25519-public.pem
+```
+
+The output parent must already be a real directory. The command writes a
+canonical Ed25519 PKIX PEM through same-directory staging and an atomic
+no-replace commit. Existing files, directories, and final-component symlinks
+are rejected. Review the public key through an independent tool and reviewer,
+commit it, and only then create the production tag and plan. Configure the
+corresponding private key as a protected GitHub Environment secret in a
+separate administrative step; the repository contains only the public anchor.
+Hosted automation should materialize that secret as a temporary owner-only
+file outside the checkout and remove it after signing.
+
 The parity fixtures are independent retained-builder oracles, not outputs
 reconstructed by the central renderer. The `.txt` overlay harness in
 `internal/libraryrelease/testdata/parity` was compiled inside each retained

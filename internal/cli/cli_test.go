@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/x509"
@@ -36,6 +37,7 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 	stdout.Reset()
 	if code := runtime.Run(t.Context(), nil, &stdout, &stderr); code != 0 ||
 		!strings.Contains(stdout.String(), "spice-dev bootstrap") ||
+		!strings.Contains(stdout.String(), "library-release public-key") ||
 		!strings.Contains(stdout.String(), "library-release sign") {
 		t.Fatalf("help code=%d stdout=%q", code, stdout.String())
 	}
@@ -123,6 +125,37 @@ func TestRuntimeSignsProductionLibraryRelease(t *testing.T) {
 	}
 	if len(entries) != 5 {
 		t.Fatalf("signed release entries = %v", entries)
+	}
+}
+
+func TestRuntimeDerivesReleasePublicKeyWithoutLoggingPrivateMaterial(t *testing.T) {
+	privateKey := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x27}, ed25519.SeedSize))
+	privateKeyContent := base64.StdEncoding.EncodeToString(privateKey.Seed())
+	privateKeyFile := filepath.Join(t.TempDir(), "release.key")
+	if err := os.WriteFile(privateKeyFile, []byte(privateKeyContent), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(t.TempDir(), "release-public.pem")
+	var stdout, stderr strings.Builder
+	code := testRuntime(t).Run(t.Context(), []string{
+		"library-release", "public-key",
+		"--signing-key", privateKeyFile,
+		"--output", output,
+	}, &stdout, &stderr)
+	if code != 0 || !strings.Contains(stdout.String(), "Ed25519 PKIX public key") {
+		t.Fatalf("library-release public-key code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if strings.Contains(stdout.String(), privateKeyFile) ||
+		strings.Contains(stdout.String(), privateKeyContent) || stderr.Len() != 0 {
+		t.Fatalf("private signing material was logged: stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	content, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block, rest := pem.Decode(content)
+	if block == nil || block.Type != "PUBLIC KEY" || len(rest) != 0 {
+		t.Fatalf("public-key output = %q", content)
 	}
 }
 
@@ -220,6 +253,11 @@ func TestRuntimeRejectsInvalidCommandsAndWrites(t *testing.T) {
 	}
 	if code := runtime.Run(t.Context(), []string{"library-release"}, &stdout, &stderr); code != 2 {
 		t.Fatalf("library-release missing plan code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{
+		"library-release", "public-key", "extra",
+	}, &stdout, &stderr); code != 2 {
+		t.Fatalf("library-release public-key positional code = %d", code)
 	}
 	if code := runtime.Run(t.Context(), []string{
 		"library-release", "render", "--root", t.TempDir(),
