@@ -13,6 +13,7 @@ import (
 const (
 	artifactSchemaVersion = 1
 	rendererIdentity      = "github.com/spice-framework/development/cmd/spice-dev library-release renderer/v1"
+	maximumSBOMBytes      = 1 << 20
 )
 
 type spdxDocument struct {
@@ -115,7 +116,11 @@ func buildSBOM(
 	if err != nil {
 		return nil, fmt.Errorf("encode release SBOM: %w", err)
 	}
-	return append(content, '\n'), nil
+	content = append(content, '\n')
+	if err := requireControlFileLimit("release SBOM", content, maximumSBOMBytes); err != nil {
+		return nil, err
+	}
+	return content, nil
 }
 
 func newSPDXPackage(name string, version string, replacement string) spdxPackage {

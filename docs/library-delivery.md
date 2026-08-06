@@ -84,6 +84,11 @@ atomic rename, refuses existing output, performs no network access, and never
 reads working-tree source bytes. Two independent renders are byte-identical.
 Production plans remain rejected by this rehearsal-only command.
 
+Renderer/v1 bounds compatibility metadata to 64 KiB, committed `go.sum` to
+16 MiB, and the emitted SPDX SBOM to 1 MiB. Its independent verifier enforces
+the same versioned limits, so production signing cannot create an artifact
+outside the verifier's accepted contract.
+
 `spice-dev library-release sign` implements phase 3 as a distinct production
 boundary. It accepts only a production plan and requires the current checkout
 to remain clean, at the exact planned commit, with the exact planned tag and

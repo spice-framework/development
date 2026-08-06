@@ -288,3 +288,22 @@ func TestRenderHelpersRejectUnsafeOrConflictingOutputs(t *testing.T) {
 		t.Fatal("renderArtifacts(missing required file) error = nil")
 	}
 }
+
+func TestRendererV1ControlFileLimits(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		maximum int
+	}{
+		{name: "committed go.sum", maximum: maximumModuleGraphBytes},
+		{name: "release SBOM", maximum: maximumSBOMBytes},
+	} {
+		if err := requireControlFileLimit(test.name, make([]byte, test.maximum), test.maximum); err != nil {
+			t.Fatalf("requireControlFileLimit(%s boundary) = %v", test.name, err)
+		}
+		if err := requireControlFileLimit(test.name, make([]byte, test.maximum+1), test.maximum); err == nil ||
+			!strings.Contains(err.Error(), test.name) {
+			t.Fatalf("requireControlFileLimit(%s oversized) = %v", test.name, err)
+		}
+	}
+}
