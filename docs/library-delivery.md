@@ -4,31 +4,45 @@ Spice libraries need one trusted release and common quality implementation,
 not copied programs that slowly acquire different security and reproducibility
 behavior.
 
-## Current duplication
+## Current state
 
-The ten active starter repositories each contain an `internal/qualitygate`
-program between roughly 460 and 905 lines. They also contain a release command
-and private release package. Five use the older release-builder generation and
-five use the newer exact-commit generation. Within each generation, Git source
-inspection, archive construction, SPDX generation, checksums, Ed25519 signing,
-version parsing, CLI validation, and hundreds of test lines are copied. Several
-files are byte-identical; most remaining differences are hard-coded repository,
-module, temporary-directory, and artifact names.
+The release-builder migration is complete for all ten active starter
+repositories. None retains a tracked repository-specific release command or
+`internal/release` implementation. Each repository instead keeps:
 
-Repository-specific acceptance is valuable and remains repository-owned.
-Copies of formatting, module/vendor checks, vet, lint, security, generic tests,
-coverage accounting, offline proof, compatibility orchestration, and release
-rendering are not repository-specific.
+- its own product quality gate and external-system acceptance;
+- a vendored, immutable `spice-dev` tool selection for offline unsigned
+  release rehearsal;
+- a caller workflow pinned to one immutable `.github` reusable-workflow
+  commit;
+- a distinct committed Ed25519 public trust anchor and corresponding
+  repository Actions secret;
+- separate protected `release-signing` and `release-publish` approval
+  environments; and
+- release-tag creation restrictions plus immutable tag update/deletion rules.
 
-## Target contract
+The remaining `internal/qualitygate` packages are repository-owned gate
+orchestrators, not release artifact builders. Some generic gate mechanics can
+still be consolidated separately, but product-specific coverage, offline,
+protocol, and real-service acceptance intentionally remain with each starter.
+The infrastructure state above does not assert that every public preview run
+and independent post-publication audit has completed.
 
-The trusted path is the pinned
-`github.com/spice-framework/development/cmd/spice-dev` Go tool. A library
-selects the tool through its own `go.mod` tool directive and vendors it like
-other build tools. CI and local development invoke the same command with
-`GOWORK=off`; the command never depends on a sibling checkout.
+## Authoritative contract
 
-The central path has three separated phases:
+Local rehearsal uses the pinned
+`github.com/spice-framework/development/cmd/spice-dev` Go tool selected through
+each starter's `go.mod` tool directive and vendor tree. CI invokes it with
+`GOWORK=off`, `GOPROXY=off`, and `-mod=vendor`; it never depends on a sibling
+checkout and never receives signing material.
+
+Production uses the organization-owned reusable workflow pinned by immutable
+commit. That workflow checks out and builds the renderer/signer from the
+separate trusted development commit and the independent verifier from a
+separate trusted toolchain commit. It never builds release authority from the
+candidate repository or its vendor tree.
+
+The artifact implementation has three separated phases:
 
 1. `library-release plan` performs read-only policy and source-identity
    validation and emits schema-versioned JSON.
@@ -38,7 +52,8 @@ The central path has three separated phases:
 3. `library-release sign` consumes a production plan, adds the trusted public
    key and detached checksum signature, revalidates the exact production state,
    and atomically renames the staging directory. Publication and tagging stay
-   outside the builder and require an explicit release workflow.
+   outside the builder and are performed only by the final protected workflow
+   job after independent verification.
 
 The plan contains no absolute paths or wall-clock timestamps. It records the
 catalog repository and module, canonical release version, full commit, commit
@@ -47,14 +62,16 @@ and exact artifact names. Production requires a clean checkout and the named
 tag resolving to `HEAD`. Rehearsal is visibly unsigned and may be dirty or
 untagged, but it still binds artifacts to committed source identity.
 
-`library verify` will eventually own the common Go quality profile. Catalog
-policy will select the profile and retain only explicit repository-specific
-acceptance commands. The shared profile will own toolchain enforcement,
-formatting, module/vendor freshness, vet, lint, security, shuffled/race tests,
-coverage, compatibility boundaries, offline build, and two-build release
-reproducibility. External-service and protocol acceptance stays in the library.
+The reusable workflow adds two approval and permission boundaries around those
+phases. Candidate validation runs without credentials or secrets. Signing runs
+with `contents:read` behind `release-signing` and receives only the one named
+caller secret. Independent verification receives no private key. Publication
+runs behind `release-publish`, contains no signing secret, and is the only job
+with `contents:write`. The workflow re-resolves the immutable tag before and
+after publication and classifies canonical SemVer prerelease tags as GitHub
+prereleases.
 
-## Implemented migration slices
+## Central implementation
 
 `spice-dev library-release plan` implements phase 1. It:
 
@@ -82,7 +99,8 @@ and creates a stable PAX tar/gzip source archive, SPDX 2.3 dependency document,
 and SHA-256 checksum file. It writes through a new staging directory and an
 atomic rename, refuses existing output, performs no network access, and never
 reads working-tree source bytes. Two independent renders are byte-identical.
-Production plans remain rejected by this rehearsal-only command.
+Production plans remain rejected by this rehearsal-only command; the reusable
+workflow invokes the production signer after constructing its own exact plan.
 
 Renderer/v1 bounds compatibility metadata to 64 KiB, committed `go.sum` to
 16 MiB, and the emitted SPDX SBOM to 1 MiB. Its independent verifier enforces
@@ -121,9 +139,9 @@ production state is checked again after those writes and immediately before an
 atomic no-replace directory commit. Existing output is never replaced and a
 failure removes staging. The emitted public key records the authenticated key
 used for signing, but verifiers must compare it to an independently distributed
-trust anchor rather than trust the release directory itself. Publication,
-tag creation, hosted key custody, and a separate toolchain verifier remain
-outside this slice.
+trust anchor rather than trust the release directory itself. The reusable
+workflow performs that independent toolchain verification before its separately
+approved publication job receives the five-artifact set.
 
 ### Bootstrapping a production trust anchor
 
@@ -146,38 +164,42 @@ canonical Ed25519 PKIX PEM through same-directory staging and an atomic
 no-replace commit. Existing files, directories, and final-component symlinks
 are rejected. Review the public key through an independent tool and reviewer,
 commit it, and only then create the production tag and plan. Configure the
-corresponding private key as a protected GitHub Environment secret in a
-separate administrative step; the repository contains only the public anchor.
-Hosted automation should materialize that secret as a temporary owner-only
-file outside the checkout and remove it after signing.
+corresponding private key as the one repository Actions secret accepted by the
+reusable workflow; the repository and both protected environments contain no
+private-key copy. Hosted automation materializes the secret only as a temporary
+owner-only file outside the checkout for the signing job and removes it before
+that job exits.
 
-The parity fixtures are independent retained-builder oracles, not outputs
-reconstructed by the central renderer. The `.txt` overlay harness in
-`internal/libraryrelease/testdata/parity` was compiled inside each retained
-`internal/release` package and invoked that package's exported `Build` function
-against a clean, fixed SHA-1 fixture repository. Each `*-legacy.json` file
-records the retained repository URL, builder commit, `internal/release` Git tree
-object, Go toolchain/platform, overlay-harness hash, fixture commit, version,
-epoch, and actual legacy artifact hashes. Both frozen records were produced with
-Go 1.26.5 on `windows/amd64`; the shared harness hash is
+The parity fixtures are frozen historical oracles, not live copies or outputs
+reconstructed by the central renderer. Before the copied builders were
+retired, the `.txt` overlay harness in
+`internal/libraryrelease/testdata/parity` was compiled inside two representative
+historical `internal/release` packages and invoked each package's exported
+`Build` function against a clean, fixed SHA-1 fixture repository. Each
+`*-legacy.json` file records the source repository URL, historical builder
+commit, `internal/release` Git tree object, Go toolchain/platform,
+overlay-harness hash, fixture commit, version, epoch, and actual legacy artifact
+hashes. Both frozen records were produced with Go 1.26.5 on `windows/amd64`;
+the shared harness hash is
 `a7b69759421a2efe4b272285a1b92e76d9f5e515f0fc8f95d76b0507d15a18a1`.
 
 The frozen provenance is:
 
-| Generation | Retained builder commit | `internal/release` tree | Fixture commit |
+| Generation | Historical builder commit | `internal/release` tree | Fixture commit |
 |---|---|---|---|
 | `starter-mysql` older working-tree v1 | `9227a40e1c9f4b4bd122fc60c9740002d978c744` | `9f8adfee5d01773efb11875fb6a5a8b9cbdba65d` | `b9b6ea7f8c42cbdc114b26ce998d107cf5f795d5` |
 | `starter-oidc` newer exact-commit v2 | `30b138c178e31629f2f75289642ea18306693999` | `c09323590267ba69de6577d55a708c87130cc173` | `85f568b49a5a0071c69b8c59200dd2a073e59c0e` |
 
-The oracle command was `go test -mod=vendor -overlay <overlay.json>
+The historical oracle command was `go test -mod=vendor -overlay <overlay.json>
 ./internal/release -run ^TestGenerateLegacyParityOracle$ -count=1`, with
 `SPICE_PARITY_FIXTURE` selecting `older.json` or `newer.json` and
 `SPICE_PARITY_ORACLE` selecting the corresponding legacy record, and
 `SPICE_PARITY_HARNESS` naming the checked-in overlay source. The overlay
 maps a synthetic `internal/release/parity_oracle_test.go` to the checked-in
-`.txt` harness, so the retained implementation is exercised without modifying
-or copying it. Regeneration is accepted only from the recorded clean builder
-commit and package tree.
+`.txt` harness. Reproduction therefore requires checking out the recorded clean
+historical commit and package tree; no active starter repository retains that
+implementation. Normal development verification validates the committed
+provenance and hashes without executing a former starter builder.
 
 `TestRendererGoldenParityContracts` validates that provenance, pins the central
 hashes separately, and mechanically compares every central hash with its actual
@@ -197,19 +219,21 @@ renderer/v1`; future byte-contract changes must advance that identity. The
 renderer does not infer a legacy profile from repository names or silently
 claim parity that does not exist.
 
-## Migration sequence
+## Completed migration and remaining boundaries
 
-1. Migrate one starter to a pinned `spice-dev` tool directive. Its existing
-   builder remains temporarily as a parity oracle; CI compares both outputs.
-2. After the documented parity contract is green on Windows and Linux, make the central builder
-   authoritative for that starter and remove its copied release command and
-   package.
-3. Add the central common quality profile. Migrate the same starter by replacing
-   copied generic checks with the shared profile while retaining its explicit
-   integration/acceptance commands.
-4. Repeat per starter, alternating old and new builder generations. A migration
-   is complete only after deterministic artifacts, signature verification,
-   SBOM contents, offline execution, and repository-specific acceptance match.
-5. Remove the final copied implementations only after every active library uses
-   the pinned central tool. Version the plan and artifact schemas independently
-   and reject unknown versions rather than adding compatibility heuristics.
+The completed migration was deliberately incremental: representative old and
+new builders first established historical parity contracts; the central
+renderer became authoritative; every starter adopted deterministic offline
+rehearsal; distinct trust anchors and protected workflow boundaries were
+provisioned; and the final copied release command/package was removed.
+
+The following work is separate from that completed release-builder migration:
+
+1. Public preview runs and independent downloaded-artifact audits must be
+   recorded per repository; workflow readiness alone is not publication.
+2. Generic quality-gate mechanics may move to a central profile only when each
+   starter retains its explicit product and real-service acceptance.
+3. Plan, renderer, and artifact schemas must continue to version independently
+   and reject unknown versions instead of adding heuristic compatibility.
+4. Any trusted development, toolchain, or reusable-workflow commit update is a
+   security-sensitive migration that requires fresh caller review and pinning.

@@ -15,8 +15,6 @@ go run ./cmd/spice-dev workspace --root ../spice-workspace
 go run ./cmd/spice-dev verify --root ../spice-workspace
 go run ./cmd/spice-dev library-release plan --root ../starter-smtp --repo starter-smtp --version v1.2.3 --rehearsal > plan.json
 go run ./cmd/spice-dev library-release render --root ../starter-smtp --plan plan.json --output dist/rehearsal
-go run ./cmd/spice-dev library-release public-key --signing-key ../release-keys/starter-smtp.key --output ../starter-smtp/security/release/ed25519-public.pem
-go run ./cmd/spice-dev library-release sign --root ../starter-smtp --plan production-plan.json --output ../releases/starter-smtp-v1.2.3 --signing-key ../release-keys/starter-smtp.key --trusted-public-key ../starter-smtp/security/release/ed25519-public.pem
 ```
 
 `bootstrap` is the only network-capable command. Add `--offline` to validate
@@ -48,86 +46,74 @@ starter gate runs. This preflight is read-only, shell-free, and offline; it uses
 the rest of verification.
 
 `library-release plan` is the first executable part of the central library
-delivery path. It performs no writes, downloads, signing, tagging, or release
-publication. It binds a catalog-governed library to its exact module,
+delivery implementation. It performs no writes, downloads, signing, tagging,
+or publication. It binds a catalog-governed library to its exact module,
 compatibility boundaries, full Git commit, commit epoch, required committed
 files, and standard artifact names. Production plans additionally require a
 clean checkout and an exact tag at `HEAD`; `--rehearsal` deliberately omits
 those two production checks. See
-[`docs/library-delivery.md`](docs/library-delivery.md) for the artifact-builder
-and quality-gate migration sequence.
+[`docs/library-delivery.md`](docs/library-delivery.md) for the completed
+release-builder migration, trust boundaries, and historical parity evidence.
 
 `library-release render` consumes an already validated rehearsal plan and only
 the selected commit's Git objects. It atomically creates a new directory with a
 deterministic source archive, SPDX 2.3 SBOM, and SHA-256 checksums. It is
 offline, refuses existing output, and rejects production plans.
 
-`library-release sign` is the separate production boundary. It requires a
-production plan, exact clean tagged checkout, output and private-key files
-outside the repository, a canonical Ed25519 private key, and an independently
-trusted matching public key. The public trust anchor may be a reviewed
-committed file. It signs the exact checksum bytes, revalidates the checkout
-immediately before an atomic no-replace commit, and emits exactly the archive,
-SBOM, checksums, canonical public-key PEM, and raw detached signature.
+`library-release sign` is the separate production boundary used by the
+organization release workflow. It requires a production plan, exact clean
+tagged checkout, output and private-key files outside the repository, a
+canonical Ed25519 private key, and an independently trusted matching public
+key. It signs the exact checksum bytes, revalidates the checkout immediately
+before an atomic no-replace commit, and emits exactly the archive, SBOM,
+checksums, canonical public-key PEM, and raw detached signature.
 
-`library-release public-key` is the narrow trust-anchor bootstrap boundary.
-The maintainer creates and retains the Ed25519 private key through a separate
-external key-management process, then uses this command to derive one canonical
-PKIX public-key PEM for review and commit before the release tag is created.
-The command never generates, prints, or persists private material and atomically
-creates, but never replaces, the public output. Configure any GitHub Environment
-signing secret separately after reviewing the committed public anchor; never
-put the private key in the repository, command output, or release artifacts.
+`library-release public-key` is the narrow trust-anchor bootstrap boundary. It
+derives one canonical PKIX public-key PEM for review and commit from externally
+created Ed25519 key material. The command never generates, prints, or persists
+private material and atomically creates, but never replaces, the public output.
+It is an administrative operation, not part of normal application development.
+
+All ten active starter repositories now pin the same immutable organization
+release workflow. Each owns a distinct committed Ed25519 public anchor and a
+corresponding repository Actions secret, and uses separate protected
+`release-signing` and `release-publish` approval environments plus restricted,
+immutable release tags. Candidate verification is uncredentialed; the central
+renderer/signer and independent toolchain verifier are built from separate
+immutable commits; only the final approved publication job receives
+`contents:write`. The repositories retain deterministic unsigned rehearsals,
+but no longer contain copied release commands or `internal/release` packages.
+This statement describes completed release infrastructure, not the completion
+of every public preview run or post-publication audit.
+
+## Compatibility and repository state
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).
-The core repository is resolved from `github.com/spice-framework/spice`, and
-the active compiler/CLI/LSP repository is resolved from
-`github.com/spice-framework/toolchain`. Catalog tests pin both clone URLs and
-Go module paths and require applications/editors to depend explicitly on the
-toolchain rather than a retired core `cmd` path. The toolchain compatibility
-pair is core `v0.0.0-20260806053623-2ec6f862073f` with standalone toolchain
-`v0.0.0-20260805230546-150f8ae62c13`; editor and application fixtures must pin
-both exact public versions without a local replacement. Repository status and
-canonical/source locations remain distinct fields so migrations are never
-presented as completed before their acceptance gates pass. The active SMTP starter is an
-independently versioned Go module with its own complete quality gate, vendor
-proof, and authenticated verified-STARTTLS Mailpit acceptance path. The active
-PostgreSQL starter is independently versioned as well; it owns migrations,
-transactions, batch operations, durable outbox behavior, SQL test slices, and
-a pinned real-PostgreSQL acceptance path. The independent MySQL starter owns
-secure pool configuration, cancellation and recovery behavior, and a pinned
-real-MySQL acceptance path without adding its driver to core. The independent
-Redis starter owns authenticated client configuration, independent pools,
-typed JSON cache operations, expiry, cancellation, and a pinned real-Redis
-acceptance path without adding its client graph to core. The independently
-versioned OpenTelemetry starter keeps tracing and metrics providers caller
-owned, the OAuth2 client starter fails closed around transport and redirect
-policy, and the OIDC resource-server starter validates signed tokens against a
-deterministic TLS/JWKS acceptance service. Each publishes strict minimum and
-current Spice compatibility boundaries without moving its dependency graph
-back into core. The WebSocket starter adds authenticated, bounded, verified
-TLS client/server behavior with deterministic local interoperability evidence
-and no ambient listener, connection, or credential ownership. The gRPC starter
-likewise owns verified TLS/mTLS channels, health, message limits, observations,
-and graceful/forced server shutdown outside core. The Kafka starter owns
-authenticated, ordered, manually committed broker delivery against a pinned
-Redpanda acceptance environment. Go repository linters
-serialize on
-golangci-lint's shared process lock, so concurrently orchestrated repository
-gates remain deterministic without oversubscribing the host. The active
-Petclinic repository is the
-cross-platform reference application and owns its complete generated-code,
-security, race, coverage, offline, PostgreSQL, and MySQL verification contract.
-The active Commerce repository is the production-shaped modular application;
-it independently proves configuration, generated DI, HTTP, security,
-transactions, PostgreSQL, mail through the standalone SMTP module, lifecycle,
-and zero-network development defaults against immutable dependency versions.
-Schema 3 also records the central starter compatibility policy and safe
-per-command working directories, allowing the active
-Zed repository to verify both its locked Rust extension and nested canonical
-Spice fixture without a shell or a repository-local path assumption.
-The active GoLand repository is likewise verified from the shared workspace
-against the catalog-selected core and Petclinic checkouts. Its installed-IDE
-visual and interaction suite remains a repository-owned Windows and Linux CI
-gate because it launches a real pinned GoLand distribution.
+The catalog's `starter_compatibility.current_core` value is a deliberately
+pinned consumer-policy baseline used by the offline starter preflight. It is
+not a claim that the selected pseudo-version is the latest core repository
+head. Likewise, application and editor compatibility fixtures pin reviewed
+core/toolchain pairs as reproducible test inputs; they advance through an
+explicit compatibility change rather than following either repository's
+moving `main` branch.
+
+The repository split is now explicit:
+
+- `spice` owns the runtime and public SDK contracts.
+- `toolchain` owns the compiler, generator, CLI, LSP, independent release
+  verifier, and enforced compiler/generator/dev-loop performance budgets.
+- ten independently versioned `starter-*` repositories own external-system
+  integration and their real-service acceptance paths;
+- `commerce` and `petclinic` own distinct minimum/current core and toolchain
+  compatibility matrices, generated-code proof, and application acceptance;
+- `goland` owns the packaged installed-IDE visual, navigation, complete-package
+  Run, and native Debug proof on Windows and Linux;
+- `zed` owns the independently versioned Rust extension and its canonical
+  offline Spice fixture; and
+- `.github` and this repository own organization workflows and cross-repository
+  development policy respectively.
+
+Repository status, compatibility baselines, source locations, and public
+release status are separate facts. A green compatibility or installed-IDE gate
+does not by itself claim that a new public version has been published.
