@@ -2,7 +2,10 @@ package libraryrelease
 
 import (
 	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -118,6 +121,99 @@ func TestArchivePathsRejectCrossPlatformExtractionHazards(t *testing.T) {
 	}
 	if err := validateSymlink("nested/link", "../portable.go"); err != nil {
 		t.Fatalf("validateSymlink(portable) = %v", err)
+	}
+}
+
+func TestRendererV1RejectsNonASCIISourceNamesAndCaseCollisions(t *testing.T) {
+	t.Parallel()
+	objectID := strings.Repeat("a", 40)
+	record := func(name []byte) []byte {
+		result := []byte("100644 blob " + objectID + "\t")
+		result = append(result, name...)
+		return append(result, 0)
+	}
+	for _, test := range []struct {
+		name    string
+		path    []byte
+		wantErr string
+	}{
+		{
+			name:    "NFC",
+			path:    []byte("caf\u00e9.go"),
+			wantErr: "path contains a byte outside printable ASCII",
+		},
+		{
+			name:    "NFD",
+			path:    []byte("cafe\u0301.go"),
+			wantErr: "path contains a byte outside printable ASCII",
+		},
+		{
+			name:    "invalid UTF-8",
+			path:    []byte{'b', 'a', 'd', 0xff, '.', 'g', 'o'},
+			wantErr: "path is not valid UTF-8",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			_, firstErr := parseGitTree(record(test.path))
+			_, secondErr := parseGitTree(record(test.path))
+			if firstErr == nil || firstErr.Error() != secondErr.Error() ||
+				!strings.Contains(firstErr.Error(), test.wantErr) {
+				t.Fatalf("parseGitTree() errors = %v and %v, want deterministic %q", firstErr, secondErr, test.wantErr)
+			}
+		})
+	}
+
+	forward := append(record([]byte("File.go")), record([]byte("file.go"))...)
+	reverse := append(record([]byte("file.go")), record([]byte("File.go"))...)
+	wantCollision := `release source paths "File.go" and "file.go" collide on case-insensitive filesystems`
+	for _, content := range [][]byte{forward, reverse} {
+		if _, err := parseGitTree(content); err == nil || err.Error() != wantCollision {
+			t.Fatalf("parseGitTree(case collision) error = %v, want %q", err, wantCollision)
+		}
+	}
+}
+
+func TestRendererV1RejectsNonASCIISymlinkTargets(t *testing.T) {
+	t.Parallel()
+	for _, target := range []string{"caf\u00e9.go", "cafe\u0301.go", string([]byte{'b', 'a', 'd', 0xff})} {
+		firstErr := validateSymlink("nested/link", target)
+		secondErr := validateSymlink("nested/link", target)
+		if firstErr == nil || firstErr.Error() != secondErr.Error() {
+			t.Fatalf("validateSymlink(%q) errors = %v and %v", target, firstErr, secondErr)
+		}
+	}
+}
+
+func TestRendererV1RetainsLongASCIIPathsThroughPAX(t *testing.T) {
+	t.Parallel()
+	name := "nested/" + strings.Repeat("a", 120) + ".go"
+	content := []byte("package fixture\n")
+	archive, err := buildSourceArchiveWithPrefix(
+		"fixture/",
+		time.Unix(1_700_000_000, 0).UTC(),
+		[]gitTreeEntry{{mode: "100644", name: name, data: content}},
+	)
+	if err != nil {
+		t.Fatalf("buildSourceArchiveWithPrefix() error = %v", err)
+	}
+	gzipReader, err := gzip.NewReader(bytes.NewReader(archive))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = gzipReader.Close() })
+	tarReader := tar.NewReader(gzipReader)
+	header, err := tarReader.Next()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantName := "fixture/" + name
+	if header.Name != wantName || header.Format != tar.FormatPAX || header.PAXRecords["path"] != wantName {
+		t.Fatalf("long ASCII header = %#v, want PAX path %q", header, wantName)
+	}
+	gotContent, err := io.ReadAll(tarReader)
+	if err != nil || !bytes.Equal(gotContent, content) {
+		t.Fatalf("long ASCII content = %q, %v", gotContent, err)
 	}
 }
 

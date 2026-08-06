@@ -89,6 +89,17 @@ Renderer/v1 bounds compatibility metadata to 64 KiB, committed `go.sum` to
 the same versioned limits, so production signing cannot create an artifact
 outside the verifier's accepted contract.
 
+Renderer/v1 also defines a portable source-tree name contract. Every byte in a
+committed source path and symbolic-link target must be printable ASCII
+(`0x20`-`0x7e`) and valid UTF-8. Existing traversal, absolute-path, Windows
+reserved-name, forbidden-character, trailing-dot, and trailing-space checks
+still apply. Paths that differ only by ASCII case are rejected as a Git-tree
+collision, preventing one signed source tree from extracting differently on
+case-sensitive and case-insensitive filesystems. Long printable-ASCII paths
+remain supported through deterministic PAX headers. This byte contract is part
+of `renderer/v1`; accepting Unicode names or changing normalization behavior
+requires a new renderer identity and matching independent-verifier support.
+
 `spice-dev library-release sign` implements phase 3 as a distinct production
 boundary. It accepts only a production plan and requires the current checkout
 to remain clean, at the exact planned commit, with the exact planned tag and
