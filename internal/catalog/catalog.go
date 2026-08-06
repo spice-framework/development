@@ -209,7 +209,7 @@ func (policy StarterCompatibilityPolicy) validate() error {
 	if strings.TrimSpace(policy.CoreModule) == "" {
 		return errors.New("starter compatibility core module must be explicit")
 	}
-	if !validModuleVersion(policy.CurrentCore) {
+	if !ValidModuleVersion(policy.CurrentCore) {
 		return fmt.Errorf(
 			"starter compatibility current core version %q is malformed",
 			policy.CurrentCore,
@@ -252,13 +252,13 @@ func ParseStarterCompatibility(
 			policy.MetadataSchema,
 		)
 	}
-	if !validModuleVersion(result.Minimum) {
+	if !ValidModuleVersion(result.Minimum) {
 		return StarterCompatibility{}, fmt.Errorf(
 			"starter compatibility minimum version %q is malformed",
 			result.Minimum,
 		)
 	}
-	if !validModuleVersion(result.Current) {
+	if !ValidModuleVersion(result.Current) {
 		return StarterCompatibility{}, fmt.Errorf(
 			"starter compatibility current version %q is malformed",
 			result.Current,
@@ -274,7 +274,9 @@ func ParseStarterCompatibility(
 	return result, nil
 }
 
-func validModuleVersion(version string) bool {
+// ValidModuleVersion reports whether version is a canonical v-prefixed Go
+// module version without leading-zero numeric identifiers.
+func ValidModuleVersion(version string) bool {
 	matches := moduleVersionPattern.FindStringSubmatch(version)
 	if matches == nil {
 		return false

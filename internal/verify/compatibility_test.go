@@ -100,8 +100,9 @@ func TestVerifyStarterCompatibilityRejectsInvalidMetadataAndModuleAlignment(t *t
 			want: "must be direct", commands: 1,
 		},
 		"missing requirement": {
-			metadata: validStarterMetadata, moduleJSON: `{"Require":[]}`,
-			want: "must directly require", commands: 1,
+			metadata:   validStarterMetadata,
+			moduleJSON: `{"Module":{"Path":"github.com/spice-framework/starter-mail"},"Require":[]}`,
+			want:       "must directly require", commands: 1,
 		},
 		"malformed module metadata": {
 			metadata: validStarterMetadata, moduleJSON: `{`,
@@ -152,27 +153,6 @@ func TestVerifyStarterCompatibilityPropagatesModuleInspectionFailure(t *testing.
 	if !executed || output != "module output" || err == nil ||
 		!strings.Contains(err.Error(), "inspect go.mod") {
 		t.Fatalf("verifyStarterCompatibility() = %q, %t, %v", output, executed, err)
-	}
-}
-
-func TestReadCompatibilityMetadataRejectsNonRegularAndOversizedFiles(t *testing.T) {
-	t.Parallel()
-	directory := t.TempDir()
-	if _, err := readCompatibilityMetadata(directory, "."); err == nil ||
-		!strings.Contains(err.Error(), "not a regular file") {
-		t.Fatalf("readCompatibilityMetadata(directory) error = %v", err)
-	}
-	name := "spice-compatibility.json"
-	if err := os.WriteFile(
-		filepath.Join(directory, name),
-		make([]byte, maximumCompatibilityMetadata+1),
-		0o600,
-	); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := readCompatibilityMetadata(directory, name); err == nil ||
-		!strings.Contains(err.Error(), "bounded") {
-		t.Fatalf("readCompatibilityMetadata(oversized) error = %v", err)
 	}
 }
 

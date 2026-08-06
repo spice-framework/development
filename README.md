@@ -13,6 +13,7 @@ go run ./cmd/spice-dev catalog
 go run ./cmd/spice-dev bootstrap --root ../spice-workspace
 go run ./cmd/spice-dev workspace --root ../spice-workspace
 go run ./cmd/spice-dev verify --root ../spice-workspace
+go run ./cmd/spice-dev library-release plan --root ../starter-smtp --repo starter-smtp --version v1.2.3 --rehearsal
 ```
 
 `bootstrap` is the only network-capable command. Add `--offline` to validate
@@ -42,6 +43,16 @@ direct `github.com/spice-framework/spice` requirement reported by its own
 starter gate runs. This preflight is read-only, shell-free, and offline; it uses
 `go mod edit -json` with the same `GOWORK=off` and `GOPROXY=off` isolation as
 the rest of verification.
+
+`library-release plan` is the first executable part of the central library
+delivery path. It performs no writes, downloads, signing, tagging, or release
+publication. It binds a catalog-governed library to its exact module,
+compatibility boundaries, full Git commit, commit epoch, required committed
+files, and standard artifact names. Production plans additionally require a
+clean checkout and an exact tag at `HEAD`; `--rehearsal` deliberately omits
+those two production checks. See
+[`docs/library-delivery.md`](docs/library-delivery.md) for the artifact-builder
+and quality-gate migration sequence.
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).

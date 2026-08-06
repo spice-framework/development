@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/spice-framework/development/internal/catalog"
+	"github.com/spice-framework/development/internal/libraryrelease"
 )
 
 func TestRuntimeCatalogAndHelp(t *testing.T) {
@@ -49,6 +50,40 @@ func TestMainUsesEmbeddedCatalog(t *testing.T) {
 	if code := Main(t.Context(), []string{"catalog"}, &stdout, &stderr); code != 0 ||
 		!strings.Contains(stdout.String(), "development\tactive") {
 		t.Fatalf("Main(catalog) code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+}
+
+func TestRuntimeCreatesLibraryReleasePlan(t *testing.T) {
+	t.Parallel()
+	value, err := catalog.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	directory := filepath.Join(root, "starter-smtp")
+	if err := os.Mkdir(directory, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	metadata := `{"schema":1,"minimum":"v0.1.0","current":"` +
+		value.StarterCompatibility.CurrentCore + `"}`
+	if err := os.WriteFile(
+		filepath.Join(directory, value.StarterCompatibility.MetadataFile),
+		[]byte(metadata),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	runtime := Runtime{Catalog: value, Runner: releasePlanRunner{}}
+	var stdout, stderr strings.Builder
+	code := runtime.Run(t.Context(), []string{
+		"library-release", "plan", "--root", directory, "--repo", "starter-smtp",
+		"--version", "v1.2.3", "--source-date-epoch", "1700000000", "--rehearsal",
+	}, &stdout, &stderr)
+	var plan libraryrelease.Plan
+	if err := json.Unmarshal([]byte(stdout.String()), &plan); err != nil || code != 0 ||
+		plan.Repository != "starter-smtp" || plan.Mode != "rehearsal" ||
+		plan.SourceDateEpoch != 1_700_000_000 {
+		t.Fatalf("library release plan code=%d plan=%#v err=%v stderr=%q", code, plan, err, stderr.String())
 	}
 }
 
@@ -144,6 +179,9 @@ func TestRuntimeRejectsInvalidCommandsAndWrites(t *testing.T) {
 	if code := runtime.Run(t.Context(), []string{"catalog", "--help"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("catalog help code = %d", code)
 	}
+	if code := runtime.Run(t.Context(), []string{"library-release"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("library-release missing plan code = %d", code)
+	}
 	var values stringList
 	if err := values.Set(""); err == nil {
 		t.Fatal("stringList.Set(empty) error = nil")
@@ -156,6 +194,34 @@ func TestRuntimeRejectsInvalidCommandsAndWrites(t *testing.T) {
 type fakeRunner struct {
 	mu    sync.Mutex
 	calls [][]string
+}
+
+type releasePlanRunner struct{}
+
+func (releasePlanRunner) Run(
+	ctx context.Context,
+	_ string,
+	arguments ...string,
+) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	switch {
+	case slices.Equal(arguments, []string{"git", "remote", "get-url", "origin"}):
+		return "https://github.com/spice-framework/starter-smtp.git", nil
+	case slices.Equal(arguments, []string{"go", "mod", "edit", "-json"}):
+		return `{"Module":{"Path":"github.com/spice-framework/starter-smtp"},"Require":[{"Path":"github.com/spice-framework/spice","Version":"v0.1.0"}]}`, nil
+	case slices.Equal(arguments, []string{"git", "rev-parse", "--verify", "HEAD^{commit}"}):
+		return "0123456789abcdef0123456789abcdef01234567", nil
+	case len(arguments) == 5 && slices.Equal(arguments[:4], []string{"git", "show", "-s", "--format=%ct"}):
+		return "1700000000", nil
+	case len(arguments) == 4 && slices.Equal(arguments[:3], []string{"git", "cat-file", "-e"}):
+		return "", nil
+	case len(arguments) == 8 && slices.Equal(arguments[:4], []string{"git", "diff", "--no-ext-diff", "--unified=0"}):
+		return "", nil
+	default:
+		return "", errors.New("unexpected release plan command")
+	}
 }
 
 func (runner *fakeRunner) Run(

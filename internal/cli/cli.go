@@ -13,6 +13,7 @@ import (
 
 	"github.com/spice-framework/development/internal/bootstrap"
 	"github.com/spice-framework/development/internal/catalog"
+	"github.com/spice-framework/development/internal/libraryrelease"
 	"github.com/spice-framework/development/internal/process"
 	"github.com/spice-framework/development/internal/verify"
 	"github.com/spice-framework/development/internal/workspace"
@@ -72,6 +73,8 @@ func (runtime Runtime) Run(
 		code = runtime.workspaceCommand(arguments[1:], stdout, stderr)
 	case "verify":
 		code = runtime.verifyCommand(ctx, arguments[1:], stdout, stderr)
+	case "library-release":
+		code = runtime.libraryReleaseCommand(ctx, arguments[1:], stdout, stderr)
 	default:
 		if _, err := fmt.Fprintf(stderr, "spice-dev: unknown command %q\n", arguments[0]); err != nil {
 			return 1
@@ -79,6 +82,45 @@ func (runtime Runtime) Run(
 		code = 2
 	}
 	return code
+}
+
+func (runtime Runtime) libraryReleaseCommand(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	if len(arguments) == 0 || arguments[0] != "plan" {
+		return usageError(stderr, "library-release requires the plan subcommand")
+	}
+	flags := flag.NewFlagSet("library-release plan", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	root := flags.String("root", "", "library repository root")
+	repository := flags.String("repo", "", "catalog library repository")
+	version := flags.String("version", "", "canonical v-prefixed release version")
+	rehearsal := flags.Bool("rehearsal", false, "plan an unsigned untagged rehearsal")
+	epoch := flags.Int64("source-date-epoch", 0, "require this exact source commit epoch")
+	if err := flags.Parse(arguments[1:]); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "library-release plan accepts no positional arguments")
+	}
+	plan, err := libraryrelease.CreatePlan(ctx, runtime.Catalog, libraryrelease.Options{
+		Root: *root, Repository: *repository, Version: *version,
+		Rehearsal: *rehearsal, SourceDateEpoch: *epoch,
+	}, runtime.Runner)
+	if err != nil {
+		return commandError(stderr, "library-release plan", err)
+	}
+	content, err := json.MarshalIndent(plan, "", "  ")
+	if err != nil {
+		return commandError(stderr, "library-release plan", err)
+	}
+	if _, err := stdout.Write(append(content, '\n')); err != nil {
+		return 1
+	}
+	return 0
 }
 
 func (runtime Runtime) catalogCommand(
@@ -270,6 +312,7 @@ Usage:
   spice-dev bootstrap --root path [--offline]
   spice-dev workspace --root path [--check]
   spice-dev verify --root path [--full] [--jobs n] [--repo name ...]
+  spice-dev library-release plan --root path --repo name --version vX.Y.Z [--rehearsal]
 `)
 	return err
 }
