@@ -84,6 +84,7 @@ func TestRenderRejectsModuleIdentityMismatch(t *testing.T) {
 		Toolchains: catalog.Toolchains{
 			Go: "1.26.5", Java: "25", GoLand: "2026.2.0.1",
 		},
+		StarterCompatibility: testStarterCompatibilityPolicy(),
 		Repositories: []catalog.Repository{{
 			Name: "core", Directory: "core", Status: "active",
 			CanonicalURL: "https://github.com/spice-framework/core",
@@ -199,6 +200,7 @@ func documentationCatalog() catalog.Catalog {
 		Toolchains: catalog.Toolchains{
 			Go: "1.26.5", Java: "25", GoLand: "2026.2.0.1",
 		},
+		StarterCompatibility: testStarterCompatibilityPolicy(),
 		Repositories: []catalog.Repository{{
 			Name: "docs", Directory: "docs", Status: "active",
 			CanonicalURL: "https://github.com/spice-framework/docs",
@@ -206,5 +208,13 @@ func documentationCatalog() catalog.Catalog {
 			Artifact:     "documentation", Dependencies: []string{},
 			Fast: []catalog.Invocation{}, Full: []catalog.Invocation{},
 		}},
+	}
+}
+
+func testStarterCompatibilityPolicy() catalog.StarterCompatibilityPolicy {
+	return catalog.StarterCompatibilityPolicy{
+		RepositoryPrefix: "starter-", MetadataFile: "spice-compatibility.json",
+		MetadataSchema: 1, CoreModule: "github.com/spice-framework/spice",
+		CurrentCore: "v0.0.0-20260805222830-a2ecd56df246",
 	}
 }

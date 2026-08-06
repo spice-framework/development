@@ -11,19 +11,21 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 )
 
-const CurrentSchema = 2
+const CurrentSchema = 3
 
 //go:embed compatibility.json
 var defaultContent []byte
 
 type Catalog struct {
-	Schema       int          `json:"schema"`
-	Toolchains   Toolchains   `json:"toolchains"`
-	Repositories []Repository `json:"repositories"`
+	Schema               int                        `json:"schema"`
+	Toolchains           Toolchains                 `json:"toolchains"`
+	StarterCompatibility StarterCompatibilityPolicy `json:"starter_compatibility"`
+	Repositories         []Repository               `json:"repositories"`
 }
 
 type Toolchains struct {
@@ -51,6 +53,27 @@ type Invocation struct {
 	Directory string   `json:"directory,omitempty"`
 	Arguments []string `json:"arguments"`
 }
+
+// StarterCompatibilityPolicy is the organization-wide compatibility contract
+// applied to every active starter repository in the catalog.
+type StarterCompatibilityPolicy struct {
+	RepositoryPrefix string `json:"repository_prefix"`
+	MetadataFile     string `json:"metadata_file"`
+	MetadataSchema   int    `json:"metadata_schema"`
+	CoreModule       string `json:"core_module"`
+	CurrentCore      string `json:"current_core"`
+}
+
+// StarterCompatibility is the strict metadata stored by each starter.
+type StarterCompatibility struct {
+	Schema  int    `json:"schema"`
+	Minimum string `json:"minimum"`
+	Current string `json:"current"`
+}
+
+var moduleVersionPattern = regexp.MustCompile(
+	`^v([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$`,
+)
 
 func Default() (Catalog, error) {
 	return Parse(defaultContent)
@@ -84,6 +107,9 @@ func (value Catalog) Validate() error {
 		value.Toolchains.GoLand == "" {
 		return errors.New("compatibility toolchain versions must be explicit")
 	}
+	if err := value.StarterCompatibility.validate(); err != nil {
+		return err
+	}
 	if len(value.Repositories) == 0 {
 		return errors.New("compatibility catalog has no repositories")
 	}
@@ -107,6 +133,42 @@ func (value Catalog) Validate() error {
 		byName[repository.Name] = repository
 		directories[repository.Directory] = repository.Name
 	}
+	starters := make([]Repository, 0)
+	for _, repository := range value.Repositories {
+		if value.StarterCompatibility.Applies(repository) {
+			starters = append(starters, repository)
+		}
+	}
+	if len(starters) != 0 {
+		coreOwner := ""
+		for _, repository := range value.Repositories {
+			if repository.Module == value.StarterCompatibility.CoreModule {
+				coreOwner = repository.Name
+				break
+			}
+		}
+		if coreOwner == "" {
+			return fmt.Errorf(
+				"starter compatibility core module %q has no catalog repository",
+				value.StarterCompatibility.CoreModule,
+			)
+		}
+		for _, repository := range starters {
+			if repository.Artifact != "go-module" || repository.Module == "" {
+				return fmt.Errorf(
+					"starter repository %q must be a Go module",
+					repository.Name,
+				)
+			}
+			if !slices.Contains(repository.Dependencies, coreOwner) {
+				return fmt.Errorf(
+					"starter repository %q must depend on core repository %q",
+					repository.Name,
+					coreOwner,
+				)
+			}
+		}
+	}
 	for _, repository := range value.Repositories {
 		for _, dependency := range repository.Dependencies {
 			if _, exists := byName[dependency]; !exists {
@@ -122,6 +184,113 @@ func (value Catalog) Validate() error {
 		return fmt.Errorf("repository dependency cycle: %s", strings.Join(cycle, " -> "))
 	}
 	return nil
+}
+
+// Applies reports whether the central policy governs a repository.
+func (policy StarterCompatibilityPolicy) Applies(repository Repository) bool {
+	return (repository.Status == "active" || repository.Status == "migrating") &&
+		strings.HasPrefix(repository.Name, policy.RepositoryPrefix)
+}
+
+func (policy StarterCompatibilityPolicy) validate() error {
+	if policy.RepositoryPrefix == "" || strings.TrimSpace(policy.RepositoryPrefix) != policy.RepositoryPrefix {
+		return errors.New("starter compatibility repository prefix must be explicit")
+	}
+	if policy.MetadataFile == "" || filepath.Base(policy.MetadataFile) != policy.MetadataFile ||
+		policy.MetadataFile == "." || policy.MetadataFile == ".." {
+		return fmt.Errorf(
+			"starter compatibility metadata file %q must be one safe file name",
+			policy.MetadataFile,
+		)
+	}
+	if policy.MetadataSchema < 1 {
+		return errors.New("starter compatibility metadata schema must be positive")
+	}
+	if strings.TrimSpace(policy.CoreModule) == "" {
+		return errors.New("starter compatibility core module must be explicit")
+	}
+	if !validModuleVersion(policy.CurrentCore) {
+		return fmt.Errorf(
+			"starter compatibility current core version %q is malformed",
+			policy.CurrentCore,
+		)
+	}
+	return nil
+}
+
+// ParseStarterCompatibility strictly decodes one starter's compatibility
+// metadata and binds its current boundary to the catalog-wide core revision.
+func ParseStarterCompatibility(
+	content []byte,
+	policy StarterCompatibilityPolicy,
+) (StarterCompatibility, error) {
+	if err := policy.validate(); err != nil {
+		return StarterCompatibility{}, err
+	}
+	decoder := json.NewDecoder(bytes.NewReader(content))
+	decoder.DisallowUnknownFields()
+	var result StarterCompatibility
+	if err := decoder.Decode(&result); err != nil {
+		return StarterCompatibility{}, fmt.Errorf("decode starter compatibility metadata: %w", err)
+	}
+	var trailing json.RawMessage
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return StarterCompatibility{}, errors.New(
+				"starter compatibility metadata has trailing JSON values",
+			)
+		}
+		return StarterCompatibility{}, fmt.Errorf(
+			"decode trailing starter compatibility metadata: %w",
+			err,
+		)
+	}
+	if result.Schema != policy.MetadataSchema {
+		return StarterCompatibility{}, fmt.Errorf(
+			"starter compatibility schema %d does not match catalog schema %d",
+			result.Schema,
+			policy.MetadataSchema,
+		)
+	}
+	if !validModuleVersion(result.Minimum) {
+		return StarterCompatibility{}, fmt.Errorf(
+			"starter compatibility minimum version %q is malformed",
+			result.Minimum,
+		)
+	}
+	if !validModuleVersion(result.Current) {
+		return StarterCompatibility{}, fmt.Errorf(
+			"starter compatibility current version %q is malformed",
+			result.Current,
+		)
+	}
+	if result.Current != policy.CurrentCore {
+		return StarterCompatibility{}, fmt.Errorf(
+			"starter compatibility current version %q is stale; catalog requires %q",
+			result.Current,
+			policy.CurrentCore,
+		)
+	}
+	return result, nil
+}
+
+func validModuleVersion(version string) bool {
+	matches := moduleVersionPattern.FindStringSubmatch(version)
+	if matches == nil {
+		return false
+	}
+	for _, core := range matches[1:4] {
+		if len(core) > 1 && core[0] == '0' {
+			return false
+		}
+	}
+	for identifier := range strings.SplitSeq(matches[4], ".") {
+		if len(identifier) > 1 && identifier[0] == '0' &&
+			strings.Trim(identifier, "0123456789") == "" {
+			return false
+		}
+	}
+	return true
 }
 
 func (value Catalog) Active() []Repository {

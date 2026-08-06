@@ -87,6 +87,7 @@ func Run(
 				workCtx,
 				root,
 				repository,
+				value.StarterCompatibility,
 				options.Mode,
 				runner,
 			)
@@ -122,6 +123,7 @@ func runRepository(
 	ctx context.Context,
 	root string,
 	repository catalog.Repository,
+	compatibility catalog.StarterCompatibilityPolicy,
 	mode Mode,
 	runner process.Runner,
 ) Result {
@@ -136,6 +138,25 @@ func runRepository(
 	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
 		result.Err = errors.New("checkout is not a real directory")
 		return result
+	}
+	if compatibility.Applies(repository) {
+		text, executed, compatibilityErr := verifyStarterCompatibility(
+			ctx,
+			directory,
+			compatibility,
+			runner,
+		)
+		if executed {
+			result.Commands++
+		}
+		if text != "" {
+			result.Output = "starter compatibility:\n" + text
+		}
+		if compatibilityErr != nil {
+			result.Err = fmt.Errorf("starter compatibility: %w", compatibilityErr)
+			result.Duration = time.Since(started)
+			return result
+		}
 	}
 	commands := repository.Fast
 	if mode == Full {
@@ -162,6 +183,9 @@ func runRepository(
 		}
 	}
 	result.Duration = time.Since(started)
+	if result.Output != "" {
+		output = append([]string{result.Output}, output...)
+	}
 	result.Output = strings.Join(output, "\n")
 	return result
 }

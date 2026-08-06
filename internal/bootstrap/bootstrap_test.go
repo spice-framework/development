@@ -231,6 +231,15 @@ func testCatalog(repository catalog.Repository) catalog.Catalog {
 		Toolchains: catalog.Toolchains{
 			Go: "1.26.5", Java: "25", GoLand: "2026.2.0.1",
 		},
-		Repositories: []catalog.Repository{repository},
+		StarterCompatibility: testStarterCompatibilityPolicy(),
+		Repositories:         []catalog.Repository{repository},
+	}
+}
+
+func testStarterCompatibilityPolicy() catalog.StarterCompatibilityPolicy {
+	return catalog.StarterCompatibilityPolicy{
+		RepositoryPrefix: "starter-", MetadataFile: "spice-compatibility.json",
+		MetadataSchema: 1, CoreModule: "github.com/spice-framework/spice",
+		CurrentCore: "v0.0.0-20260805222830-a2ecd56df246",
 	}
 }

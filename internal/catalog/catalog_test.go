@@ -16,6 +16,9 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 18 {
 		t.Fatalf("Default() = %#v", value)
 	}
+	if value.StarterCompatibility != testStarterCompatibilityPolicy() {
+		t.Fatalf("starter compatibility policy = %#v", value.StarterCompatibility)
+	}
 	spice := requireRepository(t, value.Repositories, "spice")
 	if spice.Status != "active" ||
 		spice.CanonicalURL != "https://github.com/spice-framework/spice" ||
@@ -146,8 +149,9 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 func TestParseRejectsMalformedCatalogs(t *testing.T) {
 	t.Parallel()
 	base := `{
-  "schema": 2,
+  "schema": 3,
   "toolchains": {"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
+  "starter_compatibility": {"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260805222830-a2ecd56df246"},
   "repositories": [%s]
 }`
 	repository := `{
@@ -183,8 +187,9 @@ func TestParseRejectsMalformedCatalogs(t *testing.T) {
 func TestParseRejectsMissingDependenciesAndCycles(t *testing.T) {
 	t.Parallel()
 	content := `{
-  "schema":2,
+  "schema":3,
   "toolchains":{"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
+  "starter_compatibility":{"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260805222830-a2ecd56df246"},
   "repositories":[
     {"name":"a","directory":"a","status":"active","canonical_url":"https://github.com/spice-framework/a","clone_url":"https://github.com/spice-framework/a.git","artifact":"docs","dependencies":["b"],"fast":[],"full":[]},
     {"name":"b","directory":"b","status":"active","canonical_url":"https://github.com/spice-framework/b","clone_url":"https://github.com/spice-framework/b.git","artifact":"docs","dependencies":["a"],"fast":[],"full":[]}
@@ -196,6 +201,74 @@ func TestParseRejectsMissingDependenciesAndCycles(t *testing.T) {
 	missing := strings.Replace(content, `"dependencies":["a"]`, `"dependencies":["missing"]`, 1)
 	if _, err := Parse([]byte(missing)); err == nil || !strings.Contains(err.Error(), "unknown repository") {
 		t.Fatalf("Parse(missing) error = %v", err)
+	}
+}
+
+func TestParseStarterCompatibilityRequiresCentralCurrentVersion(t *testing.T) {
+	t.Parallel()
+	policy := testStarterCompatibilityPolicy()
+	value, err := ParseStarterCompatibility([]byte(`{
+  "schema": 1,
+  "minimum": "v0.0.0-20260805175412-383c17744300",
+  "current": "v0.0.0-20260805222830-a2ecd56df246"
+}`), policy)
+	if err != nil || value.Minimum != "v0.0.0-20260805175412-383c17744300" ||
+		value.Current != policy.CurrentCore {
+		t.Fatalf("ParseStarterCompatibility() = %#v, %v", value, err)
+	}
+	equal, err := ParseStarterCompatibility([]byte(`{
+  "schema": 1,
+  "minimum": "v0.0.0-20260805222830-a2ecd56df246",
+  "current": "v0.0.0-20260805222830-a2ecd56df246"
+}`), policy)
+	if err != nil || equal.Minimum != equal.Current {
+		t.Fatalf("ParseStarterCompatibility(equal boundaries) = %#v, %v", equal, err)
+	}
+	for name, content := range map[string]string{
+		"wrong schema":      `{"schema":2,"minimum":"v0.1.0","current":"v0.2.0"}`,
+		"unknown field":     `{"schema":1,"minimum":"v0.1.0","current":"v0.2.0","extra":true}`,
+		"malformed minimum": `{"schema":1,"minimum":"v01.0.0","current":"v0.0.0-20260805222830-a2ecd56df246"}`,
+		"stale current":     `{"schema":1,"minimum":"v0.1.0","current":"v0.2.0"}`,
+		"trailing value":    `{"schema":1,"minimum":"v0.1.0","current":"v0.0.0-20260805222830-a2ecd56df246"} {}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if _, parseErr := ParseStarterCompatibility([]byte(content), policy); parseErr == nil {
+				t.Fatal("ParseStarterCompatibility() error = nil")
+			}
+		})
+	}
+}
+
+func TestValidateRejectsStarterCompatibilityPolicyDrift(t *testing.T) {
+	t.Parallel()
+	for name, mutate := range map[string]func(*Catalog){
+		"missing policy": func(value *Catalog) {
+			value.StarterCompatibility = StarterCompatibilityPolicy{}
+		},
+		"unsafe metadata path": func(value *Catalog) {
+			value.StarterCompatibility.MetadataFile = "../spice-compatibility.json"
+		},
+		"starter without core dependency": func(value *Catalog) {
+			for index := range value.Repositories {
+				if value.Repositories[index].Name == "starter-smtp" {
+					value.Repositories[index].Dependencies = []string{".github", "development"}
+					return
+				}
+			}
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			value, err := Default()
+			if err != nil {
+				t.Fatal(err)
+			}
+			mutate(&value)
+			if err := value.Validate(); err == nil {
+				t.Fatal("Validate() error = nil")
+			}
+		})
 	}
 }
 
@@ -220,4 +293,14 @@ func requireRepository(t *testing.T, repositories []Repository, name string) Rep
 		t.Fatalf("repository %q is absent from %#v", name, repositories)
 	}
 	return repositories[index]
+}
+
+func testStarterCompatibilityPolicy() StarterCompatibilityPolicy {
+	return StarterCompatibilityPolicy{
+		RepositoryPrefix: "starter-",
+		MetadataFile:     "spice-compatibility.json",
+		MetadataSchema:   1,
+		CoreModule:       "github.com/spice-framework/spice",
+		CurrentCore:      "v0.0.0-20260805222830-a2ecd56df246",
+	}
 }

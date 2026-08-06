@@ -33,6 +33,16 @@ invoked through their checked-in Gradle wrapper JAR instead of an
 operating-system-specific script. Bootstrap or install the pinned toolchains
 and dependency caches explicitly before running a full gate.
 
+Before a starter's repository-owned gate, `verify` applies the catalog's
+central starter compatibility policy. Every active `starter-*` repository must
+contain a strict `spice-compatibility.json`: its `current` boundary must equal
+the catalog-selected core revision, and its `minimum` boundary must equal the
+direct `github.com/spice-framework/spice` requirement reported by its own
+`go.mod`. Missing, malformed, indirect, and stale declarations fail before the
+starter gate runs. This preflight is read-only, shell-free, and offline; it uses
+`go mod edit -json` with the same `GOWORK=off` and `GOPROXY=off` isolation as
+the rest of verification.
+
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).
 The core repository is resolved from `github.com/spice-framework/spice`, and
@@ -77,7 +87,8 @@ The active Commerce repository is the production-shaped modular application;
 it independently proves configuration, generated DI, HTTP, security,
 transactions, PostgreSQL, mail through the standalone SMTP module, lifecycle,
 and zero-network development defaults against immutable dependency versions.
-Schema 2 also records safe per-command working directories, allowing the active
+Schema 3 also records the central starter compatibility policy and safe
+per-command working directories, allowing the active
 Zed repository to verify both its locked Rust extension and nested canonical
 Spice fixture without a shell or a repository-local path assumption.
 The active GoLand repository is likewise verified from the shared workspace

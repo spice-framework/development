@@ -1,9 +1,16 @@
 {
-  "schema": 2,
+  "schema": 3,
   "toolchains": {
     "go": "1.26.5",
     "java": "25",
     "goland": "2026.2.0.1"
+  },
+  "starter_compatibility": {
+    "repository_prefix": "starter-",
+    "metadata_file": "spice-compatibility.json",
+    "metadata_schema": 1,
+    "core_module": "github.com/spice-framework/spice",
+    "current_core": "v0.0.0-20260805222830-a2ecd56df246"
   },
   "repositories": [
     {
