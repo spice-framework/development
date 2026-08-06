@@ -32,7 +32,7 @@ The central path has three separated phases:
 
 1. `library-release plan` performs read-only policy and source-identity
    validation and emits schema-versioned JSON.
-2. A renderer consumes that exact plan and committed Git objects to create a
+2. `library-release render` consumes that exact plan and committed Git objects to create a
    deterministic source archive, SPDX SBOM, and checksums in a new staging
    directory. It performs no source rediscovery and no network access.
 3. Production signing adds the public key and detached checksum signature,
@@ -53,9 +53,9 @@ formatting, module/vendor freshness, vet, lint, security, shuffled/race tests,
 coverage, compatibility boundaries, offline build, and two-build release
 reproducibility. External-service and protocol acceptance stays in the library.
 
-## Implemented migration slice
+## Implemented migration slices
 
-`spice-dev library-release plan` now implements phase 1. It:
+`spice-dev library-release plan` implements phase 1. It:
 
 - accepts only active or migrating catalog-governed `starter-*` Go modules;
 - requires the checkout's HTTPS or standard Git-over-SSH `origin` to resolve
@@ -74,26 +74,75 @@ reproducibility. External-service and protocol acceptance stays in the library.
 - emits stable JSON describing the standard source archive, SPDX SBOM,
   checksum, and production signature files.
 
-This slice deliberately creates no files and handles no secret key. It can be
-adopted and compared with existing builders before the artifact implementation
-becomes authoritative.
+`spice-dev library-release render` implements the unsigned phase-2 boundary for
+rehearsals. It strictly loads a bounded schema-1 plan, reads the exact Git tree
+and blobs named by the plan, validates committed module/vendor/checksum state,
+and creates a stable PAX tar/gzip source archive, SPDX 2.3 dependency document,
+and SHA-256 checksum file. It writes through a new staging directory and an
+atomic rename, refuses existing output, performs no network access, and never
+reads working-tree source bytes. Two independent renders are byte-identical.
+Production plans are rejected until phase 3 owns private-key handling and
+signature policy.
+
+The parity fixtures are independent retained-builder oracles, not outputs
+reconstructed by the central renderer. The `.txt` overlay harness in
+`internal/libraryrelease/testdata/parity` was compiled inside each retained
+`internal/release` package and invoked that package's exported `Build` function
+against a clean, fixed SHA-1 fixture repository. Each `*-legacy.json` file
+records the retained repository URL, builder commit, `internal/release` Git tree
+object, Go toolchain/platform, overlay-harness hash, fixture commit, version,
+epoch, and actual legacy artifact hashes. Both frozen records were produced with
+Go 1.26.5 on `windows/amd64`; the shared harness hash is
+`a7b69759421a2efe4b272285a1b92e76d9f5e515f0fc8f95d76b0507d15a18a1`.
+
+The frozen provenance is:
+
+| Generation | Retained builder commit | `internal/release` tree | Fixture commit |
+|---|---|---|---|
+| `starter-mysql` older working-tree v1 | `9227a40e1c9f4b4bd122fc60c9740002d978c744` | `9f8adfee5d01773efb11875fb6a5a8b9cbdba65d` | `b9b6ea7f8c42cbdc114b26ce998d107cf5f795d5` |
+| `starter-oidc` newer exact-commit v2 | `30b138c178e31629f2f75289642ea18306693999` | `c09323590267ba69de6577d55a708c87130cc173` | `85f568b49a5a0071c69b8c59200dd2a073e59c0e` |
+
+The oracle command was `go test -mod=vendor -overlay <overlay.json>
+./internal/release -run ^TestGenerateLegacyParityOracle$ -count=1`, with
+`SPICE_PARITY_FIXTURE` selecting `older.json` or `newer.json` and
+`SPICE_PARITY_ORACLE` selecting the corresponding legacy record, and
+`SPICE_PARITY_HARNESS` naming the checked-in overlay source. The overlay
+maps a synthetic `internal/release/parity_oracle_test.go` to the checked-in
+`.txt` harness, so the retained implementation is exercised without modifying
+or copying it. Regeneration is accepted only from the recorded clean builder
+commit and package tree.
+
+`TestRendererGoldenParityContracts` validates that provenance, pins the central
+hashes separately, and mechanically compares every central hash with its actual
+legacy hash. The intended results are:
+
+| Artifact | Older generation | Newer generation |
+|---|---|---|
+| Source archive | Not byte-identical: legacy root is `repository-version/`; central uses `repository_version/` | Byte-identical for the equivalent committed tree |
+| SPDX SBOM | Not byte-identical: working-tree graph, epoch namespace, no `DESCRIBES`, repository creator/tool | Not byte-identical: central document/tool identity and schema-bound namespace are organization-owned |
+| Checksums | Not byte-identical because covered payloads differ | Not byte-identical because the SBOM differs |
+
+The central renderer deliberately adopts the safer exact-commit archive model
+and one organization-owned SBOM identity. SBOM namespaces bind the independent
+artifact schema version (`v1`), while creator provenance names
+`github.com/spice-framework/development/cmd/spice-dev library-release
+renderer/v1`; future byte-contract changes must advance that identity. The
+renderer does not infer a legacy profile from repository names or silently
+claim parity that does not exist.
 
 ## Migration sequence
 
-1. Add golden parity fixtures from one older-generation starter and one
-   newer-generation starter. Implement the central renderer against those
-   committed trees and require byte-identical repeated builds.
-2. Migrate one starter to a pinned `spice-dev` tool directive. Its existing
+1. Migrate one starter to a pinned `spice-dev` tool directive. Its existing
    builder remains temporarily as a parity oracle; CI compares both outputs.
-3. After parity is green on Windows and Linux, make the central builder
+2. After the documented parity contract is green on Windows and Linux, make the central builder
    authoritative for that starter and remove its copied release command and
    package.
-4. Add the central common quality profile. Migrate the same starter by replacing
+3. Add the central common quality profile. Migrate the same starter by replacing
    copied generic checks with the shared profile while retaining its explicit
    integration/acceptance commands.
-5. Repeat per starter, alternating old and new builder generations. A migration
+4. Repeat per starter, alternating old and new builder generations. A migration
    is complete only after deterministic artifacts, signature verification,
    SBOM contents, offline execution, and repository-specific acceptance match.
-6. Remove the final copied implementations only after every active library uses
+5. Remove the final copied implementations only after every active library uses
    the pinned central tool. Version the plan and artifact schemas independently
    and reject unknown versions rather than adding compatibility heuristics.

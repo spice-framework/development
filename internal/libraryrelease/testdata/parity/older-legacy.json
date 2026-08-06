@@ -1,0 +1,18 @@
+{
+  "generation": "older-working-tree-v1",
+  "builder_repository": "https://github.com/spice-framework/starter-mysql.git",
+  "builder_commit": "9227a40e1c9f4b4bd122fc60c9740002d978c744",
+  "builder_release_tree": "9f8adfee5d01773efb11875fb6a5a8b9cbdba65d",
+  "builder_package": "internal/release",
+  "go_version": "go1.26.5",
+  "platform": "windows/amd64",
+  "harness_sha256": "a7b69759421a2efe4b272285a1b92e76d9f5e515f0fc8f95d76b0507d15a18a1",
+  "fixture_commit": "b9b6ea7f8c42cbdc114b26ce998d107cf5f795d5",
+  "version": "v1.2.3",
+  "source_date_epoch": 1700000000,
+  "legacy_output_sha256": {
+    "checksums.txt": "d97ce1b0575baf5209216b967d6e9a835fa55708e04b34f8f305e9c5f7859af3",
+    "starter-mysql_1.2.3_sbom.spdx.json": "4f193f664a341b01ca8687759bcdf137fa6b4578e77e0ef5dca9662d4313bd59",
+    "starter-mysql_1.2.3_source.tar.gz": "7b24065cb362855f1420c478879efe1e5c3b62896c5d970ca244f0d9e3caa2b2"
+  }
+}

@@ -13,7 +13,8 @@ go run ./cmd/spice-dev catalog
 go run ./cmd/spice-dev bootstrap --root ../spice-workspace
 go run ./cmd/spice-dev workspace --root ../spice-workspace
 go run ./cmd/spice-dev verify --root ../spice-workspace
-go run ./cmd/spice-dev library-release plan --root ../starter-smtp --repo starter-smtp --version v1.2.3 --rehearsal
+go run ./cmd/spice-dev library-release plan --root ../starter-smtp --repo starter-smtp --version v1.2.3 --rehearsal > plan.json
+go run ./cmd/spice-dev library-release render --root ../starter-smtp --plan plan.json --output dist/rehearsal
 ```
 
 `bootstrap` is the only network-capable command. Add `--offline` to validate
@@ -53,6 +54,12 @@ clean checkout and an exact tag at `HEAD`; `--rehearsal` deliberately omits
 those two production checks. See
 [`docs/library-delivery.md`](docs/library-delivery.md) for the artifact-builder
 and quality-gate migration sequence.
+
+`library-release render` consumes an already validated rehearsal plan and only
+the selected commit's Git objects. It atomically creates a new directory with a
+deterministic source archive, SPDX 2.3 SBOM, and SHA-256 checksums. It is offline,
+refuses existing output, and intentionally rejects production plans until the
+separate signing boundary is implemented.
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).

@@ -51,13 +51,46 @@ func TestExecRunnerIsolatesRepositoryFromParentGoWorkspace(t *testing.T) {
 		t.Fatalf("Run(go env GOWORK GOPROXY) = %q, %v", output, err)
 	}
 	values := make(map[string]string)
-	for _, entry := range independentEnvironment() {
+	for _, entry := range IndependentEnvironment() {
 		name, value, _ := strings.Cut(entry, "=")
 		values[strings.ToUpper(name)] = value
 	}
 	if values["CARGO_NET_OFFLINE"] != "true" ||
-		values["RUSTUP_AUTO_INSTALL"] != "0" {
-		t.Fatalf("offline Rust environment = %#v", values)
+		values["RUSTUP_AUTO_INSTALL"] != "0" ||
+		values["GIT_NO_LAZY_FETCH"] != "1" ||
+		values["GIT_NO_REPLACE_OBJECTS"] != "1" ||
+		values["GIT_OPTIONAL_LOCKS"] != "0" ||
+		values["GIT_TERMINAL_PROMPT"] != "0" ||
+		values["GOTOOLCHAIN"] != "local" || values["GOFLAGS"] != "" {
+		t.Fatalf("independent process environment = %#v", values)
+	}
+}
+
+func TestIndependentEnvironmentRejectsRepositoryRedirection(t *testing.T) {
+	t.Parallel()
+	values := make(map[string]string)
+	for _, entry := range independentEnvironmentFrom([]string{
+		"PATH=fixture",
+		"GIT_DIR=elsewhere",
+		"git_work_tree=elsewhere",
+		"GIT_OBJECT_DIRECTORY=elsewhere",
+		"GIT_ALTERNATE_OBJECT_DIRECTORIES=elsewhere",
+		"GIT_CONFIG_COUNT=1",
+		"GIT_CONFIG_KEY_0=core.fsmonitor",
+		"GIT_CONFIG_VALUE_0=malicious",
+		"GIT_NO_REPLACE_OBJECTS=0",
+		"GIT_NO_LAZY_FETCH=0",
+	}) {
+		name, value, _ := strings.Cut(entry, "=")
+		values[strings.ToUpper(name)] = value
+	}
+	if values["PATH"] != "fixture" || values["GIT_DIR"] != "" ||
+		values["GIT_WORK_TREE"] != "" || values["GIT_OBJECT_DIRECTORY"] != "" ||
+		values["GIT_ALTERNATE_OBJECT_DIRECTORIES"] != "" ||
+		values["GIT_CONFIG_COUNT"] != "" || values["GIT_CONFIG_KEY_0"] != "" ||
+		values["GIT_CONFIG_VALUE_0"] != "" || values["GIT_NO_REPLACE_OBJECTS"] != "1" ||
+		values["GIT_NO_LAZY_FETCH"] != "1" {
+		t.Fatalf("independent Git environment = %#v", values)
 	}
 }
 

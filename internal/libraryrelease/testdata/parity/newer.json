@@ -1,0 +1,55 @@
+{
+  "fixture_schema": 2,
+  "generation": "newer-exact-commit-v2",
+  "legacy_repository": "starter-oidc",
+  "exact_legacy_parity": {
+    "archive": true,
+    "sbom": false,
+    "checksums": false
+  },
+  "known_differences": [
+    "newer archive bytes already match the central underscore-root exact-commit contract",
+    "central SBOM document names and tool identity are organization-owned instead of repository-owned",
+    "central SBOM namespace identity includes the renderer plan schema"
+  ],
+  "plan": {
+    "schema": 1,
+    "repository": "starter-oidc",
+    "module": "github.com/spice-framework/starter-oidc",
+    "source": "https://github.com/spice-framework/starter-oidc",
+    "mode": "rehearsal",
+    "version": "v1.2.3",
+    "commit": "85f568b49a5a0071c69b8c59200dd2a073e59c0e",
+    "source_date_epoch": 1700000000,
+    "compatibility_minimum": "v0.1.0",
+    "compatibility_current": "v0.2.0",
+    "required_files": [
+      "LICENSE",
+      "README.md",
+      "go.mod",
+      "go.sum",
+      "spice-compatibility.json",
+      "vendor/modules.txt"
+    ],
+    "artifacts": [
+      "checksums.txt",
+      "starter-oidc_1.2.3_sbom.spdx.json",
+      "starter-oidc_1.2.3_source.tar.gz"
+    ]
+  },
+  "tree": [
+    {"mode":"100644","name":"LICENSE","content":"Apache License 2.0 fixture\n"},
+    {"mode":"100644","name":"README.md","content":"# Newer starter fixture\n"},
+    {"mode":"100644","name":"go.mod","content":"module github.com/spice-framework/starter-oidc\n\ngo 1.26.0\n\nrequire (\n\texample.com/jose/v2 v2.0.0\n\tgithub.com/spice-framework/spice v0.1.0\n)\n"},
+    {"mode":"100644","name":"go.sum","content":"example.com/jose/v2 v2.0.0/go.mod h1:Oy80J6d81+xSCo9mmMA5el87q7L/1CITSnghGC+A1lY=\ngithub.com/spice-framework/spice v0.1.0/go.mod h1:6hUxzJzu0ilUcOrlBXrf3sXEb0Kk1d5QNAwj/Zy3yfs=\n"},
+    {"mode":"100644","name":"oidc.go","content":"package oidc\n\nfunc Validate() {}\n"},
+    {"mode":"100755","name":"scripts/verify","content":"#!/bin/sh\nexit 0\n"},
+    {"mode":"100644","name":"spice-compatibility.json","content":"{\"schema\":1,\"minimum\":\"v0.1.0\",\"current\":\"v0.2.0\"}\n"},
+    {"mode":"100644","name":"vendor/modules.txt","content":"# example.com/jose/v2 v2.0.0\n## explicit; go 1.26.0\nexample.com/jose/v2\n# github.com/spice-framework/spice v0.1.0\n## explicit; go 1.26.0\ngithub.com/spice-framework/spice\n"}
+  ],
+  "expected_sha256": {
+    "checksums.txt": "0b0f85a07b151480ab0bac23a773c59fbdcf08aa437972dc2ffdb8b16ed0620a",
+    "starter-oidc_1.2.3_sbom.spdx.json": "ada0dd40640a73cbe021111e4959683e14821881f3260171c1705330b75f0e96",
+    "starter-oidc_1.2.3_source.tar.gz": "01c2835edc69043bb68a97c78a65bb2aeafdd198a058ad2f5c87fb570ecd2514"
+  }
+}

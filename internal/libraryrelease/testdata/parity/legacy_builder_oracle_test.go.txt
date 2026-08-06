@@ -1,0 +1,170 @@
+package release
+
+// This file is intentionally stored as .txt. It is overlaid into a retained
+// starter's internal/release package to regenerate the independent legacy
+// oracle without copying implementation code into the centralized renderer.
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"strings"
+	"testing"
+	"time"
+)
+
+type parityOracleFixture struct {
+	Generation string `json:"generation"`
+	Plan       struct {
+		Version         string `json:"version"`
+		SourceDateEpoch int64  `json:"source_date_epoch"`
+	} `json:"plan"`
+	Tree []struct {
+		Mode    string `json:"mode"`
+		Name    string `json:"name"`
+		Content string `json:"content"`
+	} `json:"tree"`
+}
+
+type parityOracle struct {
+	Generation         string            `json:"generation"`
+	BuilderRepository  string            `json:"builder_repository"`
+	BuilderCommit      string            `json:"builder_commit"`
+	BuilderReleaseTree string            `json:"builder_release_tree"`
+	BuilderPackage     string            `json:"builder_package"`
+	GoVersion          string            `json:"go_version"`
+	Platform           string            `json:"platform"`
+	HarnessSHA256      string            `json:"harness_sha256"`
+	FixtureCommit      string            `json:"fixture_commit"`
+	Version            string            `json:"version"`
+	SourceDateEpoch    int64             `json:"source_date_epoch"`
+	LegacyOutputSHA256 map[string]string `json:"legacy_output_sha256"`
+}
+
+func TestGenerateLegacyParityOracle(t *testing.T) {
+	fixtureName := os.Getenv("SPICE_PARITY_FIXTURE")
+	oracleName := os.Getenv("SPICE_PARITY_ORACLE")
+	harnessName := os.Getenv("SPICE_PARITY_HARNESS")
+	if fixtureName == "" || oracleName == "" || harnessName == "" {
+		t.Fatal("SPICE_PARITY_FIXTURE, SPICE_PARITY_ORACLE, and SPICE_PARITY_HARNESS are required")
+	}
+	content, err := os.ReadFile(fixtureName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture parityOracleFixture
+	if err := json.Unmarshal(content, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	harness, err := os.ReadFile(harnessName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	harnessSum := sha256.Sum256(harness)
+	root := filepath.Join(t.TempDir(), "fixture")
+	if err := os.MkdirAll(root, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range fixture.Tree {
+		if entry.Mode != "100644" && entry.Mode != "100755" {
+			t.Fatalf("unsupported fixture mode %q", entry.Mode)
+		}
+		name := filepath.Join(root, filepath.FromSlash(entry.Name))
+		if err := os.MkdirAll(filepath.Dir(name), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(name, []byte(entry.Content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	oracleGit(t, root, nil, "init", "--quiet", "--object-format=sha1")
+	oracleGit(t, root, nil, "-c", "core.autocrlf=false", "add", "--all")
+	for _, entry := range fixture.Tree {
+		if entry.Mode == "100755" {
+			oracleGit(t, root, nil, "update-index", "--chmod=+x", "--", entry.Name)
+		}
+	}
+	commitEnvironment := []string{
+		"GIT_AUTHOR_NAME=Spice Parity Fixture",
+		"GIT_AUTHOR_EMAIL=parity@spice.invalid",
+		"GIT_AUTHOR_DATE=" + time.Unix(fixture.Plan.SourceDateEpoch, 0).UTC().Format(time.RFC3339),
+		"GIT_COMMITTER_NAME=Spice Parity Fixture",
+		"GIT_COMMITTER_EMAIL=parity@spice.invalid",
+		"GIT_COMMITTER_DATE=" + time.Unix(fixture.Plan.SourceDateEpoch, 0).UTC().Format(time.RFC3339),
+	}
+	oracleGit(t, root, commitEnvironment, "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "legacy parity fixture")
+	fixtureCommit := strings.TrimSpace(oracleGit(t, root, nil, "rev-parse", "HEAD"))
+
+	output := filepath.Join(t.TempDir(), "legacy-output")
+	config := Config{
+		Root:          root,
+		OutputDir:     output,
+		Version:       fixture.Plan.Version,
+		Epoch:         time.Unix(fixture.Plan.SourceDateEpoch, 0).UTC(),
+		AllowUnsigned: true,
+	}
+	commitField := reflect.ValueOf(&config).Elem().FieldByName("Commit")
+	if commitField.IsValid() && commitField.CanSet() {
+		commitField.SetString(fixtureCommit)
+	}
+	result, err := Build(t.Context(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hashes := make(map[string]string, len(result.Files))
+	for _, name := range result.Files {
+		artifact, err := os.ReadFile(filepath.Join(result.OutputDir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(artifact)
+		hashes[name] = hex.EncodeToString(sum[:])
+	}
+
+	builderRoot := strings.TrimSpace(oracleGit(t, ".", nil, "rev-parse", "--show-toplevel"))
+	if status := strings.TrimSpace(oracleGit(t, builderRoot, nil, "status", "--porcelain", "--untracked-files=all", "--", "internal/release")); status != "" {
+		t.Fatalf("retained builder package is dirty: %s", status)
+	}
+	oracle := parityOracle{
+		Generation:         fixture.Generation,
+		BuilderRepository:  strings.TrimSpace(oracleGit(t, builderRoot, nil, "remote", "get-url", "origin")),
+		BuilderCommit:      strings.TrimSpace(oracleGit(t, builderRoot, nil, "rev-parse", "HEAD")),
+		BuilderReleaseTree: strings.TrimSpace(oracleGit(t, builderRoot, nil, "rev-parse", "HEAD:internal/release")),
+		BuilderPackage:     strings.TrimSpace(oracleGit(t, builderRoot, nil, "-c", "core.quotepath=false", "ls-tree", "--name-only", "HEAD", "internal/release")),
+		GoVersion:          runtime.Version(),
+		Platform:           runtime.GOOS + "/" + runtime.GOARCH,
+		HarnessSHA256:      hex.EncodeToString(harnessSum[:]),
+		FixtureCommit:      fixtureCommit,
+		Version:            fixture.Plan.Version,
+		SourceDateEpoch:    fixture.Plan.SourceDateEpoch,
+		LegacyOutputSHA256: hashes,
+	}
+	if oracle.BuilderPackage != "internal/release" {
+		t.Fatalf("unexpected retained builder package %q", oracle.BuilderPackage)
+	}
+	encoded, err := json.MarshalIndent(oracle, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded = append(encoded, '\n')
+	if err := os.WriteFile(oracleName, encoded, 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func oracleGit(t *testing.T, directory string, extraEnvironment []string, arguments ...string) string {
+	t.Helper()
+	command := exec.Command("git", arguments...)
+	command.Dir = directory
+	command.Env = append(os.Environ(), extraEnvironment...)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(arguments, " "), err, output)
+	}
+	return string(output)
+}

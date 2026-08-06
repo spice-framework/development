@@ -182,6 +182,13 @@ func TestRuntimeRejectsInvalidCommandsAndWrites(t *testing.T) {
 	if code := runtime.Run(t.Context(), []string{"library-release"}, &stdout, &stderr); code != 2 {
 		t.Fatalf("library-release missing plan code = %d", code)
 	}
+	if code := runtime.Run(t.Context(), []string{
+		"library-release", "render", "--root", t.TempDir(),
+		"--plan", filepath.Join(t.TempDir(), "missing.json"),
+		"--output", filepath.Join(t.TempDir(), "release"),
+	}, &stdout, &stderr); code != 1 {
+		t.Fatalf("library-release missing render plan code = %d", code)
+	}
 	var values stringList
 	if err := values.Set(""); err == nil {
 		t.Fatal("stringList.Set(empty) error = nil")

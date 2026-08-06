@@ -34,7 +34,7 @@ func (ExecRunner) Run(
 	// #nosec G204 -- allowedExecutable restricts the binary and CommandContext receives discrete arguments without a shell.
 	command := exec.CommandContext(ctx, arguments[0], arguments[1:]...)
 	command.Dir = directory
-	command.Env = independentEnvironment()
+	command.Env = IndependentEnvironment()
 	command.Stdout = &output
 	command.Stderr = &output
 	err := command.Run()
@@ -93,15 +93,18 @@ func commandDetail(output string) string {
 	return ":\n" + output
 }
 
-func independentEnvironment() []string {
-	environment := os.Environ()
-	result := make([]string, 0, len(environment)+4)
+// IndependentEnvironment isolates repository commands from ambient workspace,
+// module-network, and Git object-redirection state.
+func IndependentEnvironment() []string {
+	return independentEnvironmentFrom(os.Environ())
+}
+
+func independentEnvironmentFrom(environment []string) []string {
+	result := make([]string, 0, len(environment)+8)
 	for _, entry := range environment {
 		name, _, _ := strings.Cut(entry, "=")
-		if strings.EqualFold(name, "GOWORK") ||
-			strings.EqualFold(name, "GOPROXY") ||
-			strings.EqualFold(name, "CARGO_NET_OFFLINE") ||
-			strings.EqualFold(name, "RUSTUP_AUTO_INSTALL") {
+		upperName := strings.ToUpper(name)
+		if blockedEnvironmentName(upperName) {
 			continue
 		}
 		result = append(result, entry)
@@ -110,7 +113,48 @@ func independentEnvironment() []string {
 		result,
 		"GOWORK=off",
 		"GOPROXY=off",
+		"GOFLAGS=",
+		"GOTOOLCHAIN=local",
 		"CARGO_NET_OFFLINE=true",
 		"RUSTUP_AUTO_INSTALL=0",
+		"GIT_NO_LAZY_FETCH=1",
+		"GIT_NO_REPLACE_OBJECTS=1",
+		"GIT_OPTIONAL_LOCKS=0",
+		"GIT_TERMINAL_PROMPT=0",
 	)
+}
+
+func blockedEnvironmentName(name string) bool {
+	if strings.HasPrefix(name, "GIT_CONFIG_KEY_") ||
+		strings.HasPrefix(name, "GIT_CONFIG_VALUE_") {
+		return true
+	}
+	switch name {
+	case "CARGO_NET_OFFLINE",
+		"GIT_ALTERNATE_OBJECT_DIRECTORIES",
+		"GIT_COMMON_DIR",
+		"GIT_CONFIG_COUNT",
+		"GIT_CONFIG_PARAMETERS",
+		"GIT_DIR",
+		"GIT_EXEC_PATH",
+		"GIT_INDEX_FILE",
+		"GIT_NAMESPACE",
+		"GIT_NO_LAZY_FETCH",
+		"GIT_NO_REPLACE_OBJECTS",
+		"GIT_OBJECT_DIRECTORY",
+		"GIT_OPTIONAL_LOCKS",
+		"GIT_PREFIX",
+		"GIT_REPLACE_REF_BASE",
+		"GIT_SHALLOW_FILE",
+		"GIT_TERMINAL_PROMPT",
+		"GIT_WORK_TREE",
+		"GOFLAGS",
+		"GOPROXY",
+		"GOTOOLCHAIN",
+		"GOWORK",
+		"RUSTUP_AUTO_INSTALL":
+		return true
+	default:
+		return false
+	}
 }

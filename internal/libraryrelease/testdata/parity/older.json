@@ -1,0 +1,56 @@
+{
+  "fixture_schema": 2,
+  "generation": "older-working-tree-v1",
+  "legacy_repository": "starter-mysql",
+  "exact_legacy_parity": {
+    "archive": false,
+    "sbom": false,
+    "checksums": false
+  },
+  "known_differences": [
+    "older archives use a repository-version root while the central contract uses repository_version",
+    "older builders select HEAD and inspect working go.mod/vendor state instead of consuming the planned commit",
+    "older SBOM namespaces use epoch rather than commit identity and omit the SPDX DESCRIBES relationship",
+    "older SBOM document names, creator organization, and tool identity are repository-specific"
+  ],
+  "plan": {
+    "schema": 1,
+    "repository": "starter-mysql",
+    "module": "github.com/spice-framework/starter-mysql",
+    "source": "https://github.com/spice-framework/starter-mysql",
+    "mode": "rehearsal",
+    "version": "v1.2.3",
+    "commit": "b9b6ea7f8c42cbdc114b26ce998d107cf5f795d5",
+    "source_date_epoch": 1700000000,
+    "compatibility_minimum": "v0.1.0",
+    "compatibility_current": "v0.2.0",
+    "required_files": [
+      "LICENSE",
+      "README.md",
+      "go.mod",
+      "go.sum",
+      "spice-compatibility.json",
+      "vendor/modules.txt"
+    ],
+    "artifacts": [
+      "checksums.txt",
+      "starter-mysql_1.2.3_sbom.spdx.json",
+      "starter-mysql_1.2.3_source.tar.gz"
+    ]
+  },
+  "tree": [
+    {"mode":"100644","name":"LICENSE","content":"Apache License 2.0 fixture\n"},
+    {"mode":"100644","name":"README.md","content":"# Older starter fixture\n"},
+    {"mode":"100644","name":"go.mod","content":"module github.com/spice-framework/starter-mysql\n\ngo 1.26.0\n\nrequire (\n\texample.com/driver v1.0.0\n\tgithub.com/spice-framework/spice v0.1.0\n)\n"},
+    {"mode":"100644","name":"go.sum","content":"example.com/driver v1.0.0/go.mod h1:HpV70ecWgQRKS7ayyURAyyC+/+zniQzhNbYRO8Xedr8=\ngithub.com/spice-framework/spice v0.1.0/go.mod h1:6hUxzJzu0ilUcOrlBXrf3sXEb0Kk1d5QNAwj/Zy3yfs=\n"},
+    {"mode":"100644","name":"mysql.go","content":"package mysql\n\nfunc Open() {}\n"},
+    {"mode":"100755","name":"scripts/verify","content":"#!/bin/sh\nexit 0\n"},
+    {"mode":"100644","name":"spice-compatibility.json","content":"{\"schema\":1,\"minimum\":\"v0.1.0\",\"current\":\"v0.2.0\"}\n"},
+    {"mode":"100644","name":"vendor/modules.txt","content":"# example.com/driver v1.0.0\n## explicit; go 1.26.0\nexample.com/driver\n# github.com/spice-framework/spice v0.1.0\n## explicit; go 1.26.0\ngithub.com/spice-framework/spice\n"}
+  ],
+  "expected_sha256": {
+    "checksums.txt": "5e9bc2b1288a6591293a7f8a4d115b6db8d99e234bc0e340c4b0799dca566522",
+    "starter-mysql_1.2.3_sbom.spdx.json": "509d6801a6e6e56baddb0fa45a360e4ecd063fc280d61974fb6fd510e0989681",
+    "starter-mysql_1.2.3_source.tar.gz": "471cbf3956076fe3acefa95a6d7c279e8f5ea491811d3dfa6f7ab01cb8c9c8a5"
+  }
+}

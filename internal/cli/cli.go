@@ -90,8 +90,14 @@ func (runtime Runtime) libraryReleaseCommand(
 	stdout io.Writer,
 	stderr io.Writer,
 ) int {
-	if len(arguments) == 0 || arguments[0] != "plan" {
-		return usageError(stderr, "library-release requires the plan subcommand")
+	if len(arguments) == 0 {
+		return usageError(stderr, "library-release requires the plan or render subcommand")
+	}
+	if arguments[0] == "render" {
+		return runtime.libraryReleaseRenderCommand(ctx, arguments[1:], stdout, stderr)
+	}
+	if arguments[0] != "plan" {
+		return usageError(stderr, "library-release requires the plan or render subcommand")
 	}
 	flags := flag.NewFlagSet("library-release plan", flag.ContinueOnError)
 	flags.SetOutput(stderr)
@@ -118,6 +124,43 @@ func (runtime Runtime) libraryReleaseCommand(
 		return commandError(stderr, "library-release plan", err)
 	}
 	if _, err := stdout.Write(append(content, '\n')); err != nil {
+		return 1
+	}
+	return 0
+}
+
+func (runtime Runtime) libraryReleaseRenderCommand(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	flags := flag.NewFlagSet("library-release render", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	root := flags.String("root", "", "library repository root")
+	planFile := flags.String("plan", "", "validated release plan JSON file")
+	output := flags.String("output", "", "new release output directory")
+	if err := flags.Parse(arguments); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "library-release render accepts no positional arguments")
+	}
+	plan, err := libraryrelease.LoadPlan(*planFile)
+	if err != nil {
+		return commandError(stderr, "library-release render", err)
+	}
+	result, err := libraryrelease.Render(ctx, *root, *output, plan, runtime.Catalog)
+	if err != nil {
+		return commandError(stderr, "library-release render", err)
+	}
+	if _, err := fmt.Fprintf(
+		stdout,
+		"%s\t%s\t%d artifact(s)\n",
+		result.OutputDir,
+		plan.Commit,
+		len(result.Files),
+	); err != nil {
 		return 1
 	}
 	return 0
@@ -313,6 +356,7 @@ Usage:
   spice-dev workspace --root path [--check]
   spice-dev verify --root path [--full] [--jobs n] [--repo name ...]
   spice-dev library-release plan --root path --repo name --version vX.Y.Z [--rehearsal]
+  spice-dev library-release render --root path --plan plan.json --output new-path
 `)
 	return err
 }

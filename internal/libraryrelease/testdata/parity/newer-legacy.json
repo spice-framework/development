@@ -1,0 +1,18 @@
+{
+  "generation": "newer-exact-commit-v2",
+  "builder_repository": "git@github.com:spice-framework/starter-oidc.git",
+  "builder_commit": "30b138c178e31629f2f75289642ea18306693999",
+  "builder_release_tree": "c09323590267ba69de6577d55a708c87130cc173",
+  "builder_package": "internal/release",
+  "go_version": "go1.26.5",
+  "platform": "windows/amd64",
+  "harness_sha256": "a7b69759421a2efe4b272285a1b92e76d9f5e515f0fc8f95d76b0507d15a18a1",
+  "fixture_commit": "85f568b49a5a0071c69b8c59200dd2a073e59c0e",
+  "version": "v1.2.3",
+  "source_date_epoch": 1700000000,
+  "legacy_output_sha256": {
+    "checksums.txt": "b9e7f8732993056d063d6904e3876d5845efc4deb1cb2d50dbebd098d791bf88",
+    "starter-oidc_1.2.3_sbom.spdx.json": "e8c3cc85493dd6b37a14e85c5ad43f21837784f9d26d528300086c0140d705d6",
+    "starter-oidc_1.2.3_source.tar.gz": "01c2835edc69043bb68a97c78a65bb2aeafdd198a058ad2f5c87fb570ecd2514"
+  }
+}
