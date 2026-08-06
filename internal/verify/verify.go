@@ -70,33 +70,33 @@ func Run(
 	results := make([]Result, len(repositories))
 	workCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	semaphore := make(chan struct{}, options.Jobs)
-	var group sync.WaitGroup
+	waves := verificationWaves(repositories)
+	indexes := make(map[string]int, len(repositories))
 	for index, repository := range repositories {
-		group.Add(1)
-		go func() {
-			defer group.Done()
-			select {
-			case semaphore <- struct{}{}:
-				defer func() { <-semaphore }()
-			case <-workCtx.Done():
-				results[index] = Result{Repository: repository.Name, Err: workCtx.Err()}
-				return
-			}
-			results[index] = runRepository(
-				workCtx,
-				root,
-				repository,
-				value.StarterCompatibility,
-				options.Mode,
-				runner,
-			)
-			if results[index].Err != nil {
-				cancel()
-			}
-		}()
+		indexes[repository.Name] = index
 	}
-	group.Wait()
+	for _, wave := range waves {
+		if workCtx.Err() != nil {
+			break
+		}
+		runWave(
+			workCtx,
+			cancel,
+			root,
+			wave,
+			indexes,
+			results,
+			value.StarterCompatibility,
+			options.Mode,
+			options.Jobs,
+			runner,
+		)
+	}
+	for index := range results {
+		if results[index].Repository == "" {
+			results[index] = Result{Repository: repositories[index].Name, Err: workCtx.Err()}
+		}
+	}
 	var canceled *Result
 	for _, result := range results {
 		if result.Err == nil {
@@ -117,6 +117,94 @@ func Run(
 		return results, fmt.Errorf("verify repository %s: %w", canceled.Repository, canceled.Err)
 	}
 	return results, nil
+}
+
+// verificationWaves preserves catalog order while holding a selected
+// repository until every selected dependency has completed. Dependencies that
+// were not selected are treated as already satisfied, which keeps focused
+// checks useful without weakening ordering inside the requested subgraph.
+func verificationWaves(repositories []catalog.Repository) [][]catalog.Repository {
+	selected := make(map[string]struct{}, len(repositories))
+	remaining := make(map[string]catalog.Repository, len(repositories))
+	for _, repository := range repositories {
+		selected[repository.Name] = struct{}{}
+		remaining[repository.Name] = repository
+	}
+	completed := make(map[string]struct{}, len(repositories))
+	waves := make([][]catalog.Repository, 0)
+	for len(remaining) != 0 {
+		wave := make([]catalog.Repository, 0)
+		for _, repository := range repositories {
+			if _, pending := remaining[repository.Name]; !pending {
+				continue
+			}
+			ready := true
+			for _, dependency := range repository.Dependencies {
+				if _, included := selected[dependency]; !included {
+					continue
+				}
+				if _, done := completed[dependency]; !done {
+					ready = false
+					break
+				}
+			}
+			if ready {
+				wave = append(wave, repository)
+			}
+		}
+		// Catalog validation rejects cycles, so an empty wave is unreachable.
+		if len(wave) == 0 {
+			break
+		}
+		waves = append(waves, wave)
+		for _, repository := range wave {
+			delete(remaining, repository.Name)
+			completed[repository.Name] = struct{}{}
+		}
+	}
+	return waves
+}
+
+func runWave(
+	ctx context.Context,
+	cancel context.CancelFunc,
+	root string,
+	wave []catalog.Repository,
+	indexes map[string]int,
+	results []Result,
+	compatibility catalog.StarterCompatibilityPolicy,
+	mode Mode,
+	jobs int,
+	runner process.Runner,
+) {
+	semaphore := make(chan struct{}, jobs)
+	var group sync.WaitGroup
+	for _, repository := range wave {
+		index := indexes[repository.Name]
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			select {
+			case semaphore <- struct{}{}:
+				defer func() { <-semaphore }()
+			case <-ctx.Done():
+				results[index] = Result{Repository: repository.Name, Err: ctx.Err()}
+				return
+			}
+			results[index] = runRepository(
+				ctx,
+				root,
+				repository,
+				compatibility,
+				mode,
+				runner,
+			)
+			if results[index].Err != nil {
+				cancel()
+			}
+		}()
+	}
+	group.Wait()
 }
 
 func runRepository(

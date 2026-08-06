@@ -46,7 +46,8 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 			repository.CloneURL != "https://github.com/spice-framework/"+name+".git" ||
 			repository.Module != "github.com/spice-framework/"+name ||
 			!slices.Equal(repository.Dependencies, agentDependencies) ||
-			len(repository.Fast) != 1 || len(repository.Full) != 1 {
+			len(repository.Fast) != 1 || len(repository.Full) != 1 ||
+			!slices.Contains(repository.Fast[0].Arguments, "-mode=fast") {
 			t.Fatalf("%s repository identity = %#v", name, repository)
 		}
 	}
@@ -63,7 +64,8 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 			!slices.Equal(
 				repository.Dependencies,
 				append(slices.Clone(agentDependencies), "spice-agent"),
-			) || len(repository.Fast) != 1 || len(repository.Full) != 1 {
+			) || len(repository.Fast) != 1 || len(repository.Full) != 1 ||
+			!slices.Contains(repository.Fast[0].Arguments, "-mode=fast") {
 			t.Fatalf("%s repository identity = %#v", name, repository)
 		}
 	}
@@ -73,7 +75,8 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		!slices.Equal(agentCoding.Dependencies, []string{
 			".github", "development", "spice", "toolchain", "spice-agent",
 			"spice-agent-provider-openai", "spice-agent-tools-coding", "spice-agent-tui",
-		}) || len(agentCoding.Fast) != 1 || len(agentCoding.Full) != 1 {
+		}) || len(agentCoding.Fast) != 1 || len(agentCoding.Full) != 1 ||
+		!slices.Contains(agentCoding.Fast[0].Arguments, "-mode=fast") {
 		t.Fatalf("Spice Agent coding repository identity = %#v", agentCoding)
 	}
 	starterSMTP := requireRepository(t, value.Repositories, "starter-smtp")

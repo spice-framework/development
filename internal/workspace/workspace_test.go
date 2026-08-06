@@ -33,13 +33,25 @@ func TestRenderAndApplyDeterministicNativeWorkspace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"./development", "./spice", "./toolchain", goWorkMarker} {
+	for _, expected := range []string{
+		"./development",
+		"./spice",
+		"./toolchain",
+		"./spice-agent",
+		"./spice-agent-provider-openai",
+		"./spice-agent-tools-coding",
+		"./spice-agent-tui",
+		"./spice-agent-coding",
+		goWorkMarker,
+	} {
 		if !strings.Contains(string(plan.GoWork), expected) {
 			t.Fatalf("go.work missing %q:\n%s", expected, plan.GoWork)
 		}
 	}
 	if !strings.Contains(string(plan.Editor), `"name": ".github"`) ||
 		!strings.Contains(string(plan.Editor), `"name": "zed"`) ||
+		!strings.Contains(string(plan.Editor), `"name": "spice-agent"`) ||
+		!strings.Contains(string(plan.Editor), `"name": "spice-agent-coding"`) ||
 		!strings.Contains(string(plan.Editor), `"spiceGenerated": true`) {
 		t.Fatalf("editor workspace:\n%s", plan.Editor)
 	}

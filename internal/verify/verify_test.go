@@ -44,6 +44,50 @@ func TestRunReportsInCatalogOrderAndSelectsMode(t *testing.T) {
 	}
 }
 
+func TestRunWaitsForSelectedDependencies(t *testing.T) {
+	t.Parallel()
+	root := t.TempDir()
+	value := verificationCatalog(t, root)
+	value.Repositories[1].Dependencies = []string{"a"}
+	runner := new(recordingRunner)
+	results, err := Run(t.Context(), value, Options{
+		Root: root, Mode: Fast, Jobs: 2,
+	}, runner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 2 || len(runner.calls) != 2 ||
+		runner.calls[0][1] != "fast" || runner.directories[0] != filepath.Join(root, "a") ||
+		runner.directories[1] != filepath.Join(root, "b") {
+		t.Fatalf("dependency-ordered run = results %#v, calls %#v, directories %#v", results, runner.calls, runner.directories)
+	}
+}
+
+func TestVerificationWavesPreserveDependencyOrderAndConcurrency(t *testing.T) {
+	t.Parallel()
+	repositories := []catalog.Repository{
+		{Name: "base"},
+		{Name: "provider", Dependencies: []string{"base"}},
+		{Name: "tools", Dependencies: []string{"base"}},
+		{Name: "distribution", Dependencies: []string{"provider", "tools"}},
+	}
+	waves := verificationWaves(repositories)
+	if len(waves) != 3 ||
+		!slices.Equal(repositoryNames(waves[0]), []string{"base"}) ||
+		!slices.Equal(repositoryNames(waves[1]), []string{"provider", "tools"}) ||
+		!slices.Equal(repositoryNames(waves[2]), []string{"distribution"}) {
+		t.Fatalf("verification waves = %#v", waves)
+	}
+}
+
+func repositoryNames(repositories []catalog.Repository) []string {
+	result := make([]string, 0, len(repositories))
+	for _, repository := range repositories {
+		result = append(result, repository.Name)
+	}
+	return result
+}
+
 func TestRunRejectsMissingOrNonDirectoryInvocationDirectory(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()

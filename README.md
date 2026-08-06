@@ -27,7 +27,8 @@ idempotent and refuses to overwrite files without its marker. Use `--check` in
 automation to require freshness without writing.
 
 `verify` runs repository-owned commands. Fast mode is the default; `--full`
-runs complete gates. Independent repositories run concurrently up to `--jobs`,
+runs complete gates. Selected repositories execute in dependency-ordered waves;
+independent repositories within a ready wave run concurrently up to `--jobs`,
 while output is reported deterministically in catalog order. Verification is
 offline and shell-free: Go uses `GOPROXY=off`, Cargo uses offline mode, rustup
 automatic toolchain installation is disabled, and Java-based repositories are
@@ -57,7 +58,9 @@ release-builder migration, trust boundaries, and historical parity evidence.
 The hosted release wave paused during the 2026-08-06 GitHub Actions outage is
 captured in [`docs/release-continuation.md`](docs/release-continuation.md),
 including immutable candidate identities, run IDs, audited results, and the
-safe resume procedure.
+safe resume procedure. Runs that remain queued under the current organization
+billing/policy state are an unfinished, nonblocking mirror; local gates do not
+claim that those jobs executed or passed.
 
 `library-release render` consumes an already validated rehearsal plan and only
 the selected commit's Git objects. It atomically creates a new directory with a
@@ -123,6 +126,12 @@ The repository split is now explicit:
   SDK-first reference distribution; and
 - `.github` and this repository own organization workflows and cross-repository
   development policy respectively.
+
+The five-repository dependency graph, exact 2026-08-06 commits and module pins,
+dependency-ordered fast-check command, and honest macOS cross-compile boundary
+are recorded in
+[`docs/spice-agent-phase-0.md`](docs/spice-agent-phase-0.md). That snapshot does
+not duplicate or replace the canonical implementation ledger.
 
 For compiled Spice Agent code, the generated Spice provider graph is the
 extension graph. The ecosystem does not maintain a second compiled container,

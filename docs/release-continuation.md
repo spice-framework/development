@@ -1,5 +1,11 @@
 # Release continuation after the GitHub Actions outage
 
+> **Current mirror status (2026-08-06):** the historical incident and immutable
+> candidates below remain useful evidence. Any hosted runs still queued because
+> of the organization billing/policy state are unfinished, not failed and not
+> green. Repository-owned local verification remains the delivery gate and does
+> not wait for this nonblocking durability mirror.
+
 This document is the handoff for the Spice ecosystem release wave paused on
 2026-08-06. The locally controlled multi-repository migration, security
 hardening, candidate creation, immutable tagging, and local verification are
