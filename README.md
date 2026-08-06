@@ -54,6 +54,10 @@ clean checkout and an exact tag at `HEAD`; `--rehearsal` deliberately omits
 those two production checks. See
 [`docs/library-delivery.md`](docs/library-delivery.md) for the completed
 release-builder migration, trust boundaries, and historical parity evidence.
+The hosted release wave paused during the 2026-08-06 GitHub Actions outage is
+captured in [`docs/release-continuation.md`](docs/release-continuation.md),
+including immutable candidate identities, run IDs, audited results, and the
+safe resume procedure.
 
 `library-release render` consumes an already validated rehearsal plan and only
 the selected commit's Git objects. It atomically creates a new directory with a
