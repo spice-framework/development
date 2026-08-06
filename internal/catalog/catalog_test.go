@@ -151,7 +151,7 @@ func TestParseRejectsMalformedCatalogs(t *testing.T) {
 	base := `{
   "schema": 3,
   "toolchains": {"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
-  "starter_compatibility": {"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260805222830-a2ecd56df246"},
+  "starter_compatibility": {"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260806053623-2ec6f862073f"},
   "repositories": [%s]
 }`
 	repository := `{
@@ -189,7 +189,7 @@ func TestParseRejectsMissingDependenciesAndCycles(t *testing.T) {
 	content := `{
   "schema":3,
   "toolchains":{"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
-  "starter_compatibility":{"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260805222830-a2ecd56df246"},
+  "starter_compatibility":{"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260806053623-2ec6f862073f"},
   "repositories":[
     {"name":"a","directory":"a","status":"active","canonical_url":"https://github.com/spice-framework/a","clone_url":"https://github.com/spice-framework/a.git","artifact":"docs","dependencies":["b"],"fast":[],"full":[]},
     {"name":"b","directory":"b","status":"active","canonical_url":"https://github.com/spice-framework/b","clone_url":"https://github.com/spice-framework/b.git","artifact":"docs","dependencies":["a"],"fast":[],"full":[]}
@@ -210,7 +210,7 @@ func TestParseStarterCompatibilityRequiresCentralCurrentVersion(t *testing.T) {
 	value, err := ParseStarterCompatibility([]byte(`{
   "schema": 1,
   "minimum": "v0.0.0-20260805175412-383c17744300",
-  "current": "v0.0.0-20260805222830-a2ecd56df246"
+  "current": "v0.0.0-20260806053623-2ec6f862073f"
 }`), policy)
 	if err != nil || value.Minimum != "v0.0.0-20260805175412-383c17744300" ||
 		value.Current != policy.CurrentCore {
@@ -218,8 +218,8 @@ func TestParseStarterCompatibilityRequiresCentralCurrentVersion(t *testing.T) {
 	}
 	equal, err := ParseStarterCompatibility([]byte(`{
   "schema": 1,
-  "minimum": "v0.0.0-20260805222830-a2ecd56df246",
-  "current": "v0.0.0-20260805222830-a2ecd56df246"
+  "minimum": "v0.0.0-20260806053623-2ec6f862073f",
+  "current": "v0.0.0-20260806053623-2ec6f862073f"
 }`), policy)
 	if err != nil || equal.Minimum != equal.Current {
 		t.Fatalf("ParseStarterCompatibility(equal boundaries) = %#v, %v", equal, err)
@@ -227,9 +227,9 @@ func TestParseStarterCompatibilityRequiresCentralCurrentVersion(t *testing.T) {
 	for name, content := range map[string]string{
 		"wrong schema":      `{"schema":2,"minimum":"v0.1.0","current":"v0.2.0"}`,
 		"unknown field":     `{"schema":1,"minimum":"v0.1.0","current":"v0.2.0","extra":true}`,
-		"malformed minimum": `{"schema":1,"minimum":"v01.0.0","current":"v0.0.0-20260805222830-a2ecd56df246"}`,
+		"malformed minimum": `{"schema":1,"minimum":"v01.0.0","current":"v0.0.0-20260806053623-2ec6f862073f"}`,
 		"stale current":     `{"schema":1,"minimum":"v0.1.0","current":"v0.2.0"}`,
-		"trailing value":    `{"schema":1,"minimum":"v0.1.0","current":"v0.0.0-20260805222830-a2ecd56df246"} {}`,
+		"trailing value":    `{"schema":1,"minimum":"v0.1.0","current":"v0.0.0-20260806053623-2ec6f862073f"} {}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -301,6 +301,6 @@ func testStarterCompatibilityPolicy() StarterCompatibilityPolicy {
 		MetadataFile:     "spice-compatibility.json",
 		MetadataSchema:   1,
 		CoreModule:       "github.com/spice-framework/spice",
-		CurrentCore:      "v0.0.0-20260805222830-a2ecd56df246",
+		CurrentCore:      "v0.0.0-20260806053623-2ec6f862073f",
 	}
 }

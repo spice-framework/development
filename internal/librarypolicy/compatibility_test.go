@@ -15,7 +15,7 @@ import (
 const validMetadata = `{
   "schema": 1,
   "minimum": "v0.1.0",
-  "current": "v0.0.0-20260805222830-a2ecd56df246"
+  "current": "v0.0.0-20260806053623-2ec6f862073f"
 }`
 
 func TestInspectReturnsExactLibraryIdentity(t *testing.T) {
@@ -169,7 +169,7 @@ func compatibilityPolicy() catalog.StarterCompatibilityPolicy {
 		MetadataFile:     "spice-compatibility.json",
 		MetadataSchema:   1,
 		CoreModule:       "github.com/spice-framework/spice",
-		CurrentCore:      "v0.0.0-20260805222830-a2ecd56df246",
+		CurrentCore:      "v0.0.0-20260806053623-2ec6f862073f",
 	}
 }
 

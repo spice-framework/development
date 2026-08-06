@@ -15,7 +15,7 @@ import (
 
 const (
 	testCommit  = "0123456789abcdef0123456789abcdef01234567"
-	testCurrent = "v0.0.0-20260805222830-a2ecd56df246"
+	testCurrent = "v0.0.0-20260806053623-2ec6f862073f"
 )
 
 func TestCreatePlanProducesDeterministicProductionAndRehearsalContracts(t *testing.T) {

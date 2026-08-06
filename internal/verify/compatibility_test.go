@@ -15,7 +15,7 @@ import (
 const validStarterMetadata = `{
   "schema": 1,
   "minimum": "v0.1.0",
-  "current": "v0.0.0-20260805222830-a2ecd56df246"
+  "current": "v0.0.0-20260806053623-2ec6f862073f"
 }`
 
 func TestRunVerifiesStarterCompatibilityBeforeRepositoryGate(t *testing.T) {

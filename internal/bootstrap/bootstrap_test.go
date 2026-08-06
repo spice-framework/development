@@ -240,6 +240,6 @@ func testStarterCompatibilityPolicy() catalog.StarterCompatibilityPolicy {
 	return catalog.StarterCompatibilityPolicy{
 		RepositoryPrefix: "starter-", MetadataFile: "spice-compatibility.json",
 		MetadataSchema: 1, CoreModule: "github.com/spice-framework/spice",
-		CurrentCore: "v0.0.0-20260805222830-a2ecd56df246",
+		CurrentCore: "v0.0.0-20260806053623-2ec6f862073f",
 	}
 }

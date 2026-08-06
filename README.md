@@ -86,7 +86,7 @@ the active compiler/CLI/LSP repository is resolved from
 `github.com/spice-framework/toolchain`. Catalog tests pin both clone URLs and
 Go module paths and require applications/editors to depend explicitly on the
 toolchain rather than a retired core `cmd` path. The toolchain compatibility
-pair is core `v0.0.0-20260805222830-a2ecd56df246` with standalone toolchain
+pair is core `v0.0.0-20260806053623-2ec6f862073f` with standalone toolchain
 `v0.0.0-20260805230546-150f8ae62c13`; editor and application fixtures must pin
 both exact public versions without a local replacement. Repository status and
 canonical/source locations remain distinct fields so migrations are never
