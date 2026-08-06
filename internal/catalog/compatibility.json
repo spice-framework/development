@@ -128,6 +128,198 @@
       ]
     },
     {
+      "name": "spice-agent",
+      "directory": "spice-agent",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/spice-agent",
+      "clone_url": "https://github.com/spice-framework/spice-agent.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/spice-agent",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice",
+        "toolchain"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spice-agent-provider-openai",
+      "directory": "spice-agent-provider-openai",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/spice-agent-provider-openai",
+      "clone_url": "https://github.com/spice-framework/spice-agent-provider-openai.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/spice-agent-provider-openai",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice",
+        "toolchain",
+        "spice-agent"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spice-agent-tools-coding",
+      "directory": "spice-agent-tools-coding",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/spice-agent-tools-coding",
+      "clone_url": "https://github.com/spice-framework/spice-agent-tools-coding.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/spice-agent-tools-coding",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice",
+        "toolchain",
+        "spice-agent"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spice-agent-tui",
+      "directory": "spice-agent-tui",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/spice-agent-tui",
+      "clone_url": "https://github.com/spice-framework/spice-agent-tui.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/spice-agent-tui",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice",
+        "toolchain",
+        "spice-agent"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spice-agent-coding",
+      "directory": "spice-agent-coding",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/spice-agent-coding",
+      "clone_url": "https://github.com/spice-framework/spice-agent-coding.git",
+      "artifact": "go-module",
+      "module": "github.com/spice-framework/spice-agent-coding",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice",
+        "toolchain",
+        "spice-agent",
+        "spice-agent-provider-openai",
+        "spice-agent-tools-coding",
+        "spice-agent-tui"
+      ],
+      "fast": [
+        {
+          "name": "warm quality gate",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete verification",
+          "arguments": [
+            "go",
+            "run",
+            "./internal/qualitygate",
+            "-mode=verify"
+          ]
+        }
+      ]
+    },
+    {
       "name": "starter-smtp",
       "directory": "starter-smtp",
       "status": "active",

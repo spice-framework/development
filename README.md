@@ -115,8 +115,20 @@ The repository split is now explicit:
   Run, and native Debug proof on Windows and Linux;
 - `zed` owns the independently versioned Rust extension and its canonical
   offline Spice fixture; and
+- `spice-agent` owns the experimental Spice-native agent SDK, kernel,
+  protocols, daemon/client contracts, and runtime-plugin host;
+- `spice-agent-provider-openai`, `spice-agent-tools-coding`, and
+  `spice-agent-tui` own independently versioned provider, coding-tool, and
+  terminal UI extensions, while `spice-agent-coding` assembles their generated
+  SDK-first reference distribution; and
 - `.github` and this repository own organization workflows and cross-repository
   development policy respectively.
+
+For compiled Spice Agent code, the generated Spice provider graph is the
+extension graph. The ecosystem does not maintain a second compiled container,
+runtime registry, or reflection-based lookup layer. Only negotiated
+out-of-process plugins have a dynamic generation, and an active run retains an
+immutable lease on the generation with which it started.
 
 Repository status, compatibility baselines, source locations, and public
 release status are separate facts. A green compatibility or installed-IDE gate

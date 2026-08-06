@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 18 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 23 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	if value.StarterCompatibility != testStarterCompatibilityPolicy() {
@@ -37,6 +37,44 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		!slices.Contains(toolchain.Fast[0].Arguments, "./internal/boundarygate/cmd") ||
 		!slices.Contains(toolchain.Full[0].Arguments, "./internal/boundarygate/cmd") {
 		t.Fatalf("Toolchain repository identity = %#v", toolchain)
+	}
+	agentDependencies := []string{".github", "development", "spice", "toolchain"}
+	for _, name := range []string{"spice-agent"} {
+		repository := requireRepository(t, value.Repositories, name)
+		if repository.Status != "active" ||
+			repository.CanonicalURL != "https://github.com/spice-framework/"+name ||
+			repository.CloneURL != "https://github.com/spice-framework/"+name+".git" ||
+			repository.Module != "github.com/spice-framework/"+name ||
+			!slices.Equal(repository.Dependencies, agentDependencies) ||
+			len(repository.Fast) != 1 || len(repository.Full) != 1 {
+			t.Fatalf("%s repository identity = %#v", name, repository)
+		}
+	}
+	for _, name := range []string{
+		"spice-agent-provider-openai",
+		"spice-agent-tools-coding",
+		"spice-agent-tui",
+	} {
+		repository := requireRepository(t, value.Repositories, name)
+		if repository.Status != "active" ||
+			repository.CanonicalURL != "https://github.com/spice-framework/"+name ||
+			repository.CloneURL != "https://github.com/spice-framework/"+name+".git" ||
+			repository.Module != "github.com/spice-framework/"+name ||
+			!slices.Equal(
+				repository.Dependencies,
+				append(slices.Clone(agentDependencies), "spice-agent"),
+			) || len(repository.Fast) != 1 || len(repository.Full) != 1 {
+			t.Fatalf("%s repository identity = %#v", name, repository)
+		}
+	}
+	agentCoding := requireRepository(t, value.Repositories, "spice-agent-coding")
+	if agentCoding.Status != "active" ||
+		agentCoding.Module != "github.com/spice-framework/spice-agent-coding" ||
+		!slices.Equal(agentCoding.Dependencies, []string{
+			".github", "development", "spice", "toolchain", "spice-agent",
+			"spice-agent-provider-openai", "spice-agent-tools-coding", "spice-agent-tui",
+		}) || len(agentCoding.Fast) != 1 || len(agentCoding.Full) != 1 {
+		t.Fatalf("Spice Agent coding repository identity = %#v", agentCoding)
 	}
 	starterSMTP := requireRepository(t, value.Repositories, "starter-smtp")
 	if starterSMTP.Status != "active" ||
