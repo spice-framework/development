@@ -15,6 +15,7 @@ go run ./cmd/spice-dev workspace --root ../spice-workspace
 go run ./cmd/spice-dev verify --root ../spice-workspace
 go run ./cmd/spice-dev library-release plan --root ../starter-smtp --repo starter-smtp --version v1.2.3 --rehearsal > plan.json
 go run ./cmd/spice-dev library-release render --root ../starter-smtp --plan plan.json --output dist/rehearsal
+go run ./cmd/spice-dev library-release sign --root ../starter-smtp --plan production-plan.json --output ../releases/starter-smtp-v1.2.3 --signing-key ../release-keys/starter-smtp.key --trusted-public-key ../release-keys/starter-smtp.pub
 ```
 
 `bootstrap` is the only network-capable command. Add `--offline` to validate
@@ -57,9 +58,16 @@ and quality-gate migration sequence.
 
 `library-release render` consumes an already validated rehearsal plan and only
 the selected commit's Git objects. It atomically creates a new directory with a
-deterministic source archive, SPDX 2.3 SBOM, and SHA-256 checksums. It is offline,
-refuses existing output, and intentionally rejects production plans until the
-separate signing boundary is implemented.
+deterministic source archive, SPDX 2.3 SBOM, and SHA-256 checksums. It is
+offline, refuses existing output, and rejects production plans.
+
+`library-release sign` is the separate production boundary. It requires a
+production plan, exact clean tagged checkout, output and private-key files
+outside the repository, a canonical Ed25519 private key, and an independently
+trusted matching public key. The public trust anchor may be a reviewed
+committed file. It signs the exact checksum bytes, revalidates the checkout
+immediately before an atomic no-replace commit, and emits exactly the archive,
+SBOM, checksums, canonical public-key PEM, and raw detached signature.
 
 The embedded compatibility catalog is human-readable at
 [`internal/catalog/compatibility.json`](internal/catalog/compatibility.json).

@@ -183,7 +183,7 @@ func TestRenderUsesCommittedObjectsAndGuardsOutput(t *testing.T) {
 	}
 }
 
-func TestParsePlanRejectsUnknownTrailingAndProductionInput(t *testing.T) {
+func TestParsePlanAcceptsKnownModesAndRejectsInvalidInput(t *testing.T) {
 	t.Parallel()
 	fixture := loadParityFixture(t, "newer")
 	content, err := json.Marshal(fixture.Plan)
@@ -194,11 +194,16 @@ func TestParsePlanRejectsUnknownTrailingAndProductionInput(t *testing.T) {
 	if err != nil || plan.Commit != fixture.Plan.Commit {
 		t.Fatalf("ParsePlan() = %#v, %v", plan, err)
 	}
+	production := slices.Clone(content)
+	production = []byte(strings.Replace(string(production), `"mode":"rehearsal"`, `"mode":"production"`, 1))
+	if parsed, parseErr := ParsePlan(production); parseErr != nil || parsed.Mode != "production" {
+		t.Fatalf("ParsePlan(production) = %#v, %v", parsed, parseErr)
+	}
 	for name, invalid := range map[string][]byte{
-		"unknown":    append(bytes.TrimSuffix(slices.Clone(content), []byte("}")), []byte(`,"unknown":true}`)...),
-		"trailing":   append(slices.Clone(content), []byte(` {}`)...),
-		"oversized":  make([]byte, maximumPlanBytes+1),
-		"production": []byte(strings.Replace(string(content), `"mode":"rehearsal"`, `"mode":"production"`, 1)),
+		"unknown field": append(bytes.TrimSuffix(slices.Clone(content), []byte("}")), []byte(`,"unknown":true}`)...),
+		"trailing":      append(slices.Clone(content), []byte(` {}`)...),
+		"oversized":     make([]byte, maximumPlanBytes+1),
+		"unknown mode":  []byte(strings.Replace(string(content), `"mode":"rehearsal"`, `"mode":"other"`, 1)),
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

@@ -2,14 +2,20 @@ package cli
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/spice-framework/development/internal/catalog"
 	"github.com/spice-framework/development/internal/libraryrelease"
@@ -29,7 +35,8 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 	}
 	stdout.Reset()
 	if code := runtime.Run(t.Context(), nil, &stdout, &stderr); code != 0 ||
-		!strings.Contains(stdout.String(), "spice-dev bootstrap") {
+		!strings.Contains(stdout.String(), "spice-dev bootstrap") ||
+		!strings.Contains(stdout.String(), "library-release sign") {
 		t.Fatalf("help code=%d stdout=%q", code, stdout.String())
 	}
 	stdout.Reset()
@@ -84,6 +91,38 @@ func TestRuntimeCreatesLibraryReleasePlan(t *testing.T) {
 		plan.Repository != "starter-smtp" || plan.Mode != "rehearsal" ||
 		plan.SourceDateEpoch != 1_700_000_000 {
 		t.Fatalf("library release plan code=%d plan=%#v err=%v stderr=%q", code, plan, err, stderr.String())
+	}
+}
+
+func TestRuntimeSignsProductionLibraryRelease(t *testing.T) {
+	repository, plan, value, privateKey, publicKey := cliProductionSigningFixture(t)
+	planFile := filepath.Join(t.TempDir(), "plan.json")
+	content, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(planFile, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	output := filepath.Join(t.TempDir(), "release")
+	var stdout, stderr strings.Builder
+	code := (Runtime{Catalog: value}).Run(t.Context(), []string{
+		"library-release", "sign",
+		"--root", repository,
+		"--plan", planFile,
+		"--output", output,
+		"--signing-key", privateKey,
+		"--trusted-public-key", publicKey,
+	}, &stdout, &stderr)
+	if code != 0 || !strings.Contains(stdout.String(), "5 signed artifact(s)") {
+		t.Fatalf("library release sign code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	entries, err := os.ReadDir(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 5 {
+		t.Fatalf("signed release entries = %v", entries)
 	}
 }
 
@@ -189,6 +228,20 @@ func TestRuntimeRejectsInvalidCommandsAndWrites(t *testing.T) {
 	}, &stdout, &stderr); code != 1 {
 		t.Fatalf("library-release missing render plan code = %d", code)
 	}
+	if code := runtime.Run(t.Context(), []string{
+		"library-release", "sign", "--root", t.TempDir(),
+		"--plan", filepath.Join(t.TempDir(), "missing.json"),
+		"--output", filepath.Join(t.TempDir(), "release"),
+		"--signing-key", filepath.Join(t.TempDir(), "release.key"),
+		"--trusted-public-key", filepath.Join(t.TempDir(), "release.pub"),
+	}, &stdout, &stderr); code != 1 {
+		t.Fatalf("library-release missing sign plan code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{
+		"library-release", "sign", "extra",
+	}, &stdout, &stderr); code != 2 {
+		t.Fatalf("library-release sign positional code = %d", code)
+	}
 	var values stringList
 	if err := values.Set(""); err == nil {
 		t.Fatal("stringList.Set(empty) error = nil")
@@ -204,6 +257,116 @@ type fakeRunner struct {
 }
 
 type releasePlanRunner struct{}
+
+type cliReleaseFixture struct {
+	Plan libraryrelease.Plan `json:"plan"`
+	Tree []struct {
+		Mode    string `json:"mode"`
+		Name    string `json:"name"`
+		Content string `json:"content"`
+	} `json:"tree"`
+}
+
+func cliProductionSigningFixture(
+	t *testing.T,
+) (string, libraryrelease.Plan, catalog.Catalog, string, string) {
+	t.Helper()
+	fixtureContent, err := os.ReadFile(filepath.Join(
+		"..", "libraryrelease", "testdata", "parity", "newer.json",
+	))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture cliReleaseFixture
+	if err := json.Unmarshal(fixtureContent, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	repository := t.TempDir()
+	for _, entry := range fixture.Tree {
+		name := filepath.Join(repository, filepath.FromSlash(entry.Name))
+		if err := os.MkdirAll(filepath.Dir(name), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		mode := os.FileMode(0o600)
+		if entry.Mode == "100755" {
+			mode = 0o700
+		}
+		if err := os.WriteFile(name, []byte(entry.Content), mode); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cliGitCommand(t, repository, "init")
+	cliGitCommand(t, repository, "config", "user.name", "Spice Test")
+	cliGitCommand(t, repository, "config", "user.email", "spice@example.invalid")
+	cliGitCommand(
+		t,
+		repository,
+		"remote",
+		"add",
+		"origin",
+		"https://github.com/spice-framework/starter-oidc.git",
+	)
+	cliGitCommand(t, repository, "add", ".")
+	command := exec.Command("git", "commit", "-m", "fixture")
+	command.Dir = repository
+	date := time.Unix(fixture.Plan.SourceDateEpoch, 0).UTC().Format(time.RFC3339)
+	command.Env = append(os.Environ(), "GIT_AUTHOR_DATE="+date, "GIT_COMMITTER_DATE="+date)
+	if output, commitErr := command.CombinedOutput(); commitErr != nil {
+		t.Fatalf("git commit: %v\n%s", commitErr, output)
+	}
+	fixture.Plan.Mode = "production"
+	fixture.Plan.Commit = strings.TrimSpace(cliGitCommand(t, repository, "rev-parse", "HEAD"))
+	fixture.Plan.Artifacts = []string{
+		"checksums.txt",
+		"checksums.txt.pem",
+		"checksums.txt.sig",
+		"starter-oidc_1.2.3_sbom.spdx.json",
+		"starter-oidc_1.2.3_source.tar.gz",
+	}
+	cliGitCommand(t, repository, "tag", fixture.Plan.Version)
+	value, err := catalog.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	value.StarterCompatibility.CurrentCore = fixture.Plan.CompatibilityCurrent
+	if err := value.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	keyDirectory := t.TempDir()
+	privateKeyPath := filepath.Join(keyDirectory, "release.key")
+	publicKeyPath := filepath.Join(keyDirectory, "release.pub")
+	privateKey := ed25519.NewKeyFromSeed(make([]byte, ed25519.SeedSize))
+	if err := os.WriteFile(
+		privateKeyPath,
+		[]byte(base64.StdEncoding.EncodeToString(privateKey.Seed())),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	publicDER, err := x509.MarshalPKIXPublicKey(privateKey.Public())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		publicKeyPath,
+		pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicDER}),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	return repository, fixture.Plan, value, privateKeyPath, publicKeyPath
+}
+
+func cliGitCommand(t *testing.T, root string, arguments ...string) string {
+	t.Helper()
+	command := exec.Command("git", arguments...)
+	command.Dir = root
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(arguments, " "), err, output)
+	}
+	return string(output)
+}
 
 func (releasePlanRunner) Run(
 	ctx context.Context,

@@ -35,8 +35,9 @@ The central path has three separated phases:
 2. `library-release render` consumes that exact plan and committed Git objects to create a
    deterministic source archive, SPDX SBOM, and checksums in a new staging
    directory. It performs no source rediscovery and no network access.
-3. Production signing adds the public key and detached checksum signature,
-   then atomically renames the staging directory. Publication and tagging stay
+3. `library-release sign` consumes a production plan, adds the trusted public
+   key and detached checksum signature, revalidates the exact production state,
+   and atomically renames the staging directory. Publication and tagging stay
    outside the builder and require an explicit release workflow.
 
 The plan contains no absolute paths or wall-clock timestamps. It records the
@@ -81,8 +82,32 @@ and creates a stable PAX tar/gzip source archive, SPDX 2.3 dependency document,
 and SHA-256 checksum file. It writes through a new staging directory and an
 atomic rename, refuses existing output, performs no network access, and never
 reads working-tree source bytes. Two independent renders are byte-identical.
-Production plans are rejected until phase 3 owns private-key handling and
-signature policy.
+Production plans remain rejected by this rehearsal-only command.
+
+`spice-dev library-release sign` implements phase 3 as a distinct production
+boundary. It accepts only a production plan and requires the current checkout
+to remain clean, at the exact planned commit, with the exact planned tag and
+commit epoch. The production output directory and private key must be outside
+the source repository. The independently trusted public-key file may be a
+reviewed, committed trust anchor in the clean release tree. Private keys are
+bounded regular files with final-component symlinks rejected; on Unix they must
+grant no group or other permissions. Accepted key encodings are canonical
+Ed25519 PKCS#8 PEM and canonical standard-base64 Ed25519 seed or private-key
+bytes. The trusted public key must be canonical Ed25519 PKIX PEM and match the
+private key before signing.
+
+The command signs the exact LF-terminated `checksums.txt` bytes, verifies its
+own raw Ed25519 signature, and emits exactly five deterministic files: the
+source archive, SPDX SBOM, `checksums.txt`, `checksums.txt.pem`, and
+`checksums.txt.sig`. The checksum file covers only the archive and SBOM, so it
+is nonrecursive. All files are written to same-filesystem staging; the complete
+production state is checked again after those writes and immediately before an
+atomic no-replace directory commit. Existing output is never replaced and a
+failure removes staging. The emitted public key records the authenticated key
+used for signing, but verifiers must compare it to an independently distributed
+trust anchor rather than trust the release directory itself. Publication,
+tag creation, hosted key custody, and a separate toolchain verifier remain
+outside this slice.
 
 The parity fixtures are independent retained-builder oracles, not outputs
 reconstructed by the central renderer. The `.txt` overlay harness in

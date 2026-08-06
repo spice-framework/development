@@ -194,10 +194,10 @@ func (runner *releaseRunner) Run(
 		return runner.policyDiff, nil
 	case slices.Equal(arguments, []string{"git", "status", "--porcelain", "--untracked-files=all"}):
 		return runner.status, nil
-	case slices.Equal(arguments, []string{"git", "rev-list", "-n", "1", "v1.2.3"}):
+	case slices.Equal(arguments, []string{
+		"git", "rev-parse", "--verify", "refs/tags/v1.2.3^{commit}",
+	}):
 		return runner.tagCommit, nil
-	case slices.Equal(arguments, []string{"git", "tag", "--points-at", testCommit}):
-		return "v1.2.3", nil
 	default:
 		return "", errors.New("unexpected command: " + strings.Join(arguments, " "))
 	}
