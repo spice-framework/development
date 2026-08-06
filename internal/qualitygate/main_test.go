@@ -72,6 +72,60 @@ func TestGateHelpersRejectToolchainFormattingAndCoverageFailures(t *testing.T) {
 	}
 }
 
+func TestGateHelpersPreserveBoundaryFailures(t *testing.T) {
+	t.Parallel()
+	want := errors.New("boundary failed")
+	root := t.TempDir()
+	if err := os.WriteFile(
+		filepath.Join(root, "source.go"),
+		[]byte("package fixture\n"),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := verifyGo(t.Context(), root, &gateRunner{failure: want}); !errors.Is(err, want) {
+		t.Fatalf("verifyGo() error = %v", err)
+	}
+	missingRoot := filepath.Join(t.TempDir(), "missing")
+	if err := formatting(t.Context(), missingRoot, &gateRunner{}); err == nil ||
+		!strings.Contains(err.Error(), "discover Go source") {
+		t.Fatalf("formatting(missing root) error = %v", err)
+	}
+	if err := formatting(t.Context(), root, &gateRunner{failure: want}); !errors.Is(err, want) {
+		t.Fatalf("formatting(runner failure) error = %v", err)
+	}
+
+	coverageDirectory := t.TempDir()
+	testFailure := &gateRunner{
+		failure:          want,
+		failureArguments: []string{"go", "test"},
+	}
+	if err := coverageInDirectory(
+		t.Context(), root, coverageDirectory, testFailure,
+	); !errors.Is(err, want) {
+		t.Fatalf("coverageInDirectory(test failure) error = %v", err)
+	}
+	coverFailure := &gateRunner{
+		failure:          want,
+		failureArguments: []string{"go", "tool", "cover"},
+	}
+	if err := coverageInDirectory(
+		t.Context(), root, coverageDirectory, coverFailure,
+	); !errors.Is(err, want) {
+		t.Fatalf("coverageInDirectory(cover failure) error = %v", err)
+	}
+	malformed := &gateRunner{coverageOutput: "missing total\n"}
+	if err := coverageInDirectory(
+		t.Context(), root, coverageDirectory, malformed,
+	); err == nil || !strings.Contains(err.Error(), "no total") {
+		t.Fatalf("coverageInDirectory(malformed output) error = %v", err)
+	}
+	if _, err := totalCoverage("total:\t(statements)\tnot-a-number%\n"); err == nil {
+		t.Fatal("totalCoverage(invalid percentage) error = nil")
+	}
+}
+
 func TestCommandReturnsRunnerFailure(t *testing.T) {
 	t.Parallel()
 	want := errors.New("failed")
@@ -82,12 +136,14 @@ func TestCommandReturnsRunnerFailure(t *testing.T) {
 }
 
 type gateRunner struct {
-	mu         sync.Mutex
-	calls      [][]string
-	goVersion  string
-	formatting string
-	coverage   float64
-	failure    error
+	mu               sync.Mutex
+	calls            [][]string
+	goVersion        string
+	formatting       string
+	coverage         float64
+	coverageOutput   string
+	failure          error
+	failureArguments []string
 }
 
 func (runner *gateRunner) Run(
@@ -98,7 +154,9 @@ func (runner *gateRunner) Run(
 	runner.mu.Lock()
 	defer runner.mu.Unlock()
 	runner.calls = append(runner.calls, slices.Clone(arguments))
-	if runner.failure != nil {
+	if runner.failure != nil &&
+		(len(runner.failureArguments) == 0 ||
+			slices.Equal(arguments[:min(len(arguments), len(runner.failureArguments))], runner.failureArguments)) {
 		return "runner output", runner.failure
 	}
 	if slices.Equal(arguments, []string{"go", "version"}) {
@@ -112,6 +170,9 @@ func (runner *gateRunner) Run(
 	}
 	if len(arguments) >= 3 && arguments[0] == "go" &&
 		arguments[1] == "tool" && arguments[2] == "cover" {
+		if runner.coverageOutput != "" {
+			return runner.coverageOutput, nil
+		}
 		return fmt.Sprintf("total:\t(statements)\t%.1f%%\n", runner.coverage), nil
 	}
 	return "", nil
