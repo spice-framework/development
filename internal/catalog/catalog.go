@@ -16,7 +16,12 @@ import (
 	"strings"
 )
 
-const CurrentSchema = 3
+const CurrentSchema = 4
+
+const (
+	ReleaseProfileGoModule     = "go-module-v1"
+	ReleaseProfileDistribution = "go-distribution-v1"
+)
 
 //go:embed compatibility.json
 var defaultContent []byte
@@ -35,17 +40,41 @@ type Toolchains struct {
 }
 
 type Repository struct {
-	Name            string       `json:"name"`
-	Directory       string       `json:"directory"`
-	Status          string       `json:"status"`
-	CanonicalURL    string       `json:"canonical_url"`
-	CloneURL        string       `json:"clone_url"`
-	Artifact        string       `json:"artifact"`
-	Module          string       `json:"module,omitempty"`
-	CanonicalModule string       `json:"canonical_module,omitempty"`
-	Dependencies    []string     `json:"dependencies"`
-	Fast            []Invocation `json:"fast"`
-	Full            []Invocation `json:"full"`
+	Name            string         `json:"name"`
+	Directory       string         `json:"directory"`
+	Status          string         `json:"status"`
+	CanonicalURL    string         `json:"canonical_url"`
+	CloneURL        string         `json:"clone_url"`
+	Artifact        string         `json:"artifact"`
+	Module          string         `json:"module,omitempty"`
+	CanonicalModule string         `json:"canonical_module,omitempty"`
+	Dependencies    []string       `json:"dependencies"`
+	Release         *ReleasePolicy `json:"release,omitempty"`
+	Fast            []Invocation   `json:"fast"`
+	Full            []Invocation   `json:"full"`
+}
+
+// ReleasePolicy is the catalog-owned authorization for one generic Go-module
+// or binary-distribution release. Starter releases deliberately remain under
+// StarterCompatibilityPolicy and may not use this path.
+type ReleasePolicy struct {
+	Profile         string          `json:"profile,omitempty"`
+	Version         string          `json:"version,omitempty"`
+	MetadataFile    string          `json:"metadata_file,omitempty"`
+	RequiredModules []string        `json:"required_modules,omitempty"`
+	Binaries        []ReleaseBinary `json:"binaries,omitempty"`
+	Targets         []ReleaseTarget `json:"targets,omitempty"`
+	PayloadFiles    []string        `json:"payload_files,omitempty"`
+}
+
+type ReleaseBinary struct {
+	Name    string `json:"name"`
+	Package string `json:"package"`
+}
+
+type ReleaseTarget struct {
+	GOOS   string `json:"goos"`
+	GOARCH string `json:"goarch"`
 }
 
 type Invocation struct {
@@ -326,6 +355,9 @@ func validateRepository(repository Repository) error {
 	if repository.Artifact == "go-module" && repository.Module == "" {
 		return fmt.Errorf("repository %q has no Go module path", repository.Name)
 	}
+	if err := repository.Release.validate(repository); err != nil {
+		return fmt.Errorf("repository %q release policy: %w", repository.Name, err)
+	}
 	for _, invocation := range append(slices.Clone(repository.Fast), repository.Full...) {
 		if invocation.Name == "" || len(invocation.Arguments) == 0 ||
 			invocation.Arguments[0] == "" {
@@ -341,6 +373,99 @@ func validateRepository(repository Repository) error {
 		}
 	}
 	return nil
+}
+
+func (policy *ReleasePolicy) validate(repository Repository) error {
+	if policy == nil {
+		return nil
+	}
+	if policy.Profile == "" {
+		return errors.New("profile is required")
+	}
+	if strings.HasPrefix(repository.Name, "starter-") {
+		return errors.New("starter repositories must use the starter release path")
+	}
+	if repository.Artifact != "go-module" || repository.Module == "" {
+		return errors.New("generic release profiles require a Go module repository")
+	}
+	if !ValidModuleVersion(policy.Version) {
+		return fmt.Errorf("version %q is malformed", policy.Version)
+	}
+	if !safeReleaseFile(policy.MetadataFile) {
+		return fmt.Errorf("metadata file %q must be one safe file name", policy.MetadataFile)
+	}
+	if err := validateDistinctStrings("required module", policy.RequiredModules); err != nil {
+		return err
+	}
+	switch policy.Profile {
+	case ReleaseProfileGoModule:
+		if len(policy.Binaries) != 0 || len(policy.Targets) != 0 || len(policy.PayloadFiles) != 0 {
+			return errors.New("Go module release policy cannot define distribution payloads")
+		}
+	case ReleaseProfileDistribution:
+		if len(policy.Binaries) == 0 || len(policy.Targets) == 0 || len(policy.PayloadFiles) == 0 {
+			return errors.New("distribution release policy requires binaries, targets, and payload files")
+		}
+		if err := validateReleaseBinaries(policy.Binaries); err != nil {
+			return err
+		}
+		if err := validateReleaseTargets(policy.Targets); err != nil {
+			return err
+		}
+		for _, file := range policy.PayloadFiles {
+			if err := validateInvocationDirectory(file); err != nil {
+				return fmt.Errorf("payload file: %w", err)
+			}
+		}
+	default:
+		return fmt.Errorf("profile %q is unsupported", policy.Profile)
+	}
+	return nil
+}
+
+func validateReleaseBinaries(values []ReleaseBinary) error {
+	names := make([]string, 0, len(values))
+	for _, value := range values {
+		if !safeReleaseFile(value.Name) {
+			return fmt.Errorf("binary name %q must be one safe file name", value.Name)
+		}
+		relativePackage := strings.TrimPrefix(value.Package, "./")
+		if !strings.HasPrefix(value.Package, "./cmd/") || path.Clean(relativePackage) != relativePackage {
+			return fmt.Errorf("binary package %q must be a clean ./cmd path", value.Package)
+		}
+		names = append(names, value.Name)
+	}
+	return validateDistinctStrings("binary name", names)
+}
+
+func validateReleaseTargets(values []ReleaseTarget) error {
+	identities := make([]string, 0, len(values))
+	for _, value := range values {
+		if !slices.Contains([]string{"linux", "darwin", "windows"}, value.GOOS) ||
+			!slices.Contains([]string{"amd64", "arm64"}, value.GOARCH) {
+			return fmt.Errorf("target %q/%q is unsupported", value.GOOS, value.GOARCH)
+		}
+		identities = append(identities, value.GOOS+"/"+value.GOARCH)
+	}
+	return validateDistinctStrings("release target", identities)
+}
+
+func validateDistinctStrings(kind string, values []string) error {
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		if strings.TrimSpace(value) == "" || value != strings.TrimSpace(value) {
+			return fmt.Errorf("%s %q is invalid", kind, value)
+		}
+		if _, duplicate := seen[value]; duplicate {
+			return fmt.Errorf("%s %q is duplicated", kind, value)
+		}
+		seen[value] = struct{}{}
+	}
+	return nil
+}
+
+func safeReleaseFile(value string) bool {
+	return value != "" && filepath.Base(value) == value && value != "." && value != ".."
 }
 
 func validateInvocationDirectory(directory string) error {

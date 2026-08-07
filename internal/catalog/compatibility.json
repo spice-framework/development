@@ -1,5 +1,5 @@
 {
-  "schema": 3,
+  "schema": 4,
   "toolchains": {
     "go": "1.26.5",
     "java": "25",
@@ -135,6 +135,15 @@
       "clone_url": "https://github.com/spice-framework/spice-agent.git",
       "artifact": "go-module",
       "module": "github.com/spice-framework/spice-agent",
+      "release": {
+        "profile": "go-module-v1",
+        "version": "v0.1.0-preview.1",
+        "metadata_file": "spice-release.json",
+        "required_modules": [
+          "github.com/spice-framework/spice",
+          "github.com/spice-framework/toolchain"
+        ]
+      },
       "dependencies": [
         ".github",
         "development",
@@ -172,6 +181,16 @@
       "clone_url": "https://github.com/spice-framework/spice-agent-provider-openai.git",
       "artifact": "go-module",
       "module": "github.com/spice-framework/spice-agent-provider-openai",
+      "release": {
+        "profile": "go-module-v1",
+        "version": "v0.1.0-preview.1",
+        "metadata_file": "spice-release.json",
+        "required_modules": [
+          "github.com/spice-framework/spice",
+          "github.com/spice-framework/toolchain",
+          "github.com/spice-framework/spice-agent"
+        ]
+      },
       "dependencies": [
         ".github",
         "development",
@@ -210,6 +229,16 @@
       "clone_url": "https://github.com/spice-framework/spice-agent-tools-coding.git",
       "artifact": "go-module",
       "module": "github.com/spice-framework/spice-agent-tools-coding",
+      "release": {
+        "profile": "go-module-v1",
+        "version": "v0.1.0-preview.1",
+        "metadata_file": "spice-release.json",
+        "required_modules": [
+          "github.com/spice-framework/spice",
+          "github.com/spice-framework/toolchain",
+          "github.com/spice-framework/spice-agent"
+        ]
+      },
       "dependencies": [
         ".github",
         "development",
@@ -248,6 +277,15 @@
       "clone_url": "https://github.com/spice-framework/spice-agent-tui.git",
       "artifact": "go-module",
       "module": "github.com/spice-framework/spice-agent-tui",
+      "release": {
+        "profile": "go-module-v1",
+        "version": "v0.1.0-preview.1",
+        "metadata_file": "spice-release.json",
+        "required_modules": [
+          "github.com/spice-framework/spice",
+          "github.com/spice-framework/toolchain"
+        ]
+      },
       "dependencies": [
         ".github",
         "development",
@@ -286,6 +324,40 @@
       "clone_url": "https://github.com/spice-framework/spice-agent-coding.git",
       "artifact": "go-module",
       "module": "github.com/spice-framework/spice-agent-coding",
+      "release": {
+        "profile": "go-distribution-v1",
+        "version": "v0.1.0-preview.1",
+        "metadata_file": "spice-release.json",
+        "required_modules": [
+          "github.com/spice-framework/spice",
+          "github.com/spice-framework/toolchain",
+          "github.com/spice-framework/spice-agent",
+          "github.com/spice-framework/spice-agent-provider-openai",
+          "github.com/spice-framework/spice-agent-tools-coding",
+          "github.com/spice-framework/spice-agent-tui"
+        ],
+        "binaries": [
+          {"name": "spice-agent", "package": "./cmd/spice-agent"},
+          {"name": "spice-agentd", "package": "./cmd/spice-agentd"}
+        ],
+        "targets": [
+          {"goos": "linux", "goarch": "amd64"},
+          {"goos": "linux", "goarch": "arm64"},
+          {"goos": "darwin", "goarch": "amd64"},
+          {"goos": "darwin", "goarch": "arm64"},
+          {"goos": "windows", "goarch": "amd64"},
+          {"goos": "windows", "goarch": "arm64"}
+        ],
+        "payload_files": [
+          "LICENSE",
+          "README.md",
+          "THIRD_PARTY_NOTICES.md",
+          "docs/configuration.md",
+          "docs/installation.md",
+          "docs/security.md",
+          "protocol-descriptors.pb"
+        ]
+      },
       "dependencies": [
         ".github",
         "development",

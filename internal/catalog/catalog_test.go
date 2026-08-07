@@ -47,7 +47,8 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 			repository.Module != "github.com/spice-framework/"+name ||
 			!slices.Equal(repository.Dependencies, agentDependencies) ||
 			len(repository.Fast) != 1 || len(repository.Full) != 1 ||
-			!slices.Contains(repository.Fast[0].Arguments, "-mode=fast") {
+			!slices.Contains(repository.Fast[0].Arguments, "-mode=fast") ||
+			repository.Release == nil || repository.Release.Profile != ReleaseProfileGoModule {
 			t.Fatalf("%s repository identity = %#v", name, repository)
 		}
 	}
@@ -76,7 +77,9 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 			".github", "development", "spice", "toolchain", "spice-agent",
 			"spice-agent-provider-openai", "spice-agent-tools-coding", "spice-agent-tui",
 		}) || len(agentCoding.Fast) != 1 || len(agentCoding.Full) != 1 ||
-		!slices.Contains(agentCoding.Fast[0].Arguments, "-mode=fast") {
+		!slices.Contains(agentCoding.Fast[0].Arguments, "-mode=fast") ||
+		agentCoding.Release == nil || agentCoding.Release.Profile != ReleaseProfileDistribution ||
+		len(agentCoding.Release.Binaries) != 2 || len(agentCoding.Release.Targets) != 6 {
 		t.Fatalf("Spice Agent coding repository identity = %#v", agentCoding)
 	}
 	starterSMTP := requireRepository(t, value.Repositories, "starter-smtp")
@@ -212,7 +215,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 func TestParseRejectsMalformedCatalogs(t *testing.T) {
 	t.Parallel()
 	base := `{
-  "schema": 3,
+  "schema": 4,
   "toolchains": {"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
   "starter_compatibility": {"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260806053623-2ec6f862073f"},
   "repositories": [%s]
@@ -250,7 +253,7 @@ func TestParseRejectsMalformedCatalogs(t *testing.T) {
 func TestParseRejectsMissingDependenciesAndCycles(t *testing.T) {
 	t.Parallel()
 	content := `{
-  "schema":3,
+  "schema":4,
   "toolchains":{"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
   "starter_compatibility":{"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260806053623-2ec6f862073f"},
   "repositories":[
@@ -264,6 +267,40 @@ func TestParseRejectsMissingDependenciesAndCycles(t *testing.T) {
 	missing := strings.Replace(content, `"dependencies":["a"]`, `"dependencies":["missing"]`, 1)
 	if _, err := Parse([]byte(missing)); err == nil || !strings.Contains(err.Error(), "unknown repository") {
 		t.Fatalf("Parse(missing) error = %v", err)
+	}
+}
+
+func TestValidateRejectsMalformedGenericReleasePolicies(t *testing.T) {
+	t.Parallel()
+	for name, mutate := range map[string]func(*Repository){
+		"starter bypass": func(repository *Repository) {
+			repository.Name = "starter-agent"
+		},
+		"unknown profile": func(repository *Repository) {
+			repository.Release.Profile = "unknown"
+		},
+		"unsafe metadata": func(repository *Repository) {
+			repository.Release.MetadataFile = "../spice-release.json"
+		},
+		"duplicate module": func(repository *Repository) {
+			repository.Release.RequiredModules = []string{"example.com/module", "example.com/module"}
+		},
+		"module with payload": func(repository *Repository) {
+			repository.Release.PayloadFiles = []string{"README.md"}
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			value, err := Default()
+			if err != nil {
+				t.Fatal(err)
+			}
+			repository := requireRepository(t, value.Repositories, "spice-agent")
+			mutate(&repository)
+			if err = repository.Release.validate(repository); err == nil {
+				t.Fatal("release validation error = nil")
+			}
+		})
 	}
 }
 

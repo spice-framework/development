@@ -61,6 +61,16 @@ starter gate runs. This preflight is read-only, shell-free, and offline; it uses
 `go mod edit -json` with the same `GOWORK=off` and `GOPROXY=off` isolation as
 the rest of verification.
 
+The catalog separately authorizes generic `go-module-v1` and
+`go-distribution-v1` release profiles for the five Spice Agent repositories.
+Those entries fix the preview version, strict `spice-release.json` file name,
+required module graph, and—for the distribution only—the two binaries, six
+platform targets, and required payload files. This metadata cannot route a
+`starter-*` repository around the established starter release path. Rendering,
+independent verification, attestation, and publication remain separate
+fail-closed commands and workflows; catalog authorization alone publishes
+nothing.
+
 `library-release plan` is the first executable part of the central library
 delivery implementation. It performs no writes, downloads, signing, tagging,
 or publication. It binds a catalog-governed library to its exact module,
