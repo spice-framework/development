@@ -1,0 +1,415 @@
+package gorelease
+
+import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"slices"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/spice-framework/development/internal/catalog"
+	"github.com/spice-framework/development/internal/process"
+)
+
+func TestRenderAndVerifyDeterministicModuleRelease(t *testing.T) {
+	t.Parallel()
+	fixture := newReleaseFixture(t, fixtureOptions{dependency: true, toolDependency: true})
+	first := filepath.Join(fixture.parent, "first")
+	result, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantFiles := []string{
+		"checksums.txt",
+		"spice-agent_0.1.0-preview.1_release.json",
+		"spice-agent_0.1.0-preview.1_sbom.spdx.json",
+		"spice-agent_0.1.0-preview.1_source.tar.gz",
+	}
+	if !slices.Equal(result.Files, wantFiles) || result.Commit != fixture.commit {
+		t.Fatalf("Render() = %#v", result)
+	}
+	verified, err := Verify(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(verified.Files, wantFiles) || verified.Commit != fixture.commit {
+		t.Fatalf("Verify() = %#v", verified)
+	}
+	second := filepath.Join(fixture.parent, "second")
+	if _, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, second); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range wantFiles {
+		left, err := os.ReadFile(filepath.Join(first, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		right, err := os.ReadFile(filepath.Join(second, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(left, right) {
+			t.Fatalf("artifact %s differs between renders", name)
+		}
+	}
+	assertArchive(t, filepath.Join(first, wantFiles[3]), "spice-agent_0.1.0-preview.1/agent.go")
+	assertMetadata(t, filepath.Join(first, wantFiles[1]), fixture.commit)
+	sbomContent, err := os.ReadFile(filepath.Join(first, wantFiles[2]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sbom spdxDocument
+	if err := json.Unmarshal(sbomContent, &sbom); err != nil || len(sbom.Packages) != 2 || len(sbom.Relationships) != 2 {
+		t.Fatalf("SBOM dependency graph = %#v, %v", sbom, err)
+	}
+}
+
+func TestRenderRejectsUntrustedSourceAndPolicy(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		fixture fixtureOptions
+		mutate  func(*releaseFixture)
+		want    string
+	}{
+		{name: "unknown repository", mutate: func(value *releaseFixture) { value.options.Repository = "unknown" }, want: "not in the catalog"},
+		{name: "wrong version", mutate: func(value *releaseFixture) { value.options.Version = "v0.1.0-preview.2" }, want: "does not match catalog"},
+		{name: "distribution profile", mutate: func(value *releaseFixture) { value.options.Repository = "spice-agent-coding" }, want: "not authorized"},
+		{name: "starter bypass", mutate: func(value *releaseFixture) { value.options.Repository = "starter-smtp" }, want: "must use library-release"},
+		{name: "origin mismatch", mutate: func(value *releaseFixture) {
+			git(t, value.root, "remote", "set-url", "origin", "https://github.com/spice-framework/not-agent.git")
+		}, want: "does not match"},
+		{name: "dirty checkout", mutate: func(value *releaseFixture) { writeFile(t, filepath.Join(value.root, "dirty"), "dirty") }, want: "must be clean"},
+		{name: "missing tag", mutate: func(value *releaseFixture) { git(t, value.root, "tag", "-d", value.options.Version) }, want: "resolve Go release tag"},
+		{name: "intent mismatch", fixture: fixtureOptions{intentModule: "example.invalid/wrong"}, want: "does not match catalog contract"},
+		{name: "unknown intent field", fixture: fixtureOptions{unknownIntent: true}, want: "unknown field"},
+		{name: "replace directive", fixture: fixtureOptions{replaceDirective: true}, want: "must not contain replace directives"},
+		{name: "missing required module", mutate: func(value *releaseFixture) {
+			value.repository.Release.RequiredModules = []string{"example.invalid/required"}
+			replaceRepository(value)
+		}, want: "must require"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			fixture := newReleaseFixture(t, test.fixture)
+			if test.mutate != nil {
+				test.mutate(&fixture)
+			}
+			output := filepath.Join(fixture.parent, "release")
+			if _, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("Render() error = %v, want %q", err, test.want)
+			}
+			if _, err := os.Lstat(output); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("failed render created output: %v", err)
+			}
+		})
+	}
+}
+
+func TestRenderAndVerifyRejectOutputAttacks(t *testing.T) {
+	t.Parallel()
+	fixture := newReleaseFixture(t, fixtureOptions{})
+	if _, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, filepath.Join(fixture.root, "dist")); err == nil || !strings.Contains(err.Error(), "outside") {
+		t.Fatalf("Render(inside repository) error = %v", err)
+	}
+	output := filepath.Join(fixture.parent, "release")
+	if _, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err == nil || !strings.Contains(err.Error(), "already exists") {
+		t.Fatalf("Render(existing) error = %v", err)
+	}
+	checksumsPath := filepath.Join(output, "checksums.txt")
+	if err := os.WriteFile(checksumsPath, []byte("tampered\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Verify(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err == nil || !strings.Contains(err.Error(), "not reproducible") {
+		t.Fatalf("Verify(tampered) error = %v", err)
+	}
+	if err := os.Remove(checksumsPath); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Verify(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err == nil || !strings.Contains(err.Error(), "do not match contract") {
+		t.Fatalf("Verify(missing) error = %v", err)
+	}
+}
+
+func TestRenderRejectsInvalidBoundaries(t *testing.T) {
+	t.Parallel()
+	fixture := newReleaseFixture(t, fixtureOptions{})
+	if _, err := Render(nil, fixture.options, fixture.catalog, process.ExecRunner{}, filepath.Join(fixture.parent, "nil")); err == nil || !strings.Contains(err.Error(), "context") { //nolint:staticcheck // Fail-closed nil boundary.
+		t.Fatalf("Render(nil context) error = %v", err)
+	}
+	if _, err := Render(t.Context(), fixture.options, fixture.catalog, nil, filepath.Join(fixture.parent, "runner")); err == nil || !strings.Contains(err.Error(), "runner") {
+		t.Fatalf("Render(nil runner) error = %v", err)
+	}
+	canceled, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := Render(canceled, fixture.options, fixture.catalog, process.ExecRunner{}, filepath.Join(fixture.parent, "canceled")); !errors.Is(err, context.Canceled) && (err == nil || !strings.Contains(err.Error(), "canceled")) {
+		t.Fatalf("Render(canceled) error = %v", err)
+	}
+	if _, err := Verify(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, filepath.Join(fixture.parent, "missing")); err == nil || !strings.Contains(err.Error(), "artifact directory") {
+		t.Fatalf("Verify(missing) error = %v", err)
+	}
+}
+
+func TestPureValidationHelpers(t *testing.T) {
+	t.Parallel()
+	for _, value := range []string{"", "../x", "/x", `a\\b`, "AUX.txt", "bad?.go", "x./y"} {
+		if err := validatePortablePath(value); err == nil {
+			t.Errorf("validatePortablePath(%q) error = nil", value)
+		}
+	}
+	if err := validatePortablePath("docs/release.md"); err != nil {
+		t.Fatal(err)
+	}
+	const objectID = "0123456789abcdef0123456789abcdef01234567"
+	if err := validateTree([]byte("100644 blob " + objectID + "\tREADME.md\x00")); err != nil {
+		t.Fatal(err)
+	}
+	for _, content := range [][]byte{
+		nil,
+		[]byte("120000 blob " + objectID + "\tlink\x00"),
+		[]byte("100644 blob " + objectID + "\tFile.go\x00100644 blob " + objectID + "\tfile.go\x00"),
+	} {
+		if err := validateTree(content); err == nil {
+			t.Fatalf("validateTree(%q) error = nil", content)
+		}
+	}
+	for _, value := range []string{"file:///tmp/repo", "https://user@example.com/repo", "ssh://user@example.com/repo", "https://example.com/../repo"} {
+		if _, err := remoteIdentity(value); err == nil {
+			t.Errorf("remoteIdentity(%q) error = nil", value)
+		}
+	}
+	if left, err := remoteIdentity("git@github.com:spice-framework/spice-agent.git"); err != nil || left != "github.com/spice-framework/spice-agent" {
+		t.Fatalf("remoteIdentity(SCP) = %q, %v", left, err)
+	}
+	var decoded intent
+	if err := decodeStrict([]byte(`{"schema":1} trailing`), &decoded); err == nil {
+		t.Fatal("decodeStrict(trailing) error = nil")
+	}
+	if got := string(checksums(map[string][]byte{"b": []byte("b"), "a": []byte("a")})); !strings.HasSuffix(got, "  b\n") || strings.Index(got, "  a\n") > strings.Index(got, "  b\n") {
+		t.Fatalf("checksums order = %q", got)
+	}
+	for name, content := range map[string]string{
+		"malformed":   "# example.com/module not-a-version\n",
+		"replacement": "# example.com/module v1.0.0 => ../local\n",
+		"duplicate":   "# example.com/module v1.0.0\n# example.com/module v1.0.0\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if _, err := parseVendorModules([]byte(content)); err == nil {
+				t.Fatal("parseVendorModules() error = nil")
+			}
+		})
+	}
+	buffer := boundedBuffer{maximum: 2}
+	if written, err := buffer.Write([]byte("long")); err != nil || written != 4 || !buffer.truncated || buffer.String() != "lo" {
+		t.Fatalf("boundedBuffer = %#v, written=%d err=%v", buffer, written, err)
+	}
+	if written, err := buffer.Write([]byte("more")); err != nil || written != 4 {
+		t.Fatalf("boundedBuffer full write = %d, %v", written, err)
+	}
+	directory := t.TempDir()
+	if _, err := realDirectory("", "test"); err == nil {
+		t.Fatal("realDirectory(empty) error = nil")
+	}
+	file := filepath.Join(directory, "file")
+	writeFile(t, file, "x")
+	if _, err := realDirectory(file, "test"); err == nil {
+		t.Fatal("realDirectory(file) error = nil")
+	}
+	if _, err := readBounded(file, 0); err == nil {
+		t.Fatal("readBounded(oversized) error = nil")
+	}
+	if err := writeArtifact(directory, "../bad", []byte("x")); err == nil {
+		t.Fatal("writeArtifact(unsafe) error = nil")
+	}
+	if err := writeArtifact(directory, "new", []byte("x")); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeArtifact(directory, "new", []byte("x")); err == nil {
+		t.Fatal("writeArtifact(existing) error = nil")
+	}
+}
+
+type fixtureOptions struct {
+	intentModule     string
+	unknownIntent    bool
+	replaceDirective bool
+	dependency       bool
+	toolDependency   bool
+}
+
+type releaseFixture struct {
+	parent     string
+	root       string
+	commit     string
+	options    Options
+	catalog    catalog.Catalog
+	repository catalog.Repository
+}
+
+func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
+	t.Helper()
+	value, err := catalog.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repositoryIndex := slices.IndexFunc(value.Repositories, func(repository catalog.Repository) bool {
+		return repository.Name == "spice-agent"
+	})
+	repository := value.Repositories[repositoryIndex]
+	repository.Release.RequiredModules = nil
+	if options.dependency {
+		repository.Release.RequiredModules = []string{"example.com/dependency"}
+	}
+	value.Repositories[repositoryIndex] = repository
+	parent := t.TempDir()
+	root := filepath.Join(parent, "repository")
+	if err := os.MkdirAll(filepath.Join(root, "vendor"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	modulePath := repository.Module
+	intentModule := modulePath
+	if options.intentModule != "" {
+		intentModule = options.intentModule
+	}
+	metadata := `{"schema":1,"profile":"go-module-v1","repository":"spice-agent","module":"` + intentModule + `","version":"v0.1.0-preview.1"}`
+	if options.unknownIntent {
+		metadata = strings.TrimSuffix(metadata, "}") + `,"unexpected":true}`
+	}
+	modfile := "module " + modulePath + "\n\ngo 1.26.0\n\ntoolchain go1.26.5\n"
+	if options.dependency {
+		modfile += "\nrequire example.com/dependency v1.2.3"
+		if options.toolDependency {
+			modfile += " // indirect"
+		}
+		modfile += "\n"
+	}
+	if options.toolDependency {
+		modfile += "\ntool example.com/dependency/cmd/tool\n"
+	}
+	if options.replaceDirective {
+		modfile += "\nreplace example.invalid/old => example.invalid/new v1.0.0\n"
+	}
+	files := map[string]string{
+		"LICENSE":            "Apache License fixture\n",
+		"README.md":          "# Agent fixture\n",
+		"agent.go":           "package agent\n",
+		"go.mod":             modfile,
+		"go.sum":             "",
+		"spice-release.json": metadata + "\n",
+		"vendor/modules.txt": "",
+	}
+	if options.dependency {
+		if options.toolDependency {
+			files["vendor/modules.txt"] = "# example.com/dependency v1.2.3\n## explicit; go 1.26.0\nexample.com/dependency/cmd/tool\n"
+			files["vendor/example.com/dependency/cmd/tool/main.go"] = "package main\n\nfunc main() {}\n"
+		} else {
+			files["agent.go"] = "package agent\n\nimport _ \"example.com/dependency\"\n"
+			files["vendor/modules.txt"] = "# example.com/dependency v1.2.3\n## explicit; go 1.26.0\nexample.com/dependency\n"
+			files["vendor/example.com/dependency/dependency.go"] = "package dependency\n"
+		}
+	}
+	for name, content := range files {
+		writeFile(t, filepath.Join(root, filepath.FromSlash(name)), content)
+	}
+	git(t, root, "init")
+	git(t, root, "config", "user.name", "Spice Test")
+	git(t, root, "config", "user.email", "spice@example.invalid")
+	git(t, root, "remote", "add", "origin", repository.CloneURL)
+	git(t, root, "add", ".")
+	command := exec.Command("git", "commit", "-m", "fixture")
+	command.Dir = root
+	date := time.Unix(1_700_000_000, 0).UTC().Format(time.RFC3339)
+	command.Env = append(os.Environ(), "GIT_AUTHOR_DATE="+date, "GIT_COMMITTER_DATE="+date)
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("git commit: %v\n%s", err, output)
+	}
+	commit := strings.TrimSpace(git(t, root, "rev-parse", "HEAD"))
+	git(t, root, "tag", repository.Release.Version)
+	return releaseFixture{
+		parent: parent, root: root, commit: commit, catalog: value, repository: repository,
+		options: Options{Root: root, Repository: repository.Name, Version: repository.Release.Version},
+	}
+}
+
+func replaceRepository(fixture *releaseFixture) {
+	index := slices.IndexFunc(fixture.catalog.Repositories, func(repository catalog.Repository) bool {
+		return repository.Name == fixture.options.Repository || repository.Name == "spice-agent"
+	})
+	fixture.catalog.Repositories[index] = fixture.repository
+}
+
+func writeFile(t *testing.T, name string, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(name), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(name, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func git(t *testing.T, root string, arguments ...string) string {
+	t.Helper()
+	command := exec.Command("git", arguments...)
+	command.Dir = root
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(arguments, " "), err, output)
+	}
+	return string(output)
+}
+
+func assertArchive(t *testing.T, name string, wanted string) {
+	t.Helper()
+	file, err := os.Open(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	gzipReader, err := gzip.NewReader(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer gzipReader.Close()
+	tarReader := tar.NewReader(gzipReader)
+	for {
+		header, err := tarReader.Next()
+		if errors.Is(err, io.EOF) {
+			t.Fatalf("archive does not contain %q", wanted)
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if header.Name == wanted {
+			return
+		}
+	}
+}
+
+func assertMetadata(t *testing.T, name string, commit string) {
+	t.Helper()
+	content, err := os.ReadFile(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var metadata releaseMetadata
+	if err := json.Unmarshal(content, &metadata); err != nil {
+		t.Fatal(err)
+	}
+	if metadata.Commit != commit || metadata.Go != "1.26.5" || len(metadata.Artifacts) != 2 || strings.Contains(string(content), filepath.VolumeName(name)) {
+		t.Fatalf("release metadata = %#v", metadata)
+	}
+}

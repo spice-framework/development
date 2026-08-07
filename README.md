@@ -71,6 +71,21 @@ independent verification, attestation, and publication remain separate
 fail-closed commands and workflows; catalog authorization alone publishes
 nothing.
 
+The first generic renderer is available through an isolated command boundary:
+
+```text
+spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.1 --output ../release
+spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.1 --artifacts ../release
+```
+
+It requires a clean tagged checkout, an exact catalog origin and module,
+`go 1.26.0`, `toolchain go1.26.5`, committed vendor contents, no `replace`
+directives, and a strict committed `spice-release.json`. Rendering is offline,
+deterministic, outside the repository, and refuses to replace an existing
+directory. The local verifier byte-compares a fresh rendering against the
+artifact allowlist; it is not the independent post-attestation verifier used
+to establish release trust. See [`docs/go-module-release.md`](docs/go-module-release.md).
+
 `library-release plan` is the first executable part of the central library
 delivery implementation. It performs no writes, downloads, signing, tagging,
 or publication. It binds a catalog-governed library to its exact module,

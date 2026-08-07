@@ -39,7 +39,9 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 		!strings.Contains(stdout.String(), "spice-dev bootstrap") ||
 		!strings.Contains(stdout.String(), "snapshot materialize") ||
 		!strings.Contains(stdout.String(), "library-release public-key") ||
-		!strings.Contains(stdout.String(), "library-release sign") {
+		!strings.Contains(stdout.String(), "library-release sign") ||
+		!strings.Contains(stdout.String(), "go-release render") ||
+		!strings.Contains(stdout.String(), "go-release verify") {
 		t.Fatalf("help code=%d stdout=%q", code, stdout.String())
 	}
 	stdout.Reset()
@@ -301,6 +303,31 @@ func TestRuntimeRejectsInvalidCommandsAndWrites(t *testing.T) {
 	}
 	if code := runtime.Run(t.Context(), []string{"library-release"}, &stdout, &stderr); code != 2 {
 		t.Fatalf("library-release missing plan code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{"go-release"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("go-release missing subcommand code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{"go-release", "unknown"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("go-release unknown subcommand code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{
+		"go-release", "render", "--repo", "unknown", "--version", "v1.0.0",
+		"--root", t.TempDir(), "--output", filepath.Join(t.TempDir(), "release"),
+	}, &stdout, &stderr); code != 1 {
+		t.Fatalf("go-release unknown repository code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{
+		"go-release", "render", "--artifacts", t.TempDir(),
+	}, &stdout, &stderr); code != 2 {
+		t.Fatalf("go-release render artifacts code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{
+		"go-release", "verify", "--output", t.TempDir(),
+	}, &stdout, &stderr); code != 2 {
+		t.Fatalf("go-release verify output code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{"go-release", "verify", "extra"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("go-release positional code = %d", code)
 	}
 	if code := runtime.Run(t.Context(), []string{
 		"library-release", "public-key", "extra",

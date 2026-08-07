@@ -13,6 +13,7 @@ import (
 
 	"github.com/spice-framework/development/internal/bootstrap"
 	"github.com/spice-framework/development/internal/catalog"
+	"github.com/spice-framework/development/internal/gorelease"
 	"github.com/spice-framework/development/internal/libraryrelease"
 	"github.com/spice-framework/development/internal/process"
 	"github.com/spice-framework/development/internal/snapshot"
@@ -76,6 +77,8 @@ func (runtime Runtime) Run(
 		code = runtime.verifyCommand(ctx, arguments[1:], stdout, stderr)
 	case "library-release":
 		code = runtime.libraryReleaseCommand(ctx, arguments[1:], stdout, stderr)
+	case "go-release":
+		code = runtime.goReleaseCommand(ctx, arguments[1:], stdout, stderr)
 	case "snapshot":
 		code = runtime.snapshotCommand(ctx, arguments[1:], stdout, stderr)
 	default:
@@ -85,6 +88,58 @@ func (runtime Runtime) Run(
 		code = 2
 	}
 	return code
+}
+
+func (runtime Runtime) goReleaseCommand(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	if len(arguments) == 0 || (arguments[0] != "render" && arguments[0] != "verify") {
+		return usageError(stderr, "go-release requires the render or verify subcommand")
+	}
+	subcommand := arguments[0]
+	flags := flag.NewFlagSet("go-release "+subcommand, flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	root := flags.String("root", "", "clean tagged Go repository root")
+	repository := flags.String("repo", "", "catalog repository name")
+	version := flags.String("version", "", "catalog-authorized canonical release version")
+	output := flags.String("output", "", "new deterministic release directory")
+	artifacts := flags.String("artifacts", "", "existing release artifact directory")
+	if err := flags.Parse(arguments[1:]); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "go-release "+subcommand+" accepts no positional arguments")
+	}
+	if subcommand == "render" && *artifacts != "" {
+		return usageError(stderr, "go-release render does not accept --artifacts")
+	}
+	if subcommand == "verify" && *output != "" {
+		return usageError(stderr, "go-release verify does not accept --output")
+	}
+	options := gorelease.Options{Root: *root, Repository: *repository, Version: *version}
+	var result gorelease.Result
+	var err error
+	if subcommand == "render" {
+		result, err = gorelease.Render(ctx, options, runtime.Catalog, runtime.Runner, *output)
+	} else {
+		result, err = gorelease.Verify(ctx, options, runtime.Catalog, runtime.Runner, *artifacts)
+	}
+	if err != nil {
+		return commandError(stderr, "go-release "+subcommand, err)
+	}
+	if _, err := fmt.Fprintf(
+		stdout,
+		"%s\t%s\t%d artifact(s)\n",
+		result.OutputDir,
+		result.Commit,
+		len(result.Files),
+	); err != nil {
+		return 1
+	}
+	return 0
 }
 
 func (runtime Runtime) snapshotCommand(
@@ -494,6 +549,8 @@ Usage:
   spice-dev library-release public-key --signing-key external-private-key --output new-public.pem
   spice-dev library-release render --root path --plan plan.json --output new-path
   spice-dev library-release sign --root path --plan plan.json --output new-path --signing-key key --trusted-public-key public.pem
+  spice-dev go-release render --root path --repo name --version vX.Y.Z --output new-path
+  spice-dev go-release verify --root path --repo name --version vX.Y.Z --artifacts path
 `)
 	return err
 }
