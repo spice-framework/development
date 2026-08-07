@@ -1,5 +1,7 @@
 # Spice ecosystem development
 
+Unified documentation: [spiceframework.dev/project/ecosystem](https://spiceframework.dev/project/ecosystem/).
+
 This repository owns cross-repository bootstrap, workspace, compatibility, and
 verification tooling for the Spice Framework organization. It does not contain
 framework runtime or compiler behavior.
