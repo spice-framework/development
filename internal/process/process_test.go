@@ -26,6 +26,9 @@ func TestExecRunnerUsesDiscreteAllowedCommands(t *testing.T) {
 	if !allowedExecutable("java") {
 		t.Fatal("java is not an approved repository verification executable")
 	}
+	if !allowedExecutable("npm") || !allowedExecutable("pnpm") {
+		t.Fatal("pinned JavaScript package runners are not approved verification executables")
+	}
 	if _, err := (ExecRunner{}).Run(nil, ".", "go", "version"); err == nil { //nolint:staticcheck // Intentional fail-closed boundary case.
 		t.Fatal("Run(nil) error = nil")
 	}

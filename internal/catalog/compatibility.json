@@ -884,6 +884,94 @@
           ]
         }
       ]
+    },
+    {
+      "name": "chrome",
+      "directory": "chrome",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/chrome",
+      "clone_url": "https://github.com/spice-framework/chrome.git",
+      "artifact": "chrome-extension",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice",
+        "toolchain"
+      ],
+      "fast": [
+        {
+          "name": "extension unit tests",
+          "arguments": [
+            "npm",
+            "run",
+            "test:unit"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete extension verification",
+          "arguments": [
+            "npm",
+            "run",
+            "verify"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "docs",
+      "directory": "docs",
+      "status": "active",
+      "canonical_url": "https://github.com/spice-framework/docs",
+      "clone_url": "https://github.com/spice-framework/docs.git",
+      "artifact": "documentation-site",
+      "dependencies": [
+        ".github",
+        "development",
+        "spice",
+        "toolchain",
+        "spice-agent",
+        "spice-agent-provider-openai",
+        "spice-agent-tools-coding",
+        "spice-agent-tui",
+        "spice-agent-coding",
+        "starter-smtp",
+        "starter-postgres",
+        "starter-mysql",
+        "starter-redis",
+        "starter-otel",
+        "starter-oauth2client",
+        "starter-oidc",
+        "starter-websocket",
+        "starter-grpc",
+        "starter-kafka",
+        "petclinic",
+        "commerce",
+        "goland",
+        "zed",
+        "chrome"
+      ],
+      "fast": [
+        {
+          "name": "documentation checks",
+          "arguments": [
+            "pnpm",
+            "run",
+            "check"
+          ]
+        }
+      ],
+      "full": [
+        {
+          "name": "complete documentation verification",
+          "arguments": [
+            "pnpm",
+            "run",
+            "verify"
+          ]
+        }
+      ]
     }
   ]
 }

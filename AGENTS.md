@@ -12,7 +12,8 @@ validating, and verifying the independently versioned Spice repositories.
 - Bootstrap never replaces an existing checkout or rewrites its remote.
 - Workspace generation overwrites only files carrying its ownership marker.
 - Commands use discrete arguments without a shell.
-- Network access occurs only through an explicit non-offline bootstrap command.
+- Network access occurs only through an explicit non-offline bootstrap or
+  snapshot materialization command.
 - Repository gates remain owned by each repository; this project orchestrates
   them but does not weaken or silently skip them.
 - Every commit must pass `make verify` before push to `main`.

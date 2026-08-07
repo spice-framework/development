@@ -15,6 +15,7 @@ import (
 	"github.com/spice-framework/development/internal/catalog"
 	"github.com/spice-framework/development/internal/libraryrelease"
 	"github.com/spice-framework/development/internal/process"
+	"github.com/spice-framework/development/internal/snapshot"
 	"github.com/spice-framework/development/internal/verify"
 	"github.com/spice-framework/development/internal/workspace"
 )
@@ -75,6 +76,8 @@ func (runtime Runtime) Run(
 		code = runtime.verifyCommand(ctx, arguments[1:], stdout, stderr)
 	case "library-release":
 		code = runtime.libraryReleaseCommand(ctx, arguments[1:], stdout, stderr)
+	case "snapshot":
+		code = runtime.snapshotCommand(ctx, arguments[1:], stdout, stderr)
 	default:
 		if _, err := fmt.Fprintf(stderr, "spice-dev: unknown command %q\n", arguments[0]); err != nil {
 			return 1
@@ -82,6 +85,56 @@ func (runtime Runtime) Run(
 		code = 2
 	}
 	return code
+}
+
+func (runtime Runtime) snapshotCommand(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	if len(arguments) == 0 || (arguments[0] != "materialize" && arguments[0] != "verify") {
+		return usageError(stderr, "snapshot requires the materialize or verify subcommand")
+	}
+	subcommand := arguments[0]
+	flags := flag.NewFlagSet("snapshot "+subcommand, flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	lockFile := flags.String("lock", "", "exact-repository snapshot lock JSON file")
+	root := flags.String("root", "", "new or existing materialized snapshot root")
+	offline := flags.Bool("offline", false, "require the verification-only offline mode")
+	if err := flags.Parse(arguments[1:]); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "snapshot "+subcommand+" accepts no positional arguments")
+	}
+	if subcommand == "materialize" && *offline {
+		return usageError(stderr, "snapshot materialize is the explicit online operation and does not accept --offline")
+	}
+	if subcommand == "verify" && !*offline {
+		return usageError(stderr, "snapshot verify requires --offline")
+	}
+	lock, err := snapshot.Load(*lockFile, runtime.Catalog)
+	if err != nil {
+		return commandError(stderr, "snapshot "+subcommand, err)
+	}
+	var manifest snapshot.Manifest
+	if subcommand == "materialize" {
+		manifest, err = snapshot.Materialize(ctx, lock, *root, runtime.Catalog, runtime.Runner)
+	} else {
+		manifest, err = snapshot.Verify(ctx, lock, *root, runtime.Catalog, runtime.Runner)
+	}
+	if err != nil {
+		return commandError(stderr, "snapshot "+subcommand, err)
+	}
+	content, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return commandError(stderr, "snapshot "+subcommand, err)
+	}
+	if _, err := stdout.Write(append(content, '\n')); err != nil {
+		return 1
+	}
+	return 0
 }
 
 func (runtime Runtime) libraryReleaseCommand(
@@ -435,6 +488,8 @@ Usage:
   spice-dev bootstrap --root path [--offline]
   spice-dev workspace --root path [--check]
   spice-dev verify --root path [--full] [--jobs n] [--repo name ...]
+  spice-dev snapshot materialize --lock lock.json --root new-path
+  spice-dev snapshot verify --lock lock.json --root path --offline
   spice-dev library-release plan --root path --repo name --version vX.Y.Z [--rehearsal]
   spice-dev library-release public-key --signing-key external-private-key --output new-public.pem
   spice-dev library-release render --root path --plan plan.json --output new-path

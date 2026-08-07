@@ -83,7 +83,8 @@ func (buffer *boundedBuffer) String() string {
 
 func allowedExecutable(name string) bool {
 	return name == "cargo" || name == "git" || name == "go" ||
-		name == "gofmt" || name == "java"
+		name == "gofmt" || name == "java" || name == "npm" ||
+		name == "pnpm"
 }
 
 func commandDetail(output string) string {

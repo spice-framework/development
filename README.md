@@ -13,12 +13,15 @@ go run ./cmd/spice-dev catalog
 go run ./cmd/spice-dev bootstrap --root ../spice-workspace
 go run ./cmd/spice-dev workspace --root ../spice-workspace
 go run ./cmd/spice-dev verify --root ../spice-workspace
+go run ./cmd/spice-dev snapshot materialize --lock ecosystem.lock.json --root ../snapshot
+go run ./cmd/spice-dev snapshot verify --lock ecosystem.lock.json --root ../snapshot --offline
 go run ./cmd/spice-dev library-release plan --root ../starter-smtp --repo starter-smtp --version v1.2.3 --rehearsal > plan.json
 go run ./cmd/spice-dev library-release render --root ../starter-smtp --plan plan.json --output dist/rehearsal
 ```
 
-`bootstrap` is the only network-capable command. Add `--offline` to validate
-already-present checkouts without fetching. Existing directories must be real
+`bootstrap` and `snapshot materialize` are the only network-capable commands.
+Add `--offline` to bootstrap to validate already-present checkouts without
+fetching. Existing directories must be real
 Git checkouts with the exact catalog remote; the command never replaces them or
 rewrites their origin.
 
@@ -35,6 +38,16 @@ automatic toolchain installation is disabled, and Java-based repositories are
 invoked through their checked-in Gradle wrapper JAR instead of an
 operating-system-specific script. Bootstrap or install the pinned toolchains
 and dependency caches explicitly before running a full gate.
+
+`snapshot materialize` is the explicit network-capable boundary for consumers
+that assemble exact multi-repository source snapshots. It validates every
+repository and canonical remote against the embedded catalog, fetches only the
+locked 40-character commit into a new detached checkout, rejects symlinks, and
+publishes one deterministic ownership manifest only after the complete snapshot
+succeeds. `snapshot verify --offline` performs no fetches: it requires that
+manifest, the exact detached commits, canonical remotes, clean worktrees, and a
+symlink-free tree. The snapshot command intentionally has no knowledge of
+Markdown, Astro, documentation manifests, or another consumer-specific format.
 
 Before a starter's repository-owned gate, `verify` applies the catalog's
 central starter compatibility policy. Every active `starter-*` repository must
@@ -118,6 +131,10 @@ The repository split is now explicit:
   Run, and native Debug proof on Windows and Linux;
 - `zed` owns the independently versioned Rust extension and its canonical
   offline Spice fixture; and
+- `chrome` owns the privacy-preserving GitHub presentation and reusable
+  browser-neutral Spice syntax contract;
+- `docs` owns the static, exact-commit documentation portal while product
+  documentation remains canonical in each source repository;
 - `spice-agent` owns the experimental Spice-native agent SDK, kernel,
   protocols, daemon/client contracts, and runtime-plugin host;
 - `spice-agent-provider-openai`, `spice-agent-tools-coding`, and

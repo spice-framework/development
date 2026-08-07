@@ -37,6 +37,7 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 	stdout.Reset()
 	if code := runtime.Run(t.Context(), nil, &stdout, &stderr); code != 0 ||
 		!strings.Contains(stdout.String(), "spice-dev bootstrap") ||
+		!strings.Contains(stdout.String(), "snapshot materialize") ||
 		!strings.Contains(stdout.String(), "library-release public-key") ||
 		!strings.Contains(stdout.String(), "library-release sign") {
 		t.Fatalf("help code=%d stdout=%q", code, stdout.String())
@@ -50,6 +51,53 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 	if code := runtime.Run(t.Context(), []string{"catalog"}, &stdout, &stderr); code != 0 ||
 		!strings.Contains(stdout.String(), "spice\tactive") {
 		t.Fatalf("catalog text code=%d stdout=%q", code, stdout.String())
+	}
+}
+
+func TestRuntimeMaterializesAndVerifiesSnapshot(t *testing.T) {
+	value, err := catalog.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	const commit = "0123456789abcdef0123456789abcdef01234567"
+	lockFile := filepath.Join(t.TempDir(), "ecosystem.lock.json")
+	if err := os.WriteFile(lockFile, []byte(`{
+  "schema": 1,
+  "snapshot": "test",
+  "sources": [{"repository":"spice","commit":"`+commit+`"}]
+}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runner := &cliSnapshotRunner{catalog: value, commit: commit}
+	runtime := Runtime{Catalog: value, Runner: runner}
+	root := filepath.Join(t.TempDir(), "sources")
+	var stdout, stderr strings.Builder
+	code := runtime.Run(t.Context(), []string{
+		"snapshot", "materialize", "--lock", lockFile, "--root", root,
+	}, &stdout, &stderr)
+	if code != 0 || !strings.Contains(stdout.String(), `"repository": "spice"`) {
+		t.Fatalf("snapshot materialize code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code = runtime.Run(t.Context(), []string{
+		"snapshot", "verify", "--lock", lockFile, "--root", root, "--offline",
+	}, &stdout, &stderr)
+	if code != 0 || !strings.Contains(stdout.String(), `"commit": "`+commit+`"`) {
+		t.Fatalf("snapshot verify code=%d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	for _, arguments := range [][]string{
+		{"snapshot"},
+		{"snapshot", "unknown"},
+		{"snapshot", "verify", "--lock", lockFile, "--root", root},
+		{"snapshot", "materialize", "--offline", "--lock", lockFile, "--root", root},
+		{"snapshot", "verify", "extra"},
+	} {
+		stdout.Reset()
+		stderr.Reset()
+		if code := runtime.Run(t.Context(), arguments, &stdout, &stderr); code != 2 {
+			t.Fatalf("Run(%v) code = %d, stderr=%q", arguments, code, stderr.String())
+		}
 	}
 }
 
@@ -295,6 +343,33 @@ type fakeRunner struct {
 }
 
 type releasePlanRunner struct{}
+
+type cliSnapshotRunner struct {
+	catalog catalog.Catalog
+	commit  string
+}
+
+func (runner *cliSnapshotRunner) Run(
+	ctx context.Context,
+	directory string,
+	arguments ...string,
+) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	if slices.Equal(arguments, []string{"git", "remote", "get-url", "origin"}) {
+		name := filepath.Base(directory)
+		for _, repository := range runner.catalog.Repositories {
+			if repository.Directory == name {
+				return repository.CloneURL, nil
+			}
+		}
+	}
+	if slices.Equal(arguments, []string{"git", "rev-parse", "--verify", "HEAD^{commit}"}) {
+		return runner.commit, nil
+	}
+	return "", nil
+}
 
 type cliReleaseFixture struct {
 	Plan libraryrelease.Plan `json:"plan"`

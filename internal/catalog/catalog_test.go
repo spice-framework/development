@@ -13,7 +13,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	if value.Toolchains.Go != "1.26.5" ||
-		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 23 {
+		value.Toolchains.GoLand != "2026.2.0.1" || len(value.Active()) != 25 {
 		t.Fatalf("Default() = %#v", value)
 	}
 	if value.StarterCompatibility != testStarterCompatibilityPolicy() {
@@ -147,6 +147,28 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		"github.com/spice-framework/toolchain/cmd/spice",
 	) {
 		t.Fatalf("Zed repository identity = %#v", zed)
+	}
+	chrome := requireRepository(t, value.Repositories, "chrome")
+	if chrome.Status != "active" ||
+		chrome.CanonicalURL != "https://github.com/spice-framework/chrome" ||
+		chrome.CloneURL != "https://github.com/spice-framework/chrome.git" ||
+		chrome.Artifact != "chrome-extension" ||
+		!slices.Equal(chrome.Dependencies, []string{
+			".github", "development", "spice", "toolchain",
+		}) || len(chrome.Fast) != 1 || len(chrome.Full) != 1 ||
+		!slices.Equal(chrome.Full[0].Arguments, []string{"npm", "run", "verify"}) {
+		t.Fatalf("Chrome repository identity = %#v", chrome)
+	}
+	docs := requireRepository(t, value.Repositories, "docs")
+	if docs.Status != "active" ||
+		docs.CanonicalURL != "https://github.com/spice-framework/docs" ||
+		docs.CloneURL != "https://github.com/spice-framework/docs.git" ||
+		docs.Artifact != "documentation-site" ||
+		!slices.Contains(docs.Dependencies, "chrome") ||
+		!slices.Contains(docs.Dependencies, "spice-agent-coding") ||
+		len(docs.Fast) != 1 || len(docs.Full) != 1 ||
+		!slices.Equal(docs.Full[0].Arguments, []string{"pnpm", "run", "verify"}) {
+		t.Fatalf("Docs repository identity = %#v", docs)
 	}
 	petclinic := requireRepository(t, value.Repositories, "petclinic")
 	if petclinic.Status != "active" ||
