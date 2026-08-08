@@ -1,5 +1,5 @@
 {
-  "schema": 4,
+  "schema": 5,
   "toolchains": {
     "go": "1.26.5",
     "java": "25",
@@ -140,8 +140,8 @@
         "version": "v0.1.0-preview.1",
         "metadata_file": "spice-release.json",
         "required_modules": [
-          "github.com/spice-framework/spice",
-          "github.com/spice-framework/toolchain"
+          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.1.0.20260806200749-524424a04df0"},
+          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"}
         ]
       },
       "dependencies": [
@@ -186,9 +186,9 @@
         "version": "v0.1.0-preview.1",
         "metadata_file": "spice-release.json",
         "required_modules": [
-          "github.com/spice-framework/spice",
-          "github.com/spice-framework/toolchain",
-          "github.com/spice-framework/spice-agent"
+          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.1.0.20260806200749-524424a04df0"},
+          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"},
+          {"path": "github.com/spice-framework/spice-agent", "version": "v0.1.0-preview.1"}
         ]
       },
       "dependencies": [
@@ -234,9 +234,9 @@
         "version": "v0.1.0-preview.1",
         "metadata_file": "spice-release.json",
         "required_modules": [
-          "github.com/spice-framework/spice",
-          "github.com/spice-framework/toolchain",
-          "github.com/spice-framework/spice-agent"
+          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.1.0.20260806200749-524424a04df0"},
+          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"},
+          {"path": "github.com/spice-framework/spice-agent", "version": "v0.1.0-preview.1"}
         ]
       },
       "dependencies": [
@@ -282,8 +282,8 @@
         "version": "v0.1.0-preview.1",
         "metadata_file": "spice-release.json",
         "required_modules": [
-          "github.com/spice-framework/spice",
-          "github.com/spice-framework/toolchain"
+          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.1.0.20260806200749-524424a04df0"},
+          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"}
         ]
       },
       "dependencies": [
@@ -329,12 +329,12 @@
         "version": "v0.1.0-preview.1",
         "metadata_file": "spice-release.json",
         "required_modules": [
-          "github.com/spice-framework/spice",
-          "github.com/spice-framework/toolchain",
-          "github.com/spice-framework/spice-agent",
-          "github.com/spice-framework/spice-agent-provider-openai",
-          "github.com/spice-framework/spice-agent-tools-coding",
-          "github.com/spice-framework/spice-agent-tui"
+          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.1.0.20260807202519-bfddbd47d2d0"},
+          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.1.0.20260807044408-6598abca8196"},
+          {"path": "github.com/spice-framework/spice-agent", "version": "v0.1.0-preview.1"},
+          {"path": "github.com/spice-framework/spice-agent-provider-openai", "version": "v0.1.0-preview.1"},
+          {"path": "github.com/spice-framework/spice-agent-tools-coding", "version": "v0.1.0-preview.1"},
+          {"path": "github.com/spice-framework/spice-agent-tui", "version": "v0.1.0-preview.1"}
         ],
         "binaries": [
           {"name": "spice-agent", "package": "./cmd/spice-agent"},
@@ -356,7 +356,11 @@
           "docs/installation.md",
           "docs/security.md",
           "protocol-descriptors.pb"
-        ]
+        ],
+        "build_identity": {
+          "version_symbol": "github.com/spice-framework/spice-agent-coding/internal/distribution.Version",
+          "commit_symbol": "github.com/spice-framework/spice-agent-coding/internal/distribution.Commit"
+        }
       },
       "dependencies": [
         ".github",

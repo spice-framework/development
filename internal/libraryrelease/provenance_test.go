@@ -90,6 +90,17 @@ func TestRenderRebindsPersistedPlanProvenance(t *testing.T) {
 	}
 }
 
+func TestGitBytesEnforcesRealCommandOutputLimit(t *testing.T) {
+	t.Parallel()
+	fixture := loadProvenanceFixture(t)
+	repository := committedProvenanceFixture(t, fixture, "starter-oidc")
+	commit := strings.TrimSpace(provenanceGitCommand(t, repository, "rev-parse", "HEAD"))
+	if _, err := gitBytes(t.Context(), repository, 1, "show", commit+":README.md"); err == nil ||
+		!strings.Contains(err.Error(), "exceeds 1 bytes") {
+		t.Fatalf("gitBytes(truncated command) error = %v", err)
+	}
+}
+
 func TestRenderRejectsOriginAndCommittedIdentityMismatch(t *testing.T) {
 	t.Parallel()
 	fixture := loadProvenanceFixture(t)

@@ -41,7 +41,9 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 		!strings.Contains(stdout.String(), "library-release public-key") ||
 		!strings.Contains(stdout.String(), "library-release sign") ||
 		!strings.Contains(stdout.String(), "go-release render") ||
-		!strings.Contains(stdout.String(), "go-release verify") {
+		!strings.Contains(stdout.String(), "go-release verify") ||
+		!strings.Contains(stdout.String(), "distribution-release render") ||
+		!strings.Contains(stdout.String(), "distribution-release verify") {
 		t.Fatalf("help code=%d stdout=%q", code, stdout.String())
 	}
 	stdout.Reset()
@@ -328,6 +330,22 @@ func TestRuntimeRejectsInvalidCommandsAndWrites(t *testing.T) {
 	}
 	if code := runtime.Run(t.Context(), []string{"go-release", "verify", "extra"}, &stdout, &stderr); code != 2 {
 		t.Fatalf("go-release positional code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{"distribution-release"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("distribution-release missing subcommand code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{"distribution-release", "unknown"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("distribution-release unknown subcommand code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{
+		"distribution-release", "render", "--artifacts", t.TempDir(),
+	}, &stdout, &stderr); code != 2 {
+		t.Fatalf("distribution-release render artifacts code = %d", code)
+	}
+	if code := runtime.Run(t.Context(), []string{
+		"distribution-release", "verify", "--output", t.TempDir(),
+	}, &stdout, &stderr); code != 2 {
+		t.Fatalf("distribution-release verify output code = %d", code)
 	}
 	if code := runtime.Run(t.Context(), []string{
 		"library-release", "public-key", "extra",

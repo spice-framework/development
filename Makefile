@@ -1,7 +1,7 @@
 .PHONY: fast check verify
 
 fast:
-	go test ./internal/gorelease ./internal/cli
+	go test ./internal/gorelease ./internal/distributionrelease ./internal/cli
 
 check:
 	go test ./...

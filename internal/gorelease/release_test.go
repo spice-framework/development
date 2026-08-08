@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -63,6 +64,9 @@ func TestRenderAndVerifyDeterministicModuleRelease(t *testing.T) {
 	}
 	assertArchive(t, filepath.Join(first, wantFiles[3]), "spice-agent_0.1.0-preview.1/agent.go")
 	assertMetadata(t, filepath.Join(first, wantFiles[1]), fixture.commit)
+	if _, err := gitBinary(t.Context(), fixture.root, 1, "show", fixture.commit+":README.md"); err == nil || !strings.Contains(err.Error(), "exceeds 1 bytes") {
+		t.Fatalf("gitBinary(truncated) error = %v", err)
+	}
 	sbomContent, err := os.ReadFile(filepath.Join(first, wantFiles[2]))
 	if err != nil {
 		t.Fatal(err)
@@ -94,9 +98,13 @@ func TestRenderRejectsUntrustedSourceAndPolicy(t *testing.T) {
 		{name: "unknown intent field", fixture: fixtureOptions{unknownIntent: true}, want: "unknown field"},
 		{name: "replace directive", fixture: fixtureOptions{replaceDirective: true}, want: "must not contain replace directives"},
 		{name: "missing required module", mutate: func(value *releaseFixture) {
-			value.repository.Release.RequiredModules = []string{"example.invalid/required"}
+			value.repository.Release.RequiredModules = []catalog.ReleaseModule{{Path: "example.invalid/required", Version: "v1.0.0"}}
 			replaceRepository(value)
 		}, want: "must require"},
+		{name: "wrong required module version", mutate: func(value *releaseFixture) {
+			value.repository.Release.RequiredModules = []catalog.ReleaseModule{{Path: "example.com/dependency", Version: "v1.2.4"}}
+			replaceRepository(value)
+		}, fixture: fixtureOptions{dependency: true}, want: "exact catalog version v1.2.4"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -162,6 +170,25 @@ func TestRenderRejectsInvalidBoundaries(t *testing.T) {
 	}
 }
 
+func TestPrepareOutputRejectsSymlinkAncestorIntoGoRepository(t *testing.T) {
+	t.Parallel()
+	fixture := newReleaseFixture(t, fixtureOptions{})
+	indirect := filepath.Join(fixture.parent, "indirect")
+	if err := os.Symlink(fixture.root, indirect); err != nil {
+		if runtime.GOOS == "windows" && errors.Is(err, os.ErrPermission) {
+			t.Skipf("creating a Windows symlink requires developer mode or privilege: %v", err)
+		}
+		t.Fatal(err)
+	}
+	configured := filepath.Join(indirect, "vendor", "release")
+	if _, _, err := prepareOutput(fixture.root, configured); err == nil || !strings.Contains(err.Error(), "outside") {
+		t.Fatalf("prepareOutput(symlink ancestor) error = %v", err)
+	}
+	if _, err := os.Lstat(filepath.Join(fixture.root, "vendor", "release")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("unsafe Go release output was created through symlink ancestor: %v", err)
+	}
+}
+
 func TestPureValidationHelpers(t *testing.T) {
 	t.Parallel()
 	for _, value := range []string{"", "../x", "/x", `a\\b`, "AUX.txt", "bad?.go", "x./y"} {
@@ -185,7 +212,7 @@ func TestPureValidationHelpers(t *testing.T) {
 			t.Fatalf("validateTree(%q) error = nil", content)
 		}
 	}
-	for _, value := range []string{"file:///tmp/repo", "https://user@example.com/repo", "ssh://user@example.com/repo", "https://example.com/../repo"} {
+	for _, value := range []string{"file:///tmp/repo", "https://user@example.com/repo", "ssh://user@example.com/repo", "https://example.com/../repo", "https://example.com:443/repo", "ssh://git@example.com:22/repo"} {
 		if _, err := remoteIdentity(value); err == nil {
 			t.Errorf("remoteIdentity(%q) error = nil", value)
 		}
@@ -271,7 +298,7 @@ func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
 	repository := value.Repositories[repositoryIndex]
 	repository.Release.RequiredModules = nil
 	if options.dependency {
-		repository.Release.RequiredModules = []string{"example.com/dependency"}
+		repository.Release.RequiredModules = []catalog.ReleaseModule{{Path: "example.com/dependency", Version: "v1.2.3"}}
 	}
 	value.Repositories[repositoryIndex] = repository
 	parent := t.TempDir()

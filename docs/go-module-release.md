@@ -20,9 +20,11 @@ The catalog names the metadata file. Version 1 is a closed JSON object:
 ```
 
 Unknown and missing fields fail. The catalog is the sole owner of required
-module identities; the metadata does not duplicate that list. Each identity
-must have an exact canonical-version `require` entry in the committed `go.mod`
-and must match committed vendor metadata. The entry may be marked indirect when
+module path-and-version selections; the metadata does not duplicate that list.
+Each selection must have that exact canonical version in a `require` entry in
+the committed `go.mod` and must match committed vendor metadata. Merely naming
+the expected module or selecting another canonical version is insufficient.
+The entry may be marked indirect when
 Go derives it from a `tool` directive. Releases reject every `replace`
 directive, including remote replacements.
 
@@ -53,6 +55,10 @@ committed without replacement and contains exactly:
 No host paths, current timestamps, credentials, mutable branch names, or
 ambient workspace state enter an artifact.
 
+Repository roots and existing output parents are resolved through filesystem
+links before containment checks. A path that looks external but traverses a
+symlink or junction back into the repository is rejected before staging.
+
 ## Local verification and trust boundary
 
 ```text
@@ -69,6 +75,7 @@ renderer-owned reproducibility gate. Release authenticity, keyless signing,
 provenance, fresh-download verification, and publication are deliberately
 separate organization-workflow and independent-toolchain responsibilities.
 
-`go-distribution-v1` remains fail-closed until its profile-specific binary and
-archive renderer is implemented. Catalog authorization alone never selects a
-different renderer or publishes an artifact.
+`go-distribution-v1` uses the separate profile-specific command documented in
+[`go-distribution-release.md`](go-distribution-release.md). Catalog
+authorization never selects a different renderer implicitly or publishes an
+artifact.

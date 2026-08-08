@@ -140,14 +140,14 @@ func gitBinary(
 }
 
 type boundedBuffer struct {
-	bytes.Buffer
+	content   bytes.Buffer
 	maximum   int
 	truncated bool
 }
 
 func (buffer *boundedBuffer) Write(content []byte) (int, error) {
 	written := len(content)
-	remaining := buffer.maximum - buffer.Len()
+	remaining := buffer.maximum - buffer.content.Len()
 	if remaining <= 0 {
 		buffer.truncated = true
 		return written, nil
@@ -156,6 +156,10 @@ func (buffer *boundedBuffer) Write(content []byte) (int, error) {
 		content = content[:remaining]
 		buffer.truncated = true
 	}
-	_, _ = buffer.Buffer.Write(content)
+	_, _ = buffer.content.Write(content)
 	return written, nil
 }
+
+func (buffer *boundedBuffer) Bytes() []byte { return buffer.content.Bytes() }
+
+func (buffer *boundedBuffer) String() string { return buffer.content.String() }

@@ -79,8 +79,49 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		}) || len(agentCoding.Fast) != 1 || len(agentCoding.Full) != 1 ||
 		!slices.Contains(agentCoding.Fast[0].Arguments, "-mode=fast") ||
 		agentCoding.Release == nil || agentCoding.Release.Profile != ReleaseProfileDistribution ||
-		len(agentCoding.Release.Binaries) != 2 || len(agentCoding.Release.Targets) != 6 {
+		len(agentCoding.Release.Binaries) != 2 || len(agentCoding.Release.Targets) != 6 ||
+		agentCoding.Release.BuildIdentity == nil ||
+		agentCoding.Release.BuildIdentity.VersionSymbol != agentCoding.Module+"/internal/distribution.Version" ||
+		agentCoding.Release.BuildIdentity.CommitSymbol != agentCoding.Module+"/internal/distribution.Commit" {
 		t.Fatalf("Spice Agent coding repository identity = %#v", agentCoding)
+	}
+	spiceVersion := "v0.1.0-preview.1.0.20260806200749-524424a04df0"
+	toolchainVersion := "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
+	distributionSpiceVersion := "v0.1.0-preview.1.0.20260807202519-bfddbd47d2d0"
+	distributionToolchainVersion := "v0.1.0-preview.1.0.20260807044408-6598abca8196"
+	agentVersion := "v0.1.0-preview.1"
+	for name, want := range map[string][]ReleaseModule{
+		"spice-agent": {
+			{Path: "github.com/spice-framework/spice", Version: spiceVersion},
+			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
+		},
+		"spice-agent-provider-openai": {
+			{Path: "github.com/spice-framework/spice", Version: spiceVersion},
+			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
+			{Path: "github.com/spice-framework/spice-agent", Version: agentVersion},
+		},
+		"spice-agent-tools-coding": {
+			{Path: "github.com/spice-framework/spice", Version: spiceVersion},
+			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
+			{Path: "github.com/spice-framework/spice-agent", Version: agentVersion},
+		},
+		"spice-agent-tui": {
+			{Path: "github.com/spice-framework/spice", Version: spiceVersion},
+			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
+		},
+		"spice-agent-coding": {
+			{Path: "github.com/spice-framework/spice", Version: distributionSpiceVersion},
+			{Path: "github.com/spice-framework/toolchain", Version: distributionToolchainVersion},
+			{Path: "github.com/spice-framework/spice-agent", Version: agentVersion},
+			{Path: "github.com/spice-framework/spice-agent-provider-openai", Version: agentVersion},
+			{Path: "github.com/spice-framework/spice-agent-tools-coding", Version: agentVersion},
+			{Path: "github.com/spice-framework/spice-agent-tui", Version: agentVersion},
+		},
+	} {
+		repository := requireRepository(t, value.Repositories, name)
+		if !slices.Equal(repository.Release.RequiredModules, want) {
+			t.Fatalf("%s release module selections = %#v, want %#v", name, repository.Release.RequiredModules, want)
+		}
 	}
 	starterSMTP := requireRepository(t, value.Repositories, "starter-smtp")
 	if starterSMTP.Status != "active" ||
@@ -215,7 +256,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 func TestParseRejectsMalformedCatalogs(t *testing.T) {
 	t.Parallel()
 	base := `{
-  "schema": 4,
+  "schema": 5,
   "toolchains": {"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
   "starter_compatibility": {"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260806053623-2ec6f862073f"},
   "repositories": [%s]
@@ -253,7 +294,7 @@ func TestParseRejectsMalformedCatalogs(t *testing.T) {
 func TestParseRejectsMissingDependenciesAndCycles(t *testing.T) {
 	t.Parallel()
 	content := `{
-  "schema":4,
+  "schema":5,
   "toolchains":{"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
   "starter_compatibility":{"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260806053623-2ec6f862073f"},
   "repositories":[
@@ -283,10 +324,25 @@ func TestValidateRejectsMalformedGenericReleasePolicies(t *testing.T) {
 			repository.Release.MetadataFile = "../spice-release.json"
 		},
 		"duplicate module": func(repository *Repository) {
-			repository.Release.RequiredModules = []string{"example.com/module", "example.com/module"}
+			repository.Release.RequiredModules = []ReleaseModule{
+				{Path: "example.com/module", Version: "v1.0.0"},
+				{Path: "example.com/module", Version: "v1.1.0"},
+			}
+		},
+		"unsafe module": func(repository *Repository) {
+			repository.Release.RequiredModules = []ReleaseModule{{Path: "../module", Version: "v1.0.0"}}
+		},
+		"malformed module version": func(repository *Repository) {
+			repository.Release.RequiredModules = []ReleaseModule{{Path: "example.com/module", Version: "v01.0.0"}}
 		},
 		"module with payload": func(repository *Repository) {
 			repository.Release.PayloadFiles = []string{"README.md"}
+		},
+		"module with build identity": func(repository *Repository) {
+			repository.Release.BuildIdentity = &ReleaseBuildIdentity{
+				VersionSymbol: repository.Module + "/internal/identity.Version",
+				CommitSymbol:  repository.Module + "/internal/identity.Commit",
+			}
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -299,6 +355,43 @@ func TestValidateRejectsMalformedGenericReleasePolicies(t *testing.T) {
 			mutate(&repository)
 			if err = repository.Release.validate(repository); err == nil {
 				t.Fatal("release validation error = nil")
+			}
+		})
+	}
+}
+
+func TestValidateRejectsMalformedDistributionBuildIdentities(t *testing.T) {
+	t.Parallel()
+	for name, mutate := range map[string]func(*ReleasePolicy){
+		"missing": func(policy *ReleasePolicy) {
+			policy.BuildIdentity = nil
+		},
+		"same symbol": func(policy *ReleasePolicy) {
+			policy.BuildIdentity.CommitSymbol = policy.BuildIdentity.VersionSymbol
+		},
+		"outside module": func(policy *ReleasePolicy) {
+			policy.BuildIdentity.CommitSymbol = "example.invalid/identity.Commit"
+		},
+		"missing variable": func(policy *ReleasePolicy) {
+			policy.BuildIdentity.CommitSymbol = "github.com/spice-framework/spice-agent-coding/internal/identity"
+		},
+		"unsafe package": func(policy *ReleasePolicy) {
+			policy.BuildIdentity.CommitSymbol = policy.BuildIdentity.CommitSymbol + " bad.Commit"
+		},
+		"keyword variable": func(policy *ReleasePolicy) {
+			policy.BuildIdentity.CommitSymbol = "github.com/spice-framework/spice-agent-coding/internal/identity.var"
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			value, err := Default()
+			if err != nil {
+				t.Fatal(err)
+			}
+			repository := requireRepository(t, value.Repositories, "spice-agent-coding")
+			mutate(repository.Release)
+			if err = repository.Release.validate(repository); err == nil {
+				t.Fatal("distribution release validation error = nil")
 			}
 		})
 	}

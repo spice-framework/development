@@ -114,9 +114,14 @@ func requireModuleGraph(
 		direct[requirement.Path] = requirement.Version
 	}
 	for _, required := range repository.Release.RequiredModules {
-		version, found := direct[required]
-		if !found || !catalog.ValidModuleVersion(version) {
-			return nil, fmt.Errorf("Go release module must require %s at a canonical version", required)
+		version, found := direct[required.Path]
+		if !found || version != required.Version {
+			return nil, fmt.Errorf(
+				"Go release module must require %s at exact catalog version %s; got %q",
+				required.Path,
+				required.Version,
+				version,
+			)
 		}
 	}
 	if _, err := runner.Run(ctx, root, "go", "list", "-mod=vendor", "./..."); err != nil {

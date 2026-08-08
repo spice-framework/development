@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go/token"
 	"io"
 	"net/url"
 	"path"
@@ -16,7 +17,7 @@ import (
 	"strings"
 )
 
-const CurrentSchema = 4
+const CurrentSchema = 5
 
 const (
 	ReleaseProfileGoModule     = "go-module-v1"
@@ -58,13 +59,29 @@ type Repository struct {
 // or binary-distribution release. Starter releases deliberately remain under
 // StarterCompatibilityPolicy and may not use this path.
 type ReleasePolicy struct {
-	Profile         string          `json:"profile,omitempty"`
-	Version         string          `json:"version,omitempty"`
-	MetadataFile    string          `json:"metadata_file,omitempty"`
-	RequiredModules []string        `json:"required_modules,omitempty"`
-	Binaries        []ReleaseBinary `json:"binaries,omitempty"`
-	Targets         []ReleaseTarget `json:"targets,omitempty"`
-	PayloadFiles    []string        `json:"payload_files,omitempty"`
+	Profile         string                `json:"profile,omitempty"`
+	Version         string                `json:"version,omitempty"`
+	MetadataFile    string                `json:"metadata_file,omitempty"`
+	RequiredModules []ReleaseModule       `json:"required_modules,omitempty"`
+	Binaries        []ReleaseBinary       `json:"binaries,omitempty"`
+	Targets         []ReleaseTarget       `json:"targets,omitempty"`
+	PayloadFiles    []string              `json:"payload_files,omitempty"`
+	BuildIdentity   *ReleaseBuildIdentity `json:"build_identity,omitempty"`
+}
+
+// ReleaseBuildIdentity authorizes the only linker string variables a generic
+// distribution renderer may set. It is intentionally not an arbitrary ldflags
+// escape hatch.
+type ReleaseBuildIdentity struct {
+	VersionSymbol string `json:"version_symbol"`
+	CommitSymbol  string `json:"commit_symbol"`
+}
+
+// ReleaseModule is one exact module-graph selection authorized by the catalog.
+// Renderers must match both fields in go.mod and vendor/modules.txt.
+type ReleaseModule struct {
+	Path    string `json:"path"`
+	Version string `json:"version"`
 }
 
 type ReleaseBinary struct {
@@ -394,17 +411,28 @@ func (policy *ReleasePolicy) validate(repository Repository) error {
 	if !safeReleaseFile(policy.MetadataFile) {
 		return fmt.Errorf("metadata file %q must be one safe file name", policy.MetadataFile)
 	}
-	if err := validateDistinctStrings("required module", policy.RequiredModules); err != nil {
+	requiredPaths := make([]string, 0, len(policy.RequiredModules))
+	for _, required := range policy.RequiredModules {
+		if path.Clean(required.Path) != required.Path || required.Path == "." || required.Path == ".." ||
+			strings.HasPrefix(required.Path, "../") || !safeGoImportPath(required.Path) {
+			return fmt.Errorf("required module path %q is unsafe", required.Path)
+		}
+		if !ValidModuleVersion(required.Version) {
+			return fmt.Errorf("required module %q version %q is malformed", required.Path, required.Version)
+		}
+		requiredPaths = append(requiredPaths, required.Path)
+	}
+	if err := validateDistinctStrings("required module", requiredPaths); err != nil {
 		return err
 	}
 	switch policy.Profile {
 	case ReleaseProfileGoModule:
-		if len(policy.Binaries) != 0 || len(policy.Targets) != 0 || len(policy.PayloadFiles) != 0 {
+		if len(policy.Binaries) != 0 || len(policy.Targets) != 0 || len(policy.PayloadFiles) != 0 || policy.BuildIdentity != nil {
 			return errors.New("Go module release policy cannot define distribution payloads")
 		}
 	case ReleaseProfileDistribution:
-		if len(policy.Binaries) == 0 || len(policy.Targets) == 0 || len(policy.PayloadFiles) == 0 {
-			return errors.New("distribution release policy requires binaries, targets, and payload files")
+		if len(policy.Binaries) == 0 || len(policy.Targets) == 0 || len(policy.PayloadFiles) == 0 || policy.BuildIdentity == nil {
+			return errors.New("distribution release policy requires binaries, targets, payload files, and build identity")
 		}
 		if err := validateReleaseBinaries(policy.Binaries); err != nil {
 			return err
@@ -417,10 +445,70 @@ func (policy *ReleasePolicy) validate(repository Repository) error {
 				return fmt.Errorf("payload file: %w", err)
 			}
 		}
+		if err := validateReleaseBuildIdentity(repository.Module, *policy.BuildIdentity); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("profile %q is unsupported", policy.Profile)
 	}
 	return nil
+}
+
+func validateReleaseBuildIdentity(module string, identity ReleaseBuildIdentity) error {
+	if identity.VersionSymbol == identity.CommitSymbol {
+		return errors.New("build identity version and commit symbols must differ")
+	}
+	for _, field := range []struct {
+		label  string
+		symbol string
+	}{
+		{label: "version", symbol: identity.VersionSymbol},
+		{label: "commit", symbol: identity.CommitSymbol},
+	} {
+		label, symbol := field.label, field.symbol
+		separator := strings.LastIndex(symbol, ".")
+		if separator <= strings.LastIndex(symbol, "/") || separator == len(symbol)-1 {
+			return fmt.Errorf("build identity %s symbol %q is malformed", label, symbol)
+		}
+		packagePath, variable := symbol[:separator], symbol[separator+1:]
+		if packagePath != module && !strings.HasPrefix(packagePath, module+"/") {
+			return fmt.Errorf("build identity %s symbol %q is outside module %q", label, symbol, module)
+		}
+		if path.Clean(packagePath) != packagePath || !safeGoImportPath(packagePath) ||
+			!validGoIdentifier(variable) {
+			return fmt.Errorf("build identity %s symbol %q is unsafe", label, symbol)
+		}
+	}
+	return nil
+}
+
+func validGoIdentifier(value string) bool {
+	if !token.IsIdentifier(value) {
+		return false
+	}
+	for index := range len(value) {
+		character := value[index]
+		if character != '_' && (character < 'A' || character > 'Z') &&
+			(character < 'a' || character > 'z') && (character < '0' || character > '9') {
+			return false
+		}
+	}
+	return true
+}
+
+func safeGoImportPath(value string) bool {
+	if value == "" || strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") {
+		return false
+	}
+	for index := range len(value) {
+		character := value[index]
+		if character != '/' && character != '-' && character != '.' && character != '_' && character != '~' &&
+			(character < 'A' || character > 'Z') && (character < 'a' || character > 'z') &&
+			(character < '0' || character > '9') {
+			return false
+		}
+	}
+	return true
 }
 
 func validateReleaseBinaries(values []ReleaseBinary) error {

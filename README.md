@@ -64,7 +64,7 @@ the rest of verification.
 The catalog separately authorizes generic `go-module-v1` and
 `go-distribution-v1` release profiles for the five Spice Agent repositories.
 Those entries fix the preview version, strict `spice-release.json` file name,
-required module graph, and—for the distribution only—the two binaries, six
+exact required module path-and-version selections, and—for the distribution only—the two binaries, six
 platform targets, and required payload files. This metadata cannot route a
 `starter-*` repository around the established starter release path. Rendering,
 independent verification, attestation, and publication remain separate
@@ -85,6 +85,18 @@ deterministic, outside the repository, and refuses to replace an existing
 directory. The local verifier byte-compares a fresh rendering against the
 artifact allowlist; it is not the independent post-attestation verifier used
 to establish release trust. See [`docs/go-module-release.md`](docs/go-module-release.md).
+
+Binary applications use the separate catalog-closed distribution boundary:
+
+```text
+spice-dev distribution-release render --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.1 --output ../distribution
+spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.1 --artifacts ../distribution
+```
+
+Only a `go-distribution-v1` catalog entry can select that command. The catalog,
+not command-line input or filesystem discovery, supplies every binary package,
+target, and payload. See
+[`docs/go-distribution-release.md`](docs/go-distribution-release.md).
 
 `library-release plan` is the first executable part of the central library
 delivery implementation. It performs no writes, downloads, signing, tagging,
