@@ -89,32 +89,31 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		agentCoding.Release.BuildIdentity.CommitSymbol != agentCoding.Module+"/internal/distribution.Commit" {
 		t.Fatalf("Spice Agent coding repository identity = %#v", agentCoding)
 	}
-	spiceVersion := "v0.1.0-preview.1.0.20260806200749-524424a04df0"
+	foundationSpiceVersion := "v0.1.0-preview.2"
 	toolchainVersion := "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
-	distributionSpiceVersion := "v0.1.0-preview.1.0.20260807202519-bfddbd47d2d0"
 	distributionToolchainVersion := "v0.1.0-preview.1.0.20260807044408-6598abca8196"
 	agentVersion := "v0.1.0-preview.1"
 	for name, want := range map[string][]ReleaseModule{
 		"spice-agent": {
-			{Path: "github.com/spice-framework/spice", Version: spiceVersion},
+			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
 			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
 		},
 		"spice-agent-provider-openai": {
-			{Path: "github.com/spice-framework/spice", Version: spiceVersion},
+			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
 			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
 			{Path: "github.com/spice-framework/spice-agent", Version: agentVersion},
 		},
 		"spice-agent-tools-coding": {
-			{Path: "github.com/spice-framework/spice", Version: spiceVersion},
+			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
 			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
 			{Path: "github.com/spice-framework/spice-agent", Version: agentVersion},
 		},
 		"spice-agent-tui": {
-			{Path: "github.com/spice-framework/spice", Version: spiceVersion},
+			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
 			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
 		},
 		"spice-agent-coding": {
-			{Path: "github.com/spice-framework/spice", Version: distributionSpiceVersion},
+			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
 			{Path: "github.com/spice-framework/toolchain", Version: distributionToolchainVersion},
 			{Path: "github.com/spice-framework/spice-agent", Version: agentVersion},
 			{Path: "github.com/spice-framework/spice-agent-provider-openai", Version: agentVersion},

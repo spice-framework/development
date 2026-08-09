@@ -4,6 +4,12 @@ This is a dated compatibility and verification snapshot, not a second
 implementation roadmap. Product status and sequencing remain owned by the
 [canonical Spice Agent implementation ledger](https://github.com/spice-framework/spice-agent/tree/main/docs/implementation).
 
+The current release catalog has advanced all five Agent release contracts to
+`github.com/spice-framework/spice v0.1.0-preview.2`. Every toolchain, sibling,
+version, metadata, binary, payload, and target selection is unchanged. The
+dated source evidence below remains an accurate record of the earlier commits
+and is not the current release policy.
+
 ## Exact source inputs
 
 The catalog dependency graph and generated workspace include all five Spice

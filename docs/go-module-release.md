@@ -28,6 +28,20 @@ The entry may be marked indirect when
 Go derives it from a `tool` directive. Releases reject every `replace`
 directive, including remote replacements.
 
+## Current Agent foundation authorization
+
+The catalog currently authorizes `spice-agent`, `spice-agent-provider-openai`,
+`spice-agent-tools-coding`, and `spice-agent-tui` to select the immutable
+`github.com/spice-framework/spice v0.1.0-preview.2` foundation release. Their
+exact toolchain selection remains
+`v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
+
+This authorization is deliberately repository-scoped. The provider, coding
+tools, and TUI policies retain their existing sibling selections. The separate
+`spice-agent-coding` distribution policy selects the same Spice preview while
+retaining its distinct toolchain, sibling, metadata, binary, payload, and
+target contracts.
+
 The sole graphless exception is a catalog entry with no required modules whose
 root module genuinely selects no dependencies. In that mode both root
 `go.sum` and `vendor/modules.txt` must be absent. The renderer rejects a
