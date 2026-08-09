@@ -13,11 +13,15 @@ attempt also completed rendering but failed independent policy verification
 before attestation. The catalog now authorizes
 `spice-agent v0.1.0-preview.4` and
 requires that exact version in the provider, coding-tools, and distribution
-graphs. The TUI, provider, coding-tools, and distribution release versions
-remain `v0.1.0-preview.1`; every toolchain, other sibling, metadata, binary,
-payload, and target selection is unchanged. The dated source evidence below
-remains an accurate record of the earlier commits and is not the current
-release policy. Development's tag-independent `go-release policy-check`
+graphs. The TUI, provider, and coding-tools release versions remain
+`v0.1.0-preview.1`. The distribution release advances to
+`v0.1.0-preview.2` because its immutable preview.1 attempt
+[failed in candidate validation](https://github.com/spice-framework/spice-agent-coding/actions/runs/31333877865)
+before rendering or artifacts when the candidate lacked `make verify-release`.
+Every distribution toolchain, sibling, metadata, binary, payload, target, and
+build-identity selection is unchanged. The dated source evidence below remains
+an accurate record of the earlier commits and is not the current release
+policy. Development's tag-independent `go-release policy-check`
 provides a deterministic tuple for pre-tag comparison with the independent
 Toolchain policy, preventing another immutable tag from being used before both
 authorities agree.

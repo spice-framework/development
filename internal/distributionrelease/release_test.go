@@ -34,10 +34,10 @@ func TestRenderAndVerifyDeterministicCrossPlatformDistribution(t *testing.T) {
 	}
 	wantFiles := []string{
 		"checksums.txt",
-		"spice-agent-coding_0.1.0-preview.1_linux_amd64.tar.gz",
-		"spice-agent-coding_0.1.0-preview.1_release.json",
-		"spice-agent-coding_0.1.0-preview.1_sbom.spdx.json",
-		"spice-agent-coding_0.1.0-preview.1_windows_amd64.zip",
+		"spice-agent-coding_0.1.0-preview.2_linux_amd64.tar.gz",
+		"spice-agent-coding_0.1.0-preview.2_release.json",
+		"spice-agent-coding_0.1.0-preview.2_sbom.spdx.json",
+		"spice-agent-coding_0.1.0-preview.2_windows_amd64.zip",
 	}
 	if result.Commit != fixture.commit || !slices.Equal(result.Files, wantFiles) {
 		t.Fatalf("Render() = %#v", result)
@@ -90,7 +90,7 @@ func TestRenderRejectsUntrustedDistributionInputs(t *testing.T) {
 		want    string
 	}{
 		{name: "module profile", mutate: func(value *distributionFixture) { value.options.Repository = "spice-agent" }, want: "not authorized"},
-		{name: "wrong version", mutate: func(value *distributionFixture) { value.options.Version = "v0.1.0-preview.2" }, want: "does not match catalog"},
+		{name: "immutable preview one version", mutate: func(value *distributionFixture) { value.options.Version = "v0.1.0-preview.1" }, want: "does not match catalog"},
 		{name: "dirty checkout", mutate: func(value *distributionFixture) { writeTestFile(t, filepath.Join(value.root, "dirty"), "dirty") }, want: "must be clean"},
 		{name: "missing tag", mutate: func(value *distributionFixture) { git(t, value.root, "tag", "-d", value.options.Version) }, want: "resolve distribution tag"},
 		{name: "unknown metadata", fixture: fixtureOptions{unknownMetadata: true}, want: "unknown field"},
@@ -145,7 +145,7 @@ func TestVerifyRejectsArtifactMutationAndExtras(t *testing.T) {
 	if _, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err != nil {
 		t.Fatal(err)
 	}
-	metadata := filepath.Join(output, "spice-agent-coding_0.1.0-preview.1_release.json")
+	metadata := filepath.Join(output, "spice-agent-coding_0.1.0-preview.2_release.json")
 	if err := os.WriteFile(metadata, []byte("tampered\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -502,7 +502,7 @@ func TestDistributionPureValidation(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"", "unknown", "starter-smtp"} {
-		if _, err := selectRepository(value, name, "v0.1.0-preview.1"); err == nil {
+		if _, err := selectRepository(value, name, "v0.1.0-preview.2"); err == nil {
 			t.Errorf("selectRepository(%q) error = nil", name)
 		}
 	}
@@ -565,7 +565,7 @@ func newDistributionFixture(t *testing.T, options fixtureOptions) distributionFi
 	if options.metadataModule != "" {
 		metadataModule = options.metadataModule
 	}
-	metadata := `{"schema":1,"profile":"go-distribution-v1","repository":"spice-agent-coding","module":"` + metadataModule + `","version":"v0.1.0-preview.1"}`
+	metadata := `{"schema":1,"profile":"go-distribution-v1","repository":"spice-agent-coding","module":"` + metadataModule + `","version":"v0.1.0-preview.2"}`
 	if options.unknownMetadata {
 		metadata = strings.TrimSuffix(metadata, "}") + `,"unknown":true}`
 	}
@@ -711,11 +711,11 @@ func assertTarDistribution(t *testing.T, name string, commit string) {
 	defer gzipReader.Close()
 	reader := tar.NewReader(gzipReader)
 	want := map[string]bool{
-		"spice-agent-coding_0.1.0-preview.1_linux_amd64/agent":                   false,
-		"spice-agent-coding_0.1.0-preview.1_linux_amd64/agentd":                  false,
-		"spice-agent-coding_0.1.0-preview.1_linux_amd64/LICENSE":                 false,
-		"spice-agent-coding_0.1.0-preview.1_linux_amd64/docs/configuration.md":   false,
-		"spice-agent-coding_0.1.0-preview.1_linux_amd64/protocol-descriptors.pb": false,
+		"spice-agent-coding_0.1.0-preview.2_linux_amd64/agent":                   false,
+		"spice-agent-coding_0.1.0-preview.2_linux_amd64/agentd":                  false,
+		"spice-agent-coding_0.1.0-preview.2_linux_amd64/LICENSE":                 false,
+		"spice-agent-coding_0.1.0-preview.2_linux_amd64/docs/configuration.md":   false,
+		"spice-agent-coding_0.1.0-preview.2_linux_amd64/protocol-descriptors.pb": false,
 	}
 	for {
 		header, err := reader.Next()
@@ -755,11 +755,11 @@ func assertZipDistribution(t *testing.T, name string, commit string) {
 	}
 	defer reader.Close()
 	want := map[string]bool{
-		"spice-agent-coding_0.1.0-preview.1_windows_amd64/agent.exe":               false,
-		"spice-agent-coding_0.1.0-preview.1_windows_amd64/agentd.exe":              false,
-		"spice-agent-coding_0.1.0-preview.1_windows_amd64/LICENSE":                 false,
-		"spice-agent-coding_0.1.0-preview.1_windows_amd64/docs/configuration.md":   false,
-		"spice-agent-coding_0.1.0-preview.1_windows_amd64/protocol-descriptors.pb": false,
+		"spice-agent-coding_0.1.0-preview.2_windows_amd64/agent.exe":               false,
+		"spice-agent-coding_0.1.0-preview.2_windows_amd64/agentd.exe":              false,
+		"spice-agent-coding_0.1.0-preview.2_windows_amd64/LICENSE":                 false,
+		"spice-agent-coding_0.1.0-preview.2_windows_amd64/docs/configuration.md":   false,
+		"spice-agent-coding_0.1.0-preview.2_windows_amd64/protocol-descriptors.pb": false,
 	}
 	for _, file := range reader.File {
 		if _, found := want[file.Name]; !found || file.FileInfo().IsDir() || strings.Contains(file.Name, "\\") {
@@ -783,7 +783,7 @@ func assertZipDistribution(t *testing.T, name string, commit string) {
 
 func assertBinaryIdentity(t *testing.T, content []byte, commit string) {
 	t.Helper()
-	if !bytes.Contains(content, []byte("0.1.0-preview.1")) || !bytes.Contains(content, []byte(commit)) {
+	if !bytes.Contains(content, []byte("0.1.0-preview.2")) || !bytes.Contains(content, []byte(commit)) {
 		t.Fatal("built binary does not contain the injected version and commit identity")
 	}
 }
@@ -851,7 +851,7 @@ func assertReleaseMetadata(t *testing.T, name string, commit string) {
 		metadata.Build.Source != "materialized-tagged-commit" ||
 		metadata.Build.GOAMD64 != "v1" || metadata.Build.GOARM64 != "v8.0" ||
 		metadata.Build.Identity.VersionSymbol != "github.com/spice-framework/spice-agent-coding/internal/buildidentity.Version" ||
-		metadata.Build.Identity.VersionValue != "0.1.0-preview.1" ||
+		metadata.Build.Identity.VersionValue != "0.1.0-preview.2" ||
 		metadata.Build.Identity.CommitSymbol != "github.com/spice-framework/spice-agent-coding/internal/buildidentity.Commit" ||
 		metadata.Build.Identity.CommitValue != commit ||
 		len(metadata.Targets) != 2 || len(metadata.Payloads) != 3 || len(metadata.Artifacts) != 3 {

@@ -16,7 +16,7 @@ other generic profiles:
   "profile": "go-distribution-v1",
   "repository": "spice-agent-coding",
   "module": "github.com/spice-framework/spice-agent-coding",
-  "version": "v0.1.0-preview.1"
+  "version": "v0.1.0-preview.2"
 }
 ```
 
@@ -117,3 +117,18 @@ published.
 This remains renderer-owned reproducibility evidence. Keyless signatures,
 provenance attestations, fresh-download verification, and publication belong to
 the organization workflow and independent toolchain verifier.
+
+## Immutable preview.1 recovery
+
+The immutable `spice-agent-coding v0.1.0-preview.1` tag records a failed
+pre-artifact workflow attempt, not a published distribution. Its
+[release run](https://github.com/spice-framework/spice-agent-coding/actions/runs/31333877865)
+stopped in candidate-owned validation because that commit did not expose the
+required `make verify-release` target. The central renderer, independent
+verifier, attestation, provenance authentication, and publisher never ran, and
+GitHub contains no release or release assets for the tag. The tag must never be
+moved or reused.
+
+Recovery advances only the distribution's own release version to
+`v0.1.0-preview.2`. Its required module graph, toolchain, metadata filename,
+binaries, targets, payload files, and build-identity symbols remain unchanged.

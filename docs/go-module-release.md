@@ -38,10 +38,12 @@ exact toolchain selection remains
 
 This authorization is deliberately repository-scoped. `spice-agent` is
 authorized at `v0.1.0-preview.4`; the provider, coding-tools, and distribution
-policies select that exact Agent version. Their own versions, and the TUI's own
-version, remain `v0.1.0-preview.1`. The separate `spice-agent-coding`
-distribution policy retains its distinct toolchain, remaining sibling,
-metadata, binary, payload, and target contracts.
+policies select that exact Agent version. The provider, coding-tools, and TUI
+release versions remain `v0.1.0-preview.1`. The separate `spice-agent-coding`
+distribution release advances to `v0.1.0-preview.2` after its immutable
+preview.1 attempt failed before rendering. Its distinct toolchain, remaining
+sibling, metadata, binary, payload, and target contracts are unchanged. See
+[the distribution release history](go-distribution-release.md#immutable-preview1-recovery).
 
 The immutable `spice-agent v0.1.0-preview.1` tag records a failed pre-artifact
 workflow attempt, not an authorized or published Spice release. Its

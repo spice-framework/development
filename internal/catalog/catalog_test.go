@@ -84,6 +84,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		}) || len(agentCoding.Fast) != 1 || len(agentCoding.Full) != 1 ||
 		!slices.Contains(agentCoding.Fast[0].Arguments, "-mode=fast") ||
 		agentCoding.Release == nil || agentCoding.Release.Profile != ReleaseProfileDistribution ||
+		agentCoding.Release.Version != "v0.1.0-preview.2" ||
 		len(agentCoding.Release.Binaries) != 2 || len(agentCoding.Release.Targets) != 6 ||
 		agentCoding.Release.BuildIdentity == nil ||
 		agentCoding.Release.BuildIdentity.VersionSymbol != agentCoding.Module+"/internal/distribution.Version" ||
@@ -268,6 +269,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		foundationVersion     = "v0.1.0-preview.2"
 		agentVersion          = "v0.1.0-preview.4"
 		componentVersion      = "v0.1.0-preview.1"
+		distributionVersion   = "v0.1.0-preview.2"
 		toolchainVersion      = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
 		distributionToolchain = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
 		foundationModule      = "github.com/spice-framework/spice"
@@ -319,7 +321,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		},
 		"spice-agent-coding": {
 			Profile:      ReleaseProfileDistribution,
-			Version:      componentVersion,
+			Version:      distributionVersion,
 			MetadataFile: "spice-release.json",
 			RequiredModules: []ReleaseModule{
 				{Path: foundationModule, Version: foundationVersion},
@@ -361,6 +363,19 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		if repository.Release == nil || !reflect.DeepEqual(*repository.Release, expected) {
 			t.Fatalf("%s release policy = %#v, want %#v", name, repository.Release, expected)
 		}
+	}
+}
+
+func TestAgentCodingReleaseRejectsImmutablePreviewOne(t *testing.T) {
+	t.Parallel()
+	value, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repository := requireRepository(t, value.Repositories, "spice-agent-coding")
+	if repository.Release == nil || repository.Release.Version == "v0.1.0-preview.1" ||
+		repository.Release.Version != "v0.1.0-preview.2" {
+		t.Fatalf("spice-agent-coding release version = %#v, require preview.2 and reject immutable preview.1", repository.Release)
 	}
 }
 
