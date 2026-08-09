@@ -78,8 +78,8 @@ authorization alone publishes nothing.
 The first generic renderer is available through an isolated command boundary:
 
 ```text
-spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.1 --output ../release
-spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.1 --artifacts ../release
+spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.2 --output ../release
+spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.2 --artifacts ../release
 ```
 
 It requires a clean tagged checkout, an exact catalog origin and module,

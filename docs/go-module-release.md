@@ -15,7 +15,7 @@ The catalog names the metadata file. Version 1 is a closed JSON object:
   "profile": "go-module-v1",
   "repository": "spice-agent",
   "module": "github.com/spice-framework/spice-agent",
-  "version": "v0.1.0-preview.1"
+  "version": "v0.1.0-preview.2"
 }
 ```
 
@@ -36,11 +36,21 @@ The catalog currently authorizes `spice-agent`, `spice-agent-provider-openai`,
 exact toolchain selection remains
 `v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
 
-This authorization is deliberately repository-scoped. The provider, coding
-tools, and TUI policies retain their existing sibling selections. The separate
-`spice-agent-coding` distribution policy selects the same Spice preview while
-retaining its distinct toolchain, sibling, metadata, binary, payload, and
-target contracts.
+This authorization is deliberately repository-scoped. `spice-agent` is
+authorized at `v0.1.0-preview.2`; the provider, coding-tools, and distribution
+policies select that exact Agent version. Their own versions, and the TUI's own
+version, remain `v0.1.0-preview.1`. The separate `spice-agent-coding`
+distribution policy retains its distinct toolchain, remaining sibling,
+metadata, binary, payload, and target contracts.
+
+The immutable `spice-agent v0.1.0-preview.1` tag records a failed pre-artifact
+workflow attempt, not an authorized or published Spice release. Its
+[release run](https://github.com/spice-framework/spice-agent/actions/runs/31318421427)
+stopped in candidate-owned verification before the central renderer,
+independent verifier, attestation, provenance authentication, or publisher ran;
+GitHub contains no release or release assets for that tag. The tag must never
+be moved or reused. Recovery advances the release version to
+`v0.1.0-preview.2`.
 
 The sole graphless exception is a catalog entry with no required modules whose
 root module genuinely selects no dependencies. In that mode both root

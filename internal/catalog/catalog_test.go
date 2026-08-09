@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -92,7 +93,8 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	foundationSpiceVersion := "v0.1.0-preview.2"
 	toolchainVersion := "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
 	distributionToolchainVersion := "v0.1.0-preview.1.0.20260807044408-6598abca8196"
-	agentVersion := "v0.1.0-preview.1"
+	agentVersion := "v0.1.0-preview.2"
+	componentVersion := "v0.1.0-preview.1"
 	for name, want := range map[string][]ReleaseModule{
 		"spice-agent": {
 			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
@@ -116,9 +118,9 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
 			{Path: "github.com/spice-framework/toolchain", Version: distributionToolchainVersion},
 			{Path: "github.com/spice-framework/spice-agent", Version: agentVersion},
-			{Path: "github.com/spice-framework/spice-agent-provider-openai", Version: agentVersion},
-			{Path: "github.com/spice-framework/spice-agent-tools-coding", Version: agentVersion},
-			{Path: "github.com/spice-framework/spice-agent-tui", Version: agentVersion},
+			{Path: "github.com/spice-framework/spice-agent-provider-openai", Version: componentVersion},
+			{Path: "github.com/spice-framework/spice-agent-tools-coding", Version: componentVersion},
+			{Path: "github.com/spice-framework/spice-agent-tui", Version: componentVersion},
 		},
 	} {
 		repository := requireRepository(t, value.Repositories, name)
@@ -253,6 +255,112 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		goland.Fast[0].Arguments[0] != "java" ||
 		goland.Full[0].Arguments[len(goland.Full[0].Arguments)-1] != "verifyRepository" {
 		t.Fatalf("GoLand repository identity = %#v", goland)
+	}
+}
+
+func TestAgentReleasePoliciesRemainExact(t *testing.T) {
+	t.Parallel()
+	value, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	const (
+		foundationVersion     = "v0.1.0-preview.2"
+		agentVersion          = "v0.1.0-preview.2"
+		componentVersion      = "v0.1.0-preview.1"
+		toolchainVersion      = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
+		distributionToolchain = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
+		foundationModule      = "github.com/spice-framework/spice"
+		toolchainModule       = "github.com/spice-framework/toolchain"
+		agentModule           = "github.com/spice-framework/spice-agent"
+		providerModule        = "github.com/spice-framework/spice-agent-provider-openai"
+		codingToolsModule     = "github.com/spice-framework/spice-agent-tools-coding"
+		tuiModule             = "github.com/spice-framework/spice-agent-tui"
+		distributionModule    = "github.com/spice-framework/spice-agent-coding"
+	)
+	want := map[string]ReleasePolicy{
+		"spice-agent": {
+			Profile:      ReleaseProfileGoModule,
+			Version:      agentVersion,
+			MetadataFile: "spice-release.json",
+			RequiredModules: []ReleaseModule{
+				{Path: foundationModule, Version: foundationVersion},
+				{Path: toolchainModule, Version: toolchainVersion},
+			},
+		},
+		"spice-agent-provider-openai": {
+			Profile:      ReleaseProfileGoModule,
+			Version:      componentVersion,
+			MetadataFile: "spice-release.json",
+			RequiredModules: []ReleaseModule{
+				{Path: foundationModule, Version: foundationVersion},
+				{Path: toolchainModule, Version: toolchainVersion},
+				{Path: agentModule, Version: agentVersion},
+			},
+		},
+		"spice-agent-tools-coding": {
+			Profile:      ReleaseProfileGoModule,
+			Version:      componentVersion,
+			MetadataFile: "spice-release.json",
+			RequiredModules: []ReleaseModule{
+				{Path: foundationModule, Version: foundationVersion},
+				{Path: toolchainModule, Version: toolchainVersion},
+				{Path: agentModule, Version: agentVersion},
+			},
+		},
+		"spice-agent-tui": {
+			Profile:      ReleaseProfileGoModule,
+			Version:      componentVersion,
+			MetadataFile: "spice-release.json",
+			RequiredModules: []ReleaseModule{
+				{Path: foundationModule, Version: foundationVersion},
+				{Path: toolchainModule, Version: toolchainVersion},
+			},
+		},
+		"spice-agent-coding": {
+			Profile:      ReleaseProfileDistribution,
+			Version:      componentVersion,
+			MetadataFile: "spice-release.json",
+			RequiredModules: []ReleaseModule{
+				{Path: foundationModule, Version: foundationVersion},
+				{Path: toolchainModule, Version: distributionToolchain},
+				{Path: agentModule, Version: agentVersion},
+				{Path: providerModule, Version: componentVersion},
+				{Path: codingToolsModule, Version: componentVersion},
+				{Path: tuiModule, Version: componentVersion},
+			},
+			Binaries: []ReleaseBinary{
+				{Name: "spice-agent", Package: "./cmd/spice-agent"},
+				{Name: "spice-agentd", Package: "./cmd/spice-agentd"},
+			},
+			Targets: []ReleaseTarget{
+				{GOOS: "linux", GOARCH: "amd64"},
+				{GOOS: "linux", GOARCH: "arm64"},
+				{GOOS: "darwin", GOARCH: "amd64"},
+				{GOOS: "darwin", GOARCH: "arm64"},
+				{GOOS: "windows", GOARCH: "amd64"},
+				{GOOS: "windows", GOARCH: "arm64"},
+			},
+			PayloadFiles: []string{
+				"LICENSE",
+				"README.md",
+				"THIRD_PARTY_NOTICES.md",
+				"docs/configuration.md",
+				"docs/installation.md",
+				"docs/security.md",
+				"protocol-descriptors.pb",
+			},
+			BuildIdentity: &ReleaseBuildIdentity{
+				VersionSymbol: distributionModule + "/internal/distribution.Version",
+				CommitSymbol:  distributionModule + "/internal/distribution.Commit",
+			},
+		},
+	}
+	for name, expected := range want {
+		repository := requireRepository(t, value.Repositories, name)
+		if repository.Release == nil || !reflect.DeepEqual(*repository.Release, expected) {
+			t.Fatalf("%s release policy = %#v, want %#v", name, repository.Release, expected)
+		}
 	}
 }
 

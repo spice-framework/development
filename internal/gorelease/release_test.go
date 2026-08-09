@@ -31,9 +31,9 @@ func TestRenderAndVerifyDeterministicModuleRelease(t *testing.T) {
 	}
 	wantFiles := []string{
 		"checksums.txt",
-		"spice-agent_0.1.0-preview.1_release.json",
-		"spice-agent_0.1.0-preview.1_sbom.spdx.json",
-		"spice-agent_0.1.0-preview.1_source.tar.gz",
+		"spice-agent_0.1.0-preview.2_release.json",
+		"spice-agent_0.1.0-preview.2_sbom.spdx.json",
+		"spice-agent_0.1.0-preview.2_source.tar.gz",
 	}
 	if !slices.Equal(result.Files, wantFiles) || result.Commit != fixture.commit {
 		t.Fatalf("Render() = %#v", result)
@@ -62,7 +62,7 @@ func TestRenderAndVerifyDeterministicModuleRelease(t *testing.T) {
 			t.Fatalf("artifact %s differs between renders", name)
 		}
 	}
-	assertArchive(t, filepath.Join(first, wantFiles[3]), "spice-agent_0.1.0-preview.1/agent.go")
+	assertArchive(t, filepath.Join(first, wantFiles[3]), "spice-agent_0.1.0-preview.2/agent.go")
 	assertMetadata(t, filepath.Join(first, wantFiles[1]), fixture.commit)
 	if _, err := gitBinary(t.Context(), fixture.root, 1, "show", fixture.commit+":README.md"); err == nil || !strings.Contains(err.Error(), "exceeds 1 bytes") {
 		t.Fatalf("gitBinary(truncated) error = %v", err)
@@ -88,17 +88,17 @@ func TestRenderAndVerifyDependencyFreeModuleRelease(t *testing.T) {
 	if _, err := Verify(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err != nil {
 		t.Fatal(err)
 	}
-	archive := filepath.Join(output, "spice-agent_0.1.0-preview.1_source.tar.gz")
+	archive := filepath.Join(output, "spice-agent_0.1.0-preview.2_source.tar.gz")
 	entries := archiveEntries(t, archive)
 	for _, unexpected := range []string{
-		"spice-agent_0.1.0-preview.1/go.sum",
-		"spice-agent_0.1.0-preview.1/vendor/modules.txt",
+		"spice-agent_0.1.0-preview.2/go.sum",
+		"spice-agent_0.1.0-preview.2/vendor/modules.txt",
 	} {
 		if slices.Contains(entries, unexpected) {
 			t.Fatalf("dependency-free source archive unexpectedly contains %q", unexpected)
 		}
 	}
-	sbomContent, err := os.ReadFile(filepath.Join(output, "spice-agent_0.1.0-preview.1_sbom.spdx.json"))
+	sbomContent, err := os.ReadFile(filepath.Join(output, "spice-agent_0.1.0-preview.2_sbom.spdx.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestRenderRejectsUntrustedSourceAndPolicy(t *testing.T) {
 		want    string
 	}{
 		{name: "unknown repository", mutate: func(value *releaseFixture) { value.options.Repository = "unknown" }, want: "not in the catalog"},
-		{name: "wrong version", mutate: func(value *releaseFixture) { value.options.Version = "v0.1.0-preview.2" }, want: "does not match catalog"},
+		{name: "wrong version", mutate: func(value *releaseFixture) { value.options.Version = "v0.1.0-preview.1" }, want: "does not match catalog"},
 		{name: "distribution profile", mutate: func(value *releaseFixture) { value.options.Repository = "spice-agent-coding" }, want: "not authorized"},
 		{name: "starter bypass", mutate: func(value *releaseFixture) { value.options.Repository = "starter-smtp" }, want: "must use library-release"},
 		{name: "origin mismatch", mutate: func(value *releaseFixture) {
@@ -382,7 +382,7 @@ func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
 	if options.intentModule != "" {
 		intentModule = options.intentModule
 	}
-	metadata := `{"schema":1,"profile":"go-module-v1","repository":"spice-agent","module":"` + intentModule + `","version":"v0.1.0-preview.1"}`
+	metadata := `{"schema":1,"profile":"go-module-v1","repository":"spice-agent","module":"` + intentModule + `","version":"v0.1.0-preview.2"}`
 	if options.unknownIntent {
 		metadata = strings.TrimSuffix(metadata, "}") + `,"unexpected":true}`
 	}
