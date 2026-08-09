@@ -40,12 +40,61 @@ type Options struct {
 	Version    string
 }
 
+// PolicyOptions identifies the complete catalog policy tuple that a caller
+// intends to use. Policy checks are deliberately independent of source,
+// network, tags, and artifacts so independently versioned release authorities
+// can compare their authorization before an immutable tag exists.
+type PolicyOptions struct {
+	Repository string
+	Module     string
+	Version    string
+	Profile    string
+}
+
+// Policy is the normalized, catalog-authorized Go module release tuple.
+type Policy struct {
+	Profile    string
+	Repository string
+	Module     string
+	Version    string
+}
+
 // Result describes the committed output without exposing host-specific paths
 // in release metadata.
 type Result struct {
 	OutputDir string
 	Commit    string
 	Files     []string
+}
+
+// CheckPolicy validates an exact Go module release tuple against the catalog.
+// It performs no source, Git, filesystem, artifact, or network access.
+func CheckPolicy(options PolicyOptions, value catalog.Catalog) (Policy, error) {
+	if err := value.Validate(); err != nil {
+		return Policy{}, fmt.Errorf("validate Go release catalog: %w", err)
+	}
+	repository, err := selectRepository(value, options.Repository, options.Version)
+	if err != nil {
+		return Policy{}, err
+	}
+	if options.Profile == "" {
+		return Policy{}, errors.New("Go release profile is required")
+	}
+	if options.Profile != repository.Release.Profile {
+		return Policy{}, errors.New("Go release profile does not match catalog authorization")
+	}
+	if options.Module == "" {
+		return Policy{}, errors.New("Go release module is required")
+	}
+	if options.Module != repository.Module {
+		return Policy{}, errors.New("Go release module does not match catalog authorization")
+	}
+	return Policy{
+		Profile:    repository.Release.Profile,
+		Repository: repository.Name,
+		Module:     repository.Module,
+		Version:    repository.Release.Version,
+	}, nil
 }
 
 type source struct {

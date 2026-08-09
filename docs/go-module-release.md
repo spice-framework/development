@@ -15,7 +15,7 @@ The catalog names the metadata file. Version 1 is a closed JSON object:
   "profile": "go-module-v1",
   "repository": "spice-agent",
   "module": "github.com/spice-framework/spice-agent",
-  "version": "v0.1.0-preview.3"
+  "version": "v0.1.0-preview.4"
 }
 ```
 
@@ -37,7 +37,7 @@ exact toolchain selection remains
 `v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
 
 This authorization is deliberately repository-scoped. `spice-agent` is
-authorized at `v0.1.0-preview.3`; the provider, coding-tools, and distribution
+authorized at `v0.1.0-preview.4`; the provider, coding-tools, and distribution
 policies select that exact Agent version. Their own versions, and the TUI's own
 version, remain `v0.1.0-preview.1`. The separate `spice-agent-coding`
 distribution policy retains its distinct toolchain, remaining sibling,
@@ -61,6 +61,16 @@ release or release assets for that tag. That tag also must never be moved or
 reused. Recovery advances the Agent release version and its downstream
 selections to `v0.1.0-preview.3`.
 
+The immutable `spice-agent v0.1.0-preview.3` tag records another failed
+pre-attestation attempt, not a published release. Its
+[release run](https://github.com/spice-framework/spice-agent/actions/runs/31325588169)
+completed candidate validation and central rendering, then the independent
+verifier rejected a release-policy mismatch. Attestation, provenance
+authentication, and publication were skipped, and GitHub contains no release
+or assets for that tag. That tag must never be moved or reused. Recovery
+advances the Agent release version and its downstream selections to
+`v0.1.0-preview.4`.
+
 The sole graphless exception is a catalog entry with no required modules whose
 root module genuinely selects no dependencies. In that mode both root
 `go.sum` and `vendor/modules.txt` must be absent. The renderer rejects a
@@ -69,6 +79,31 @@ partial pair, every tracked `vendor/` path, and every `require`, `tool`, or
 packages and module graph and requires the graph to contain exactly the
 unversioned main module. A missing graph file never downgrades a normal
 vendored release into this mode.
+
+## Pre-tag policy comparison
+
+```text
+spice-dev go-release policy-check \
+  --repo spice-agent \
+  --module github.com/spice-framework/spice-agent \
+  --version v0.1.0-preview.4 \
+  --profile go-module-v1
+```
+
+The command validates the exact repository, module, version, and profile
+against the embedded catalog and prints exactly:
+
+```text
+go-module-v1	spice-agent	github.com/spice-framework/spice-agent	v0.1.0-preview.4
+```
+
+It does not read a checkout, tag, or artifact and performs no network access.
+The trusted renderer and independently versioned Toolchain verifier can run
+their corresponding policy checks before tag creation and require the emitted
+tuples to be byte-identical. Unknown repositories, starter or distribution
+profiles, stale versions, and module/profile drift fail closed. This check
+proves policy agreement only; it does not replace candidate verification,
+artifact verification, attestation, provenance authentication, or publication.
 
 ## Rendering
 

@@ -40,6 +40,7 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 		!strings.Contains(stdout.String(), "snapshot materialize") ||
 		!strings.Contains(stdout.String(), "library-release public-key") ||
 		!strings.Contains(stdout.String(), "library-release sign") ||
+		!strings.Contains(stdout.String(), "go-release policy-check") ||
 		!strings.Contains(stdout.String(), "go-release render") ||
 		!strings.Contains(stdout.String(), "go-release verify") ||
 		!strings.Contains(stdout.String(), "distribution-release render") ||
@@ -55,6 +56,55 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 	if code := runtime.Run(t.Context(), []string{"catalog"}, &stdout, &stderr); code != 0 ||
 		!strings.Contains(stdout.String(), "spice\tactive") {
 		t.Fatalf("catalog text code=%d stdout=%q", code, stdout.String())
+	}
+}
+
+func TestRuntimeChecksGoReleasePolicyWithoutReleaseInputs(t *testing.T) {
+	t.Parallel()
+	runtime := testRuntime(t)
+	// A nil process runner makes any accidental Git, Go, or network-capable
+	// command execution fail immediately. Policy comparison is catalog-only.
+	runtime.Runner = nil
+	want := "go-module-v1\tspice-agent\tgithub.com/spice-framework/spice-agent\tv0.1.0-preview.4\n"
+	arguments := []string{
+		"go-release", "policy-check",
+		"--repo", "spice-agent",
+		"--module", "github.com/spice-framework/spice-agent",
+		"--version", "v0.1.0-preview.4",
+		"--profile", "go-module-v1",
+	}
+	var stdout, stderr strings.Builder
+	if code := runtime.Run(t.Context(), arguments, &stdout, &stderr); code != 0 || stdout.String() != want || stderr.Len() != 0 {
+		t.Fatalf("policy-check code/output = %d, %q, %q", code, stdout.String(), stderr.String())
+	}
+	stdout.Reset()
+	if code := runtime.Run(t.Context(), arguments, errorWriter{}, &stderr); code != 1 {
+		t.Fatalf("policy-check output failure code = %d", code)
+	}
+
+	tests := []struct {
+		name      string
+		arguments []string
+		wantCode  int
+		wantError string
+	}{
+		{name: "stale preview.2", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.2", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
+		{name: "stale preview.3", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.3", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
+		{name: "module drift", arguments: []string{"--repo", "spice-agent", "--module", "example.invalid/agent", "--version", "v0.1.0-preview.4", "--profile", "go-module-v1"}, wantCode: 1, wantError: "module does not match"},
+		{name: "profile drift", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.4", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "profile does not match"},
+		{name: "unknown repository", arguments: []string{"--repo", "unknown", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.4", "--profile", "go-module-v1"}, wantCode: 1, wantError: "not in the catalog"},
+		{name: "positional", arguments: []string{"extra"}, wantCode: 2, wantError: "accepts no positional arguments"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			var testOut, testErr strings.Builder
+			command := append([]string{"go-release", "policy-check"}, test.arguments...)
+			code := runtime.Run(t.Context(), command, &testOut, &testErr)
+			if code != test.wantCode || testOut.Len() != 0 || !strings.Contains(testErr.String(), test.wantError) {
+				t.Fatalf("policy-check code/output = %d, %q, %q", code, testOut.String(), testErr.String())
+			}
+		})
 	}
 }
 

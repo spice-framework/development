@@ -8,14 +8,19 @@ The current release catalog selects
 `github.com/spice-framework/spice v0.1.0-preview.2` for all five Agent release
 contracts. After the immutable `spice-agent v0.1.0-preview.1` tag failed before
 artifact rendering and the immutable `v0.1.0-preview.2` attempt failed in the
-independent verifier before attestation, the catalog authorizes
-`spice-agent v0.1.0-preview.3` and
+independent verifier before attestation. The immutable `v0.1.0-preview.3`
+attempt also completed rendering but failed independent policy verification
+before attestation. The catalog now authorizes
+`spice-agent v0.1.0-preview.4` and
 requires that exact version in the provider, coding-tools, and distribution
 graphs. The TUI, provider, coding-tools, and distribution release versions
 remain `v0.1.0-preview.1`; every toolchain, other sibling, metadata, binary,
 payload, and target selection is unchanged. The dated source evidence below
 remains an accurate record of the earlier commits and is not the current
-release policy.
+release policy. Development's tag-independent `go-release policy-check`
+provides a deterministic tuple for pre-tag comparison with the independent
+Toolchain policy, preventing another immutable tag from being used before both
+authorities agree.
 
 ## Exact source inputs
 

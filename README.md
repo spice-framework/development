@@ -78,9 +78,16 @@ authorization alone publishes nothing.
 The first generic renderer is available through an isolated command boundary:
 
 ```text
-spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.3 --output ../release
-spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.3 --artifacts ../release
+spice-dev go-release policy-check --repo spice-agent --module github.com/spice-framework/spice-agent --version v0.1.0-preview.4 --profile go-module-v1
+spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.4 --output ../release
+spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.4 --artifacts ../release
 ```
+
+`policy-check` reads only the embedded catalog and emits one stable tab-separated
+profile, repository, module, and version tuple. It does not inspect source,
+require a tag or artifacts, or use the network, so the trusted renderer and an
+independent verifier can compare authorization before creating an immutable
+tag. A match is policy evidence only; it does not validate or publish a release.
 
 It requires a clean tagged checkout, an exact catalog origin and module,
 `go 1.26.0`, `toolchain go1.26.5`, a strict committed

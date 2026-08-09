@@ -145,10 +145,14 @@ func (runtime Runtime) goReleaseCommand(
 	stdout io.Writer,
 	stderr io.Writer,
 ) int {
-	if len(arguments) == 0 || (arguments[0] != "render" && arguments[0] != "verify") {
-		return usageError(stderr, "go-release requires the render or verify subcommand")
+	if len(arguments) == 0 ||
+		(arguments[0] != "policy-check" && arguments[0] != "render" && arguments[0] != "verify") {
+		return usageError(stderr, "go-release requires the policy-check, render, or verify subcommand")
 	}
 	subcommand := arguments[0]
+	if subcommand == "policy-check" {
+		return runtime.goReleasePolicyCheckCommand(arguments[1:], stdout, stderr)
+	}
 	flags := flag.NewFlagSet("go-release "+subcommand, flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	root := flags.String("root", "", "clean tagged Go repository root")
@@ -185,6 +189,45 @@ func (runtime Runtime) goReleaseCommand(
 		result.OutputDir,
 		result.Commit,
 		len(result.Files),
+	); err != nil {
+		return 1
+	}
+	return 0
+}
+
+func (runtime Runtime) goReleasePolicyCheckCommand(
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	flags := flag.NewFlagSet("go-release policy-check", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	repository := flags.String("repo", "", "catalog repository name")
+	module := flags.String("module", "", "canonical Go module path")
+	version := flags.String("version", "", "catalog-authorized canonical release version")
+	profile := flags.String("profile", "", "catalog release profile")
+	if err := flags.Parse(arguments); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "go-release policy-check accepts no positional arguments")
+	}
+	policy, err := gorelease.CheckPolicy(gorelease.PolicyOptions{
+		Repository: *repository,
+		Module:     *module,
+		Version:    *version,
+		Profile:    *profile,
+	}, runtime.Catalog)
+	if err != nil {
+		return commandError(stderr, "go-release policy-check", err)
+	}
+	if _, err := fmt.Fprintf(
+		stdout,
+		"%s\t%s\t%s\t%s\n",
+		policy.Profile,
+		policy.Repository,
+		policy.Module,
+		policy.Version,
 	); err != nil {
 		return 1
 	}
@@ -598,6 +641,7 @@ Usage:
   spice-dev library-release public-key --signing-key external-private-key --output new-public.pem
   spice-dev library-release render --root path --plan plan.json --output new-path
   spice-dev library-release sign --root path --plan plan.json --output new-path --signing-key key --trusted-public-key public.pem
+  spice-dev go-release policy-check --repo name --module path --version vX.Y.Z --profile go-module-v1
   spice-dev go-release render --root path --repo name --version vX.Y.Z --output new-path
   spice-dev go-release verify --root path --repo name --version vX.Y.Z --artifacts path
   spice-dev distribution-release render --root path --repo name --version vX.Y.Z --output new-path
