@@ -559,7 +559,7 @@ func newDistributionFixture(t *testing.T, options fixtureOptions) distributionFi
 		repository.Release.PayloadFiles = []string{"link"}
 	}
 	value.Repositories[index] = repository
-	parent := t.TempDir()
+	parent := canonicalTestDirectory(t, t.TempDir())
 	root := filepath.Join(parent, "repository")
 	metadataModule := repository.Module
 	if options.metadataModule != "" {
@@ -613,6 +613,10 @@ func newDistributionFixture(t *testing.T, options fixtureOptions) distributionFi
 		writeTestBytes(t, filepath.Join(root, filepath.FromSlash(name)), content)
 	}
 	git(t, root, "init")
+	git(t, root, "config", "core.autocrlf", "false")
+	git(t, root, "config", "core.eol", "lf")
+	git(t, root, "config", "commit.gpgsign", "false")
+	git(t, root, "config", "tag.gpgsign", "false")
 	git(t, root, "config", "user.name", "Spice Test")
 	git(t, root, "config", "user.email", "spice@example.invalid")
 	git(t, root, "remote", "add", "origin", repository.CloneURL)
@@ -627,6 +631,12 @@ func newDistributionFixture(t *testing.T, options fixtureOptions) distributionFi
 	command.Env = append(os.Environ(), "GIT_AUTHOR_DATE="+date, "GIT_COMMITTER_DATE="+date)
 	if output, commitErr := command.CombinedOutput(); commitErr != nil {
 		t.Fatalf("git commit: %v\n%s", commitErr, output)
+	}
+	if options.symlinkPayload {
+		if err := os.Remove(filepath.Join(root, "link")); err != nil {
+			t.Fatal(err)
+		}
+		git(t, root, "checkout", "--", "link")
 	}
 	commit := strings.TrimSpace(git(t, root, "rev-parse", "HEAD"))
 	git(t, root, "tag", repository.Release.Version)
@@ -676,6 +686,15 @@ func git(t *testing.T, root string, arguments ...string) string {
 		t.Fatalf("git %s: %v\n%s", strings.Join(arguments, " "), err, output)
 	}
 	return string(output)
+}
+
+func canonicalTestDirectory(t *testing.T, directory string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(directory)
+	if err != nil {
+		t.Fatalf("resolve test directory: %v", err)
+	}
+	return resolved
 }
 
 func assertTarDistribution(t *testing.T, name string, commit string) {

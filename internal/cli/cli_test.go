@@ -74,7 +74,11 @@ func TestRuntimeMaterializesAndVerifiesSnapshot(t *testing.T) {
 	}
 	runner := &cliSnapshotRunner{catalog: value, commit: commit}
 	runtime := Runtime{Catalog: value, Runner: runner}
-	root := filepath.Join(t.TempDir(), "sources")
+	rootParent, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(rootParent, "sources")
 	var stdout, stderr strings.Builder
 	code := runtime.Run(t.Context(), []string{
 		"snapshot", "materialize", "--lock", lockFile, "--root", root,
@@ -454,6 +458,8 @@ func cliProductionSigningFixture(
 		}
 	}
 	cliGitCommand(t, repository, "init")
+	cliGitCommand(t, repository, "config", "commit.gpgsign", "false")
+	cliGitCommand(t, repository, "config", "tag.gpgsign", "false")
 	cliGitCommand(t, repository, "config", "user.name", "Spice Test")
 	cliGitCommand(t, repository, "config", "user.email", "spice@example.invalid")
 	cliGitCommand(

@@ -301,7 +301,7 @@ func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
 		repository.Release.RequiredModules = []catalog.ReleaseModule{{Path: "example.com/dependency", Version: "v1.2.3"}}
 	}
 	value.Repositories[repositoryIndex] = repository
-	parent := t.TempDir()
+	parent := canonicalTestDirectory(t, t.TempDir())
 	root := filepath.Join(parent, "repository")
 	if err := os.MkdirAll(filepath.Join(root, "vendor"), 0o750); err != nil {
 		t.Fatal(err)
@@ -352,6 +352,10 @@ func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
 		writeFile(t, filepath.Join(root, filepath.FromSlash(name)), content)
 	}
 	git(t, root, "init")
+	git(t, root, "config", "core.autocrlf", "false")
+	git(t, root, "config", "core.eol", "lf")
+	git(t, root, "config", "commit.gpgsign", "false")
+	git(t, root, "config", "tag.gpgsign", "false")
 	git(t, root, "config", "user.name", "Spice Test")
 	git(t, root, "config", "user.email", "spice@example.invalid")
 	git(t, root, "remote", "add", "origin", repository.CloneURL)
@@ -436,7 +440,18 @@ func assertMetadata(t *testing.T, name string, commit string) {
 	if err := json.Unmarshal(content, &metadata); err != nil {
 		t.Fatal(err)
 	}
-	if metadata.Commit != commit || metadata.Go != "1.26.5" || len(metadata.Artifacts) != 2 || strings.Contains(string(content), filepath.VolumeName(name)) {
+	volume := filepath.VolumeName(name)
+	if metadata.Commit != commit || metadata.Go != "1.26.5" || len(metadata.Artifacts) != 2 ||
+		volume != "" && strings.Contains(string(content), volume) {
 		t.Fatalf("release metadata = %#v", metadata)
 	}
+}
+
+func canonicalTestDirectory(t *testing.T, directory string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(directory)
+	if err != nil {
+		t.Fatalf("resolve test directory: %v", err)
+	}
+	return resolved
 }

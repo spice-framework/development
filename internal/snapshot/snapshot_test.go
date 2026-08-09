@@ -26,7 +26,7 @@ func TestMaterializeAndVerifyDeterministicSnapshot(t *testing.T) {
 		"development": developmentCommit,
 		"spice":       spiceCommit,
 	}}
-	root := filepath.Join(t.TempDir(), "sources")
+	root := filepath.Join(canonicalTestDirectory(t, t.TempDir()), "sources")
 	manifest, err := Materialize(t.Context(), lock, root, value, runner)
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +45,7 @@ func TestMaterializeAndVerifyDeterministicSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	secondRoot := filepath.Join(t.TempDir(), "sources")
+	secondRoot := filepath.Join(canonicalTestDirectory(t, t.TempDir()), "sources")
 	if _, err := Materialize(t.Context(), lock, secondRoot, value, runner); err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +127,7 @@ func TestMaterializeRollsBackAndRefusesExistingTargets(t *testing.T) {
 	t.Parallel()
 	value := snapshotCatalog()
 	lock := snapshotLock()
-	parent := t.TempDir()
+	parent := canonicalTestDirectory(t, t.TempDir())
 	root := filepath.Join(parent, "sources")
 	runner := &snapshotRunner{catalog: value, failAt: 3}
 	if _, err := Materialize(t.Context(), lock, root, value, runner); err == nil {
@@ -163,7 +163,7 @@ func TestVerifyRejectsManifestRemoteCommitStatusAndSymlinks(t *testing.T) {
 			"development": developmentCommit,
 			"spice":       spiceCommit,
 		}}
-		root := filepath.Join(t.TempDir(), "sources")
+		root := filepath.Join(canonicalTestDirectory(t, t.TempDir()), "sources")
 		if _, err := Materialize(t.Context(), lock, root, value, runner); err != nil {
 			t.Fatal(err)
 		}
@@ -228,7 +228,7 @@ func TestMaterializeHonorsCancellation(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	root := filepath.Join(t.TempDir(), "sources")
+	root := filepath.Join(canonicalTestDirectory(t, t.TempDir()), "sources")
 	if _, err := Materialize(ctx, snapshotLock(), root, snapshotCatalog(), &snapshotRunner{}); !errors.Is(err, context.Canceled) {
 		t.Fatalf("Materialize(cancelled) error = %v", err)
 	}
@@ -259,6 +259,15 @@ type snapshotRunner struct {
 	failAt    int
 	badRemote string
 	dirty     string
+}
+
+func canonicalTestDirectory(t *testing.T, directory string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(directory)
+	if err != nil {
+		t.Fatalf("resolve test directory: %v", err)
+	}
+	return resolved
 }
 
 func (runner *snapshotRunner) Run(

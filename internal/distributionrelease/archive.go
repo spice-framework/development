@@ -145,9 +145,13 @@ func gitBinary(
 	maximum int,
 	arguments ...string,
 ) ([]byte, error) {
+	trustedArguments := append([]string{
+		"-c", "core.autocrlf=false",
+		"-c", "core.eol=lf",
+	}, arguments...)
 	// #nosec G204 -- executable is fixed and arguments are validated catalog
 	// paths or full Git object identities, without a shell.
-	command := exec.CommandContext(ctx, "git", arguments...)
+	command := exec.CommandContext(ctx, "git", trustedArguments...)
 	command.Dir = root
 	command.Env = process.IndependentEnvironment()
 	var stdout boundedBuffer
