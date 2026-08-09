@@ -1,12 +1,14 @@
 package gorelease
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -29,6 +31,16 @@ type modMetadata struct {
 		Version string
 	}
 	Replace []json.RawMessage
+	Tool    []struct {
+		Path string
+	}
+}
+
+type listedModule struct {
+	Path    string
+	Version string
+	Main    bool
+	Replace *listedModule
 }
 
 type releaseMetadata struct {
@@ -87,6 +99,7 @@ func requireModuleGraph(
 	ctx context.Context,
 	root string,
 	repository catalog.Repository,
+	layout moduleGraphLayout,
 	runner process.Runner,
 ) ([]module, error) {
 	modOutput, err := runner.Run(ctx, root, "go", "mod", "edit", "-json")
@@ -124,6 +137,9 @@ func requireModuleGraph(
 			)
 		}
 	}
+	if layout == moduleGraphDependencyFree {
+		return requireDependencyFreeModuleGraph(ctx, root, repository, metadata, runner)
+	}
 	if _, err := runner.Run(ctx, root, "go", "list", "-mod=vendor", "./..."); err != nil {
 		return nil, fmt.Errorf("validate committed vendor module graph: %w", err)
 	}
@@ -145,6 +161,57 @@ func requireModuleGraph(
 		}
 	}
 	return modules, nil
+}
+
+func requireDependencyFreeModuleGraph(
+	ctx context.Context,
+	root string,
+	repository catalog.Repository,
+	metadata modMetadata,
+	runner process.Runner,
+) ([]module, error) {
+	if len(repository.Release.RequiredModules) != 0 {
+		return nil, errors.New("dependency-free Go release requires an empty catalog module selection")
+	}
+	if len(metadata.Require) != 0 {
+		return nil, errors.New("dependency-free Go release must not contain require directives")
+	}
+	if len(metadata.Tool) != 0 {
+		return nil, errors.New("dependency-free Go release must not contain tool directives")
+	}
+	if _, err := runner.Run(ctx, root, "go", "list", "-mod=readonly", "-deps", "./..."); err != nil {
+		return nil, fmt.Errorf("validate dependency-free Go release packages: %w", err)
+	}
+	output, err := runner.Run(ctx, root, "go", "list", "-mod=readonly", "-m", "-json", "all")
+	if err != nil {
+		return nil, fmt.Errorf("inspect dependency-free Go release graph: %w", err)
+	}
+	if err := validateDependencyFreeModuleList([]byte(output), repository.Module); err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func validateDependencyFreeModuleList(content []byte, modulePath string) error {
+	decoder := json.NewDecoder(bytes.NewReader(content))
+	var modules []listedModule
+	for {
+		var item listedModule
+		if err := decoder.Decode(&item); errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			return fmt.Errorf("parse dependency-free Go release graph: %w", err)
+		}
+		modules = append(modules, item)
+	}
+	if len(modules) != 1 {
+		return fmt.Errorf("dependency-free Go release graph contains %d modules; want only the main module", len(modules))
+	}
+	main := modules[0]
+	if !main.Main || main.Path != modulePath || main.Version != "" || main.Replace != nil {
+		return fmt.Errorf("dependency-free Go release graph has unexpected main module %#v", main)
+	}
+	return nil
 }
 
 func parseVendorModules(content []byte) ([]module, error) {

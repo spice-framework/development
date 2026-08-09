@@ -77,6 +77,40 @@ func TestRenderAndVerifyDeterministicModuleRelease(t *testing.T) {
 	}
 }
 
+func TestRenderAndVerifyDependencyFreeModuleRelease(t *testing.T) {
+	t.Parallel()
+	fixture := newReleaseFixture(t, fixtureOptions{omitGoSum: true, omitVendorModules: true})
+	output := filepath.Join(fixture.parent, "release")
+	result, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Verify(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err != nil {
+		t.Fatal(err)
+	}
+	archive := filepath.Join(output, "spice-agent_0.1.0-preview.1_source.tar.gz")
+	entries := archiveEntries(t, archive)
+	for _, unexpected := range []string{
+		"spice-agent_0.1.0-preview.1/go.sum",
+		"spice-agent_0.1.0-preview.1/vendor/modules.txt",
+	} {
+		if slices.Contains(entries, unexpected) {
+			t.Fatalf("dependency-free source archive unexpectedly contains %q", unexpected)
+		}
+	}
+	sbomContent, err := os.ReadFile(filepath.Join(output, "spice-agent_0.1.0-preview.1_sbom.spdx.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sbom spdxDocument
+	if err := json.Unmarshal(sbomContent, &sbom); err != nil || len(sbom.Packages) != 1 || len(sbom.Relationships) != 1 {
+		t.Fatalf("dependency-free SBOM = %#v, %v", sbom, err)
+	}
+	if result.Commit != fixture.commit {
+		t.Fatalf("Render() commit = %q, want %q", result.Commit, fixture.commit)
+	}
+}
+
 func TestRenderRejectsUntrustedSourceAndPolicy(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -97,6 +131,17 @@ func TestRenderRejectsUntrustedSourceAndPolicy(t *testing.T) {
 		{name: "intent mismatch", fixture: fixtureOptions{intentModule: "example.invalid/wrong"}, want: "does not match catalog contract"},
 		{name: "unknown intent field", fixture: fixtureOptions{unknownIntent: true}, want: "unknown field"},
 		{name: "replace directive", fixture: fixtureOptions{replaceDirective: true}, want: "must not contain replace directives"},
+		{name: "dependency-free missing only go sum", fixture: fixtureOptions{omitGoSum: true}, want: "both go.sum and vendor/modules.txt or neither"},
+		{name: "dependency-free missing only vendor graph", fixture: fixtureOptions{omitVendorModules: true}, want: "both go.sum and vendor/modules.txt or neither"},
+		{name: "dependency-free inconsistent catalog", fixture: fixtureOptions{omitGoSum: true, omitVendorModules: true}, mutate: func(value *releaseFixture) {
+			value.repository.Release.RequiredModules = []catalog.ReleaseModule{{Path: "example.invalid/required", Version: "v1.0.0"}}
+			replaceRepository(value)
+		}, want: "catalog requires modules"},
+		{name: "dependency-free require smuggling", fixture: fixtureOptions{dependency: true, omitCatalogDependency: true, omitGoSum: true, omitVendorModules: true}, want: "must not contain require directives"},
+		{name: "dependency-free tool smuggling", fixture: fixtureOptions{toolDependency: true, omitGoSum: true, omitVendorModules: true}, want: "must not contain tool directives"},
+		{name: "dependency-free replace smuggling", fixture: fixtureOptions{replaceDirective: true, omitGoSum: true, omitVendorModules: true}, want: "must not contain replace directives"},
+		{name: "dependency-free source dependency smuggling", fixture: fixtureOptions{sourceDependency: true, omitGoSum: true, omitVendorModules: true}, want: "validate dependency-free Go release packages"},
+		{name: "dependency-free unexpected vendor", fixture: fixtureOptions{omitGoSum: true, omitVendorModules: true, unexpectedVendor: true}, want: "unexpected committed vendor path"},
 		{name: "missing required module", mutate: func(value *releaseFixture) {
 			value.repository.Release.RequiredModules = []catalog.ReleaseModule{{Path: "example.invalid/required", Version: "v1.0.0"}}
 			replaceRepository(value)
@@ -239,6 +284,27 @@ func TestPureValidationHelpers(t *testing.T) {
 			}
 		})
 	}
+	for name, content := range map[string]string{
+		"extra dependency": "{\"Path\":\"example.com/main\",\"Main\":true}\n{\"Path\":\"example.com/dependency\",\"Version\":\"v1.0.0\"}\n",
+		"wrong main":       "{\"Path\":\"example.com/other\",\"Main\":true}\n",
+		"non-main":         "{\"Path\":\"example.com/main\"}\n",
+		"versioned main":   "{\"Path\":\"example.com/main\",\"Version\":\"v1.0.0\",\"Main\":true}\n",
+		"replaced main":    "{\"Path\":\"example.com/main\",\"Main\":true,\"Replace\":{\"Path\":\"example.com/other\"}}\n",
+		"malformed":        "not json",
+	} {
+		t.Run("dependency-free graph "+name, func(t *testing.T) {
+			t.Parallel()
+			if err := validateDependencyFreeModuleList([]byte(content), "example.com/main"); err == nil {
+				t.Fatal("validateDependencyFreeModuleList() error = nil")
+			}
+		})
+	}
+	if err := validateDependencyFreeModuleList(
+		[]byte("{\"Path\":\"example.com/main\",\"Main\":true}\n"),
+		"example.com/main",
+	); err != nil {
+		t.Fatalf("validateDependencyFreeModuleList(main only) error = %v", err)
+	}
 	buffer := boundedBuffer{maximum: 2}
 	if written, err := buffer.Write([]byte("long")); err != nil || written != 4 || !buffer.truncated || buffer.String() != "lo" {
 		t.Fatalf("boundedBuffer = %#v, written=%d err=%v", buffer, written, err)
@@ -270,11 +336,16 @@ func TestPureValidationHelpers(t *testing.T) {
 }
 
 type fixtureOptions struct {
-	intentModule     string
-	unknownIntent    bool
-	replaceDirective bool
-	dependency       bool
-	toolDependency   bool
+	intentModule          string
+	unknownIntent         bool
+	replaceDirective      bool
+	dependency            bool
+	omitCatalogDependency bool
+	toolDependency        bool
+	omitGoSum             bool
+	omitVendorModules     bool
+	sourceDependency      bool
+	unexpectedVendor      bool
 }
 
 type releaseFixture struct {
@@ -297,7 +368,7 @@ func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
 	})
 	repository := value.Repositories[repositoryIndex]
 	repository.Release.RequiredModules = nil
-	if options.dependency {
+	if options.dependency && !options.omitCatalogDependency {
 		repository.Release.RequiredModules = []catalog.ReleaseModule{{Path: "example.com/dependency", Version: "v1.2.3"}}
 	}
 	value.Repositories[repositoryIndex] = repository
@@ -334,11 +405,15 @@ func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
 		"README.md":          "# Agent fixture\n",
 		"agent.go":           "package agent\n",
 		"go.mod":             modfile,
-		"go.sum":             "",
 		"spice-release.json": metadata + "\n",
-		"vendor/modules.txt": "",
 	}
-	if options.dependency {
+	if !options.omitGoSum {
+		files["go.sum"] = ""
+	}
+	if !options.omitVendorModules {
+		files["vendor/modules.txt"] = ""
+	}
+	if options.dependency && !options.omitVendorModules {
 		if options.toolDependency {
 			files["vendor/modules.txt"] = "# example.com/dependency v1.2.3\n## explicit; go 1.26.0\nexample.com/dependency/cmd/tool\n"
 			files["vendor/example.com/dependency/cmd/tool/main.go"] = "package main\n\nfunc main() {}\n"
@@ -347,6 +422,12 @@ func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
 			files["vendor/modules.txt"] = "# example.com/dependency v1.2.3\n## explicit; go 1.26.0\nexample.com/dependency\n"
 			files["vendor/example.com/dependency/dependency.go"] = "package dependency\n"
 		}
+	}
+	if options.sourceDependency {
+		files["agent.go"] = "package agent\n\nimport _ \"example.invalid/hidden\"\n"
+	}
+	if options.unexpectedVendor {
+		files["vendor/unexpected.go"] = "package unexpected\n"
 	}
 	for name, content := range files {
 		writeFile(t, filepath.Join(root, filepath.FromSlash(name)), content)
@@ -427,6 +508,32 @@ func assertArchive(t *testing.T, name string, wanted string) {
 		if header.Name == wanted {
 			return
 		}
+	}
+}
+
+func archiveEntries(t *testing.T, name string) []string {
+	t.Helper()
+	file, err := os.Open(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	gzipReader, err := gzip.NewReader(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer gzipReader.Close()
+	var result []string
+	tarReader := tar.NewReader(gzipReader)
+	for {
+		header, err := tarReader.Next()
+		if errors.Is(err, io.EOF) {
+			return result
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		result = append(result, header.Name)
 	}
 }
 

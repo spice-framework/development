@@ -78,7 +78,9 @@ type ReleaseBuildIdentity struct {
 }
 
 // ReleaseModule is one exact module-graph selection authorized by the catalog.
-// Renderers must match both fields in go.mod and vendor/modules.txt.
+// Renderers must match both fields in go.mod and vendor/modules.txt. An empty
+// selection permits missing root graph files only after a renderer proves that
+// the module is dependency-free.
 type ReleaseModule struct {
 	Path    string `json:"path"`
 	Version string `json:"version"`

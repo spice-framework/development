@@ -62,14 +62,18 @@ starter gate runs. This preflight is read-only, shell-free, and offline; it uses
 the rest of verification.
 
 The catalog separately authorizes generic `go-module-v1` and
-`go-distribution-v1` release profiles for the five Spice Agent repositories.
-Those entries fix the preview version, strict `spice-release.json` file name,
-exact required module path-and-version selections, and—for the distribution only—the two binaries, six
-platform targets, and required payload files. This metadata cannot route a
-`starter-*` repository around the established starter release path. Rendering,
-independent verification, attestation, and publication remain separate
-fail-closed commands and workflows; catalog authorization alone publishes
-nothing.
+`go-distribution-v1` release profiles for Spice core and the five Spice Agent
+repositories. Those entries fix the preview version, strict
+`spice-release.json` file name, exact required module path-and-version
+selections, and—for the distribution only—the two binaries, six platform
+targets, and required payload files. Spice core uses the narrowly validated
+dependency-free form: both root graph files are absent, the catalog selects no
+modules, no `require`, `tool`, `replace`, or tracked `vendor/` content is
+allowed, and offline read-only Go inspection must report only the main module.
+This metadata cannot route a `starter-*` repository around the established
+starter release path. Rendering, independent verification, attestation, and
+publication remain separate fail-closed commands and workflows; catalog
+authorization alone publishes nothing.
 
 The first generic renderer is available through an isolated command boundary:
 
@@ -79,8 +83,9 @@ spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v
 ```
 
 It requires a clean tagged checkout, an exact catalog origin and module,
-`go 1.26.0`, `toolchain go1.26.5`, committed vendor contents, no `replace`
-directives, and a strict committed `spice-release.json`. Rendering is offline,
+`go 1.26.0`, `toolchain go1.26.5`, a strict committed
+`spice-release.json`, and either a complete committed vendor graph or the
+fail-closed dependency-free form described above. Rendering is offline,
 deterministic, outside the repository, and refuses to replace an existing
 directory. The local verifier byte-compares a fresh rendering against the
 artifact allowlist; it is not the independent post-attestation verifier used

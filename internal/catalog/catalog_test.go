@@ -24,7 +24,11 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		spice.CanonicalURL != "https://github.com/spice-framework/spice" ||
 		spice.CloneURL != "https://github.com/spice-framework/spice.git" ||
 		spice.Module != "github.com/spice-framework/spice" ||
-		spice.CanonicalModule != "" {
+		spice.CanonicalModule != "" || spice.Release == nil ||
+		spice.Release.Profile != ReleaseProfileGoModule ||
+		spice.Release.Version != "v0.1.0-preview.2" ||
+		spice.Release.MetadataFile != "spice-release.json" ||
+		len(spice.Release.RequiredModules) != 0 {
 		t.Fatalf("Spice repository identity = %#v", spice)
 	}
 	toolchain := requireRepository(t, value.Repositories, "toolchain")

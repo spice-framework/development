@@ -64,6 +64,12 @@
       "clone_url": "https://github.com/spice-framework/spice.git",
       "artifact": "go-module",
       "module": "github.com/spice-framework/spice",
+      "release": {
+        "profile": "go-module-v1",
+        "version": "v0.1.0-preview.2",
+        "metadata_file": "spice-release.json",
+        "required_modules": []
+      },
       "dependencies": [
         ".github",
         "development"

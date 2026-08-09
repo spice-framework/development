@@ -61,6 +61,13 @@ type module struct {
 	Version string
 }
 
+type moduleGraphLayout uint8
+
+const (
+	moduleGraphVendored moduleGraphLayout = iota
+	moduleGraphDependencyFree
+)
+
 type intent struct {
 	Schema     int    `json:"schema"`
 	Profile    string `json:"profile"`
@@ -196,13 +203,14 @@ func prepare(
 	if err != nil {
 		return source{}, err
 	}
-	if err := requireCommittedFiles(ctx, root, commit, repository.Release.MetadataFile, runner); err != nil {
+	layout, err := requireCommittedFiles(ctx, root, commit, repository, runner)
+	if err != nil {
 		return source{}, err
 	}
 	if err := requireIntent(ctx, root, commit, repository, runner); err != nil {
 		return source{}, err
 	}
-	modules, err := requireModuleGraph(ctx, root, repository, runner)
+	modules, err := requireModuleGraph(ctx, root, repository, layout, runner)
 	if err != nil {
 		return source{}, err
 	}
@@ -336,20 +344,88 @@ func requireCommittedFiles(
 	ctx context.Context,
 	root string,
 	commit string,
-	metadataFile string,
+	repository catalog.Repository,
 	runner process.Runner,
-) error {
-	files := []string{"LICENSE", "README.md", "go.mod", "go.sum", metadataFile, "vendor/modules.txt"}
+) (moduleGraphLayout, error) {
+	paths, err := committedPaths(ctx, root, commit)
+	if err != nil {
+		return 0, err
+	}
+	files := []string{"LICENSE", "README.md", "go.mod", repository.Release.MetadataFile}
 	for _, name := range files {
-		kind, err := runner.Run(ctx, root, "git", "cat-file", "-t", commit+":"+name)
-		if err != nil {
-			return fmt.Errorf("required committed Go release file %q: %w", name, err)
-		}
-		if strings.TrimSpace(kind) != "blob" {
-			return fmt.Errorf("required committed Go release file %q is not a regular Git blob", name)
+		if err := requireCommittedBlob(ctx, root, commit, name, paths, runner); err != nil {
+			return 0, err
 		}
 	}
+	hasGoSum := hasCommittedPath(paths, "go.sum")
+	hasVendorGraph := hasCommittedPath(paths, "vendor/modules.txt")
+	if hasGoSum != hasVendorGraph {
+		return 0, errors.New("Go release must commit both go.sum and vendor/modules.txt or neither")
+	}
+	if hasGoSum {
+		for _, name := range []string{"go.sum", "vendor/modules.txt"} {
+			if err := requireCommittedBlob(ctx, root, commit, name, paths, runner); err != nil {
+				return 0, err
+			}
+		}
+		return moduleGraphVendored, nil
+	}
+	if len(repository.Release.RequiredModules) != 0 {
+		return 0, errors.New("dependency-free Go release cannot omit module graph files when the catalog requires modules")
+	}
+	for name := range paths {
+		if name == "vendor" || strings.HasPrefix(name, "vendor/") {
+			return 0, fmt.Errorf("dependency-free Go release has unexpected committed vendor path %q", name)
+		}
+	}
+	return moduleGraphDependencyFree, nil
+}
+
+func committedPaths(ctx context.Context, root string, commit string) (map[string]struct{}, error) {
+	content, err := gitBinary(
+		ctx,
+		root,
+		maximumGitTreeBytes,
+		"ls-tree",
+		"-rz",
+		"--name-only",
+		"--full-tree",
+		commit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list committed Go release paths: %w", err)
+	}
+	paths := make(map[string]struct{})
+	for name := range bytes.SplitSeq(bytes.TrimSuffix(content, []byte{0}), []byte{0}) {
+		paths[string(name)] = struct{}{}
+	}
+	return paths, nil
+}
+
+func requireCommittedBlob(
+	ctx context.Context,
+	root string,
+	commit string,
+	name string,
+	paths map[string]struct{},
+	runner process.Runner,
+) error {
+	if !hasCommittedPath(paths, name) {
+		return fmt.Errorf("required committed Go release file %q is missing", name)
+	}
+	kind, err := runner.Run(ctx, root, "git", "cat-file", "-t", commit+":"+name)
+	if err != nil {
+		return fmt.Errorf("required committed Go release file %q: %w", name, err)
+	}
+	if strings.TrimSpace(kind) != "blob" {
+		return fmt.Errorf("required committed Go release file %q is not a regular Git blob", name)
+	}
 	return nil
+}
+
+func hasCommittedPath(paths map[string]struct{}, name string) bool {
+	_, found := paths[name]
+	return found
 }
 
 func requireIntent(

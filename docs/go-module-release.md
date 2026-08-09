@@ -28,6 +28,15 @@ The entry may be marked indirect when
 Go derives it from a `tool` directive. Releases reject every `replace`
 directive, including remote replacements.
 
+The sole graphless exception is a catalog entry with no required modules whose
+root module genuinely selects no dependencies. In that mode both root
+`go.sum` and `vendor/modules.txt` must be absent. The renderer rejects a
+partial pair, every tracked `vendor/` path, and every `require`, `tool`, or
+`replace` directive. It then runs offline `go list -mod=readonly` for the
+packages and module graph and requires the graph to contain exactly the
+unversioned main module. A missing graph file never downgrades a normal
+vendored release into this mode.
+
 ## Rendering
 
 ```text
