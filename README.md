@@ -78,9 +78,9 @@ authorization alone publishes nothing.
 The first generic renderer is available through an isolated command boundary:
 
 ```text
-spice-dev go-release policy-check --repo spice-agent --module github.com/spice-framework/spice-agent --version v0.1.0-preview.4 --profile go-module-v1
-spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.4 --output ../release
-spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.4 --artifacts ../release
+spice-dev go-release policy-check --repo spice-agent --module github.com/spice-framework/spice-agent --version v0.1.0-preview.5 --profile go-module-v1
+spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.5 --output ../release
+spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.5 --artifacts ../release
 ```
 
 `policy-check` reads only the embedded catalog and emits one stable tab-separated
@@ -101,8 +101,9 @@ to establish release trust. See [`docs/go-module-release.md`](docs/go-module-rel
 Binary applications use the separate catalog-closed distribution boundary:
 
 ```text
-spice-dev distribution-release render --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.2 --output ../distribution
-spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.2 --artifacts ../distribution
+spice-dev go-release policy-check --repo spice-agent-coding --module github.com/spice-framework/spice-agent-coding --version v0.1.0-preview.3 --profile go-distribution-v1
+spice-dev distribution-release render --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.3 --output ../distribution
+spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.3 --artifacts ../distribution
 ```
 
 Only a `go-distribution-v1` catalog entry can select that command. The catalog,

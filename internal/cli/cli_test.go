@@ -65,21 +65,45 @@ func TestRuntimeChecksGoReleasePolicyWithoutReleaseInputs(t *testing.T) {
 	// A nil process runner makes any accidental Git, Go, or network-capable
 	// command execution fail immediately. Policy comparison is catalog-only.
 	runtime.Runner = nil
-	want := "go-module-v1\tspice-agent\tgithub.com/spice-framework/spice-agent\tv0.1.0-preview.4\n"
-	arguments := []string{
-		"go-release", "policy-check",
-		"--repo", "spice-agent",
-		"--module", "github.com/spice-framework/spice-agent",
-		"--version", "v0.1.0-preview.4",
-		"--profile", "go-module-v1",
+	accepted := []struct {
+		name      string
+		arguments []string
+		want      string
+	}{
+		{
+			name: "Agent module",
+			arguments: []string{
+				"go-release", "policy-check",
+				"--repo", "spice-agent",
+				"--module", "github.com/spice-framework/spice-agent",
+				"--version", "v0.1.0-preview.5",
+				"--profile", "go-module-v1",
+			},
+			want: "go-module-v1\tspice-agent\tgithub.com/spice-framework/spice-agent\tv0.1.0-preview.5\n",
+		},
+		{
+			name: "coding distribution",
+			arguments: []string{
+				"go-release", "policy-check",
+				"--repo", "spice-agent-coding",
+				"--module", "github.com/spice-framework/spice-agent-coding",
+				"--version", "v0.1.0-preview.3",
+				"--profile", "go-distribution-v1",
+			},
+			want: "go-distribution-v1\tspice-agent-coding\tgithub.com/spice-framework/spice-agent-coding\tv0.1.0-preview.3\n",
+		},
 	}
-	var stdout, stderr strings.Builder
-	if code := runtime.Run(t.Context(), arguments, &stdout, &stderr); code != 0 || stdout.String() != want || stderr.Len() != 0 {
-		t.Fatalf("policy-check code/output = %d, %q, %q", code, stdout.String(), stderr.String())
-	}
-	stdout.Reset()
-	if code := runtime.Run(t.Context(), arguments, errorWriter{}, &stderr); code != 1 {
-		t.Fatalf("policy-check output failure code = %d", code)
+	for _, test := range accepted {
+		t.Run(test.name, func(t *testing.T) {
+			var stdout, stderr strings.Builder
+			if code := runtime.Run(t.Context(), test.arguments, &stdout, &stderr); code != 0 || stdout.String() != test.want || stderr.Len() != 0 {
+				t.Fatalf("policy-check code/output = %d, %q, %q", code, stdout.String(), stderr.String())
+			}
+			stdout.Reset()
+			if code := runtime.Run(t.Context(), test.arguments, errorWriter{}, &stderr); code != 1 {
+				t.Fatalf("policy-check output failure code = %d", code)
+			}
+		})
 	}
 
 	tests := []struct {
@@ -90,9 +114,11 @@ func TestRuntimeChecksGoReleasePolicyWithoutReleaseInputs(t *testing.T) {
 	}{
 		{name: "stale preview.2", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.2", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
 		{name: "stale preview.3", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.3", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
-		{name: "module drift", arguments: []string{"--repo", "spice-agent", "--module", "example.invalid/agent", "--version", "v0.1.0-preview.4", "--profile", "go-module-v1"}, wantCode: 1, wantError: "module does not match"},
-		{name: "profile drift", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.4", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "profile does not match"},
-		{name: "unknown repository", arguments: []string{"--repo", "unknown", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.4", "--profile", "go-module-v1"}, wantCode: 1, wantError: "not in the catalog"},
+		{name: "stale preview.4", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.4", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
+		{name: "stale distribution preview.2", arguments: []string{"--repo", "spice-agent-coding", "--module", "github.com/spice-framework/spice-agent-coding", "--version", "v0.1.0-preview.2", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "does not match catalog"},
+		{name: "module drift", arguments: []string{"--repo", "spice-agent", "--module", "example.invalid/agent", "--version", "v0.1.0-preview.5", "--profile", "go-module-v1"}, wantCode: 1, wantError: "module does not match"},
+		{name: "profile drift", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.5", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "profile does not match"},
+		{name: "unknown repository", arguments: []string{"--repo", "unknown", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.5", "--profile", "go-module-v1"}, wantCode: 1, wantError: "not in the catalog"},
 		{name: "positional", arguments: []string{"extra"}, wantCode: 2, wantError: "accepts no positional arguments"},
 	}
 	for _, test := range tests {

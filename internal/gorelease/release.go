@@ -67,13 +67,13 @@ type Result struct {
 	Files     []string
 }
 
-// CheckPolicy validates an exact Go module release tuple against the catalog.
+// CheckPolicy validates an exact generic Go release tuple against the catalog.
 // It performs no source, Git, filesystem, artifact, or network access.
 func CheckPolicy(options PolicyOptions, value catalog.Catalog) (Policy, error) {
 	if err := value.Validate(); err != nil {
 		return Policy{}, fmt.Errorf("validate Go release catalog: %w", err)
 	}
-	repository, err := selectRepository(value, options.Repository, options.Version)
+	repository, err := selectPolicyRepository(value, options.Repository, options.Version)
 	if err != nil {
 		return Policy{}, err
 	}
@@ -95,6 +95,39 @@ func CheckPolicy(options PolicyOptions, value catalog.Catalog) (Policy, error) {
 		Module:     repository.Module,
 		Version:    repository.Release.Version,
 	}, nil
+}
+
+func selectPolicyRepository(
+	value catalog.Catalog,
+	name string,
+	version string,
+) (catalog.Repository, error) {
+	if strings.TrimSpace(name) == "" {
+		return catalog.Repository{}, errors.New("Go release repository is required")
+	}
+	for _, repository := range value.Repositories {
+		if repository.Name != name {
+			continue
+		}
+		if strings.HasPrefix(repository.Name, "starter-") {
+			return catalog.Repository{}, errors.New("starter repositories must use library-release")
+		}
+		if repository.Status != "active" || repository.Artifact != "go-module" ||
+			repository.Release == nil ||
+			(repository.Release.Profile != catalog.ReleaseProfileGoModule &&
+				repository.Release.Profile != catalog.ReleaseProfileDistribution) {
+			return catalog.Repository{}, fmt.Errorf("repository %q is not authorized for a generic Go release", name)
+		}
+		if version != repository.Release.Version {
+			return catalog.Repository{}, fmt.Errorf(
+				"Go release version %q does not match catalog authorization %q",
+				version,
+				repository.Release.Version,
+			)
+		}
+		return repository, nil
+	}
+	return catalog.Repository{}, fmt.Errorf("Go release repository %q is not in the catalog", name)
 }
 
 type source struct {

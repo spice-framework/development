@@ -53,7 +53,8 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 			!slices.Equal(repository.Dependencies, agentDependencies) ||
 			len(repository.Fast) != 1 || len(repository.Full) != 1 ||
 			!slices.Contains(repository.Fast[0].Arguments, "-mode=fast") ||
-			repository.Release == nil || repository.Release.Profile != ReleaseProfileGoModule {
+			repository.Release == nil || repository.Release.Profile != ReleaseProfileGoModule ||
+			repository.Release.Version != "v0.1.0-preview.5" {
 			t.Fatalf("%s repository identity = %#v", name, repository)
 		}
 	}
@@ -84,7 +85,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		}) || len(agentCoding.Fast) != 1 || len(agentCoding.Full) != 1 ||
 		!slices.Contains(agentCoding.Fast[0].Arguments, "-mode=fast") ||
 		agentCoding.Release == nil || agentCoding.Release.Profile != ReleaseProfileDistribution ||
-		agentCoding.Release.Version != "v0.1.0-preview.2" ||
+		agentCoding.Release.Version != "v0.1.0-preview.3" ||
 		len(agentCoding.Release.Binaries) != 2 || len(agentCoding.Release.Targets) != 6 ||
 		agentCoding.Release.BuildIdentity == nil ||
 		agentCoding.Release.BuildIdentity.VersionSymbol != agentCoding.Module+"/internal/distribution.Version" ||
@@ -266,24 +267,25 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		t.Fatal(err)
 	}
 	const (
-		foundationVersion     = "v0.1.0-preview.2"
-		agentVersion          = "v0.1.0-preview.4"
-		componentVersion      = "v0.1.0-preview.1"
-		distributionVersion   = "v0.1.0-preview.2"
-		toolchainVersion      = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
-		distributionToolchain = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
-		foundationModule      = "github.com/spice-framework/spice"
-		toolchainModule       = "github.com/spice-framework/toolchain"
-		agentModule           = "github.com/spice-framework/spice-agent"
-		providerModule        = "github.com/spice-framework/spice-agent-provider-openai"
-		codingToolsModule     = "github.com/spice-framework/spice-agent-tools-coding"
-		tuiModule             = "github.com/spice-framework/spice-agent-tui"
-		distributionModule    = "github.com/spice-framework/spice-agent-coding"
+		foundationVersion      = "v0.1.0-preview.2"
+		agentReleaseVersion    = "v0.1.0-preview.5"
+		agentDependencyVersion = "v0.1.0-preview.4"
+		componentVersion       = "v0.1.0-preview.1"
+		distributionVersion    = "v0.1.0-preview.3"
+		toolchainVersion       = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
+		distributionToolchain  = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
+		foundationModule       = "github.com/spice-framework/spice"
+		toolchainModule        = "github.com/spice-framework/toolchain"
+		agentModule            = "github.com/spice-framework/spice-agent"
+		providerModule         = "github.com/spice-framework/spice-agent-provider-openai"
+		codingToolsModule      = "github.com/spice-framework/spice-agent-tools-coding"
+		tuiModule              = "github.com/spice-framework/spice-agent-tui"
+		distributionModule     = "github.com/spice-framework/spice-agent-coding"
 	)
 	want := map[string]ReleasePolicy{
 		"spice-agent": {
 			Profile:      ReleaseProfileGoModule,
-			Version:      agentVersion,
+			Version:      agentReleaseVersion,
 			MetadataFile: "spice-release.json",
 			RequiredModules: []ReleaseModule{
 				{Path: foundationModule, Version: foundationVersion},
@@ -297,7 +299,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 			RequiredModules: []ReleaseModule{
 				{Path: foundationModule, Version: foundationVersion},
 				{Path: toolchainModule, Version: toolchainVersion},
-				{Path: agentModule, Version: agentVersion},
+				{Path: agentModule, Version: agentDependencyVersion},
 			},
 		},
 		"spice-agent-tools-coding": {
@@ -307,7 +309,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 			RequiredModules: []ReleaseModule{
 				{Path: foundationModule, Version: foundationVersion},
 				{Path: toolchainModule, Version: toolchainVersion},
-				{Path: agentModule, Version: agentVersion},
+				{Path: agentModule, Version: agentDependencyVersion},
 			},
 		},
 		"spice-agent-tui": {
@@ -326,7 +328,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 			RequiredModules: []ReleaseModule{
 				{Path: foundationModule, Version: foundationVersion},
 				{Path: toolchainModule, Version: distributionToolchain},
-				{Path: agentModule, Version: agentVersion},
+				{Path: agentModule, Version: agentDependencyVersion},
 				{Path: providerModule, Version: componentVersion},
 				{Path: codingToolsModule, Version: componentVersion},
 				{Path: tuiModule, Version: componentVersion},
@@ -366,16 +368,17 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 	}
 }
 
-func TestAgentCodingReleaseRejectsImmutablePreviewOne(t *testing.T) {
+func TestAgentCodingReleaseRejectsStaleVersions(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
 	if err != nil {
 		t.Fatal(err)
 	}
 	repository := requireRepository(t, value.Repositories, "spice-agent-coding")
-	if repository.Release == nil || repository.Release.Version == "v0.1.0-preview.1" ||
-		repository.Release.Version != "v0.1.0-preview.2" {
-		t.Fatalf("spice-agent-coding release version = %#v, require preview.2 and reject immutable preview.1", repository.Release)
+	stale := []string{"v0.1.0-preview.1", "v0.1.0-preview.2"}
+	if repository.Release == nil || slices.Contains(stale, repository.Release.Version) ||
+		repository.Release.Version != "v0.1.0-preview.3" {
+		t.Fatalf("spice-agent-coding release version = %#v, require preview.3 and reject %v", repository.Release, stale)
 	}
 }
 
@@ -386,14 +389,17 @@ func TestAgentReleasePoliciesRejectStaleSelections(t *testing.T) {
 		t.Fatal(err)
 	}
 	const (
-		agentModule = "github.com/spice-framework/spice-agent"
-		wantVersion = "v0.1.0-preview.4"
+		agentModule            = "github.com/spice-framework/spice-agent"
+		agentReleaseVersion    = "v0.1.0-preview.5"
+		agentDependencyVersion = "v0.1.0-preview.4"
 	)
-	staleVersions := []string{"v0.1.0-preview.2", "v0.1.0-preview.3"}
+	staleReleaseVersions := []string{"v0.1.0-preview.2", "v0.1.0-preview.3", "v0.1.0-preview.4"}
 	agent := requireRepository(t, value.Repositories, "spice-agent")
-	if agent.Release == nil || slices.Contains(staleVersions, agent.Release.Version) || agent.Release.Version != wantVersion {
-		t.Fatalf("spice-agent release version = %#v, require %q and reject %v", agent.Release, wantVersion, staleVersions)
+	if agent.Release == nil || slices.Contains(staleReleaseVersions, agent.Release.Version) ||
+		agent.Release.Version != agentReleaseVersion {
+		t.Fatalf("spice-agent release version = %#v, require %q and reject %v", agent.Release, agentReleaseVersion, staleReleaseVersions)
 	}
+	disallowedDependencyVersions := []string{"v0.1.0-preview.2", "v0.1.0-preview.3", agentReleaseVersion}
 	for _, name := range []string{
 		"spice-agent-provider-openai",
 		"spice-agent-tools-coding",
@@ -406,8 +412,8 @@ func TestAgentReleasePoliciesRejectStaleSelections(t *testing.T) {
 				selected = required.Version
 			}
 		}
-		if slices.Contains(staleVersions, selected) || selected != wantVersion {
-			t.Fatalf("%s Agent selection = %q, require %q and reject %v", name, selected, wantVersion, staleVersions)
+		if slices.Contains(disallowedDependencyVersions, selected) || selected != agentDependencyVersion {
+			t.Fatalf("%s Agent selection = %q, require %q and reject %v", name, selected, agentDependencyVersion, disallowedDependencyVersions)
 		}
 	}
 	tui := requireRepository(t, value.Repositories, "spice-agent-tui")
