@@ -7,7 +7,9 @@ implementation roadmap. Product status and sequencing remain owned by the
 The current release catalog selects
 `github.com/spice-framework/spice v0.1.0-preview.2` for all five Agent release
 contracts. After the immutable `spice-agent v0.1.0-preview.1` tag failed before
-artifact rendering, the catalog authorizes `spice-agent v0.1.0-preview.2` and
+artifact rendering and the immutable `v0.1.0-preview.2` attempt failed in the
+independent verifier before attestation, the catalog authorizes
+`spice-agent v0.1.0-preview.3` and
 requires that exact version in the provider, coding-tools, and distribution
 graphs. The TUI, provider, coding-tools, and distribution release versions
 remain `v0.1.0-preview.1`; every toolchain, other sibling, metadata, binary,

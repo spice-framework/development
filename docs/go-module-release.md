@@ -15,7 +15,7 @@ The catalog names the metadata file. Version 1 is a closed JSON object:
   "profile": "go-module-v1",
   "repository": "spice-agent",
   "module": "github.com/spice-framework/spice-agent",
-  "version": "v0.1.0-preview.2"
+  "version": "v0.1.0-preview.3"
 }
 ```
 
@@ -37,7 +37,7 @@ exact toolchain selection remains
 `v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
 
 This authorization is deliberately repository-scoped. `spice-agent` is
-authorized at `v0.1.0-preview.2`; the provider, coding-tools, and distribution
+authorized at `v0.1.0-preview.3`; the provider, coding-tools, and distribution
 policies select that exact Agent version. Their own versions, and the TUI's own
 version, remain `v0.1.0-preview.1`. The separate `spice-agent-coding`
 distribution policy retains its distinct toolchain, remaining sibling,
@@ -49,8 +49,17 @@ workflow attempt, not an authorized or published Spice release. Its
 stopped in candidate-owned verification before the central renderer,
 independent verifier, attestation, provenance authentication, or publisher ran;
 GitHub contains no release or release assets for that tag. The tag must never
-be moved or reused. Recovery advances the release version to
-`v0.1.0-preview.2`.
+be moved or reused.
+
+The immutable `spice-agent v0.1.0-preview.2` tag records a separate failed
+pre-attestation workflow attempt, not a published release. Its
+[release run](https://github.com/spice-framework/spice-agent/actions/runs/31322858420)
+completed candidate validation and central rendering, then the independent
+verifier job failed while cleaning its isolated module cache. Attestation,
+provenance authentication, and publication were skipped, and GitHub contains no
+release or release assets for that tag. That tag also must never be moved or
+reused. Recovery advances the Agent release version and its downstream
+selections to `v0.1.0-preview.3`.
 
 The sole graphless exception is a catalog entry with no required modules whose
 root module genuinely selects no dependencies. In that mode both root

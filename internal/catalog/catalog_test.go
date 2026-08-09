@@ -93,7 +93,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	foundationSpiceVersion := "v0.1.0-preview.2"
 	toolchainVersion := "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
 	distributionToolchainVersion := "v0.1.0-preview.1.0.20260807044408-6598abca8196"
-	agentVersion := "v0.1.0-preview.2"
+	agentVersion := "v0.1.0-preview.3"
 	componentVersion := "v0.1.0-preview.1"
 	for name, want := range map[string][]ReleaseModule{
 		"spice-agent": {
@@ -266,7 +266,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 	}
 	const (
 		foundationVersion     = "v0.1.0-preview.2"
-		agentVersion          = "v0.1.0-preview.2"
+		agentVersion          = "v0.1.0-preview.3"
 		componentVersion      = "v0.1.0-preview.1"
 		toolchainVersion      = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
 		distributionToolchain = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
@@ -360,6 +360,45 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		repository := requireRepository(t, value.Repositories, name)
 		if repository.Release == nil || !reflect.DeepEqual(*repository.Release, expected) {
 			t.Fatalf("%s release policy = %#v, want %#v", name, repository.Release, expected)
+		}
+	}
+}
+
+func TestAgentReleasePoliciesRejectStalePreview2Selections(t *testing.T) {
+	t.Parallel()
+	value, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	const (
+		agentModule  = "github.com/spice-framework/spice-agent"
+		staleVersion = "v0.1.0-preview.2"
+		wantVersion  = "v0.1.0-preview.3"
+	)
+	agent := requireRepository(t, value.Repositories, "spice-agent")
+	if agent.Release == nil || agent.Release.Version == staleVersion || agent.Release.Version != wantVersion {
+		t.Fatalf("spice-agent release version = %#v, require %q and reject %q", agent.Release, wantVersion, staleVersion)
+	}
+	for _, name := range []string{
+		"spice-agent-provider-openai",
+		"spice-agent-tools-coding",
+		"spice-agent-coding",
+	} {
+		repository := requireRepository(t, value.Repositories, name)
+		selected := ""
+		for _, required := range repository.Release.RequiredModules {
+			if required.Path == agentModule {
+				selected = required.Version
+			}
+		}
+		if selected == staleVersion || selected != wantVersion {
+			t.Fatalf("%s Agent selection = %q, require %q and reject %q", name, selected, wantVersion, staleVersion)
+		}
+	}
+	tui := requireRepository(t, value.Repositories, "spice-agent-tui")
+	for _, required := range tui.Release.RequiredModules {
+		if required.Path == agentModule {
+			t.Fatalf("spice-agent-tui unexpectedly selects Agent %q", required.Version)
 		}
 	}
 }
