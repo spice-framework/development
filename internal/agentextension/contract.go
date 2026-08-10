@@ -20,7 +20,8 @@ import (
 )
 
 const (
-	ProfileID            = "compiled-tool-autoconfigure/v1alpha1-preview5"
+	LegacyProfileID      = "compiled-tool-autoconfigure/v1alpha1-preview5"
+	ProfileID            = "compiled-tool-autoconfigure/v1alpha1-preview6"
 	ManifestSchema       = "spice.agent.extension/v1alpha1"
 	maximumManifestBytes = 64 << 10
 )

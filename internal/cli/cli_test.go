@@ -72,7 +72,7 @@ func TestRuntimeInitializesSourceOnlyAgentExtensionWithoutRunner(t *testing.T) {
 	code := (Runtime{Catalog: value, Runner: nil}).Run(t.Context(), []string{
 		"agent-extension", "init", "--directory", root,
 		"--module", "example.com/acme/agent-tool", "--tool-name", "acme.inspect",
-		"--profile", "compiled-tool-autoconfigure/v1alpha1-preview5",
+		"--profile", "compiled-tool-autoconfigure/v1alpha1-preview6",
 	}, &stdout, &stderr)
 	if code != 0 || !strings.Contains(stdout.String(), "source-only") || stderr.Len() != 0 {
 		t.Fatalf("agent-extension init = %d, %q, %q", code, stdout.String(), stderr.String())

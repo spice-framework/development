@@ -92,6 +92,41 @@ func TestInitCreatesDeterministicSourceOnlyScaffold(t *testing.T) {
 		strings.Contains(string(readme), "external-author") {
 		t.Fatalf("README boundary = %q, %v", readme, err)
 	}
+	moduleFile := string(mustRead(t, filepath.Join(first, "go.mod")))
+	sumFile := string(mustRead(t, filepath.Join(first, "go.sum")))
+	for _, want := range []string{"github.com/spice-framework/spice-agent v0.1.0-preview.6", "github.com/spice-framework/toolchain v0.1.0-preview.2"} {
+		if !strings.Contains(moduleFile, want) {
+			t.Fatalf("current go.mod missing %q: %s", want, moduleFile)
+		}
+	}
+	for _, want := range []string{"h1:XJKJge+xWP/FLNoL1/rXq8z8tdu/5iEkKfmu1dTgFms=", "h1:Hv/Ur+Uc3cG00jVCo/R5zINZ1w33jH0O6/ekeNOrFyk="} {
+		if !strings.Contains(sumFile, want) {
+			t.Fatalf("current go.sum missing %q: %s", want, sumFile)
+		}
+	}
+}
+
+func TestInitPreservesImmutableLegacyProfile(t *testing.T) {
+	t.Parallel()
+	root := filepath.Join(t.TempDir(), "legacy")
+	_, err := Init(t.Context(), InitOptions{
+		Directory: root, Module: "example.com/acme/legacy-tool", ToolName: "acme.legacy", Profile: LegacyProfileID,
+	}, testCatalog(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	moduleFile := string(mustRead(t, filepath.Join(root, "go.mod")))
+	sumFile := string(mustRead(t, filepath.Join(root, "go.sum")))
+	for _, want := range []string{
+		"github.com/spice-framework/spice-agent v0.1.0-preview.5",
+		"github.com/spice-framework/toolchain v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6",
+		"h1:rGND9DYx3pssliD1tZQOvPDOZ5GVfQLDc7VJQI3HLOM=",
+		"h1:paTYw/o/6OsbNAvOWvjicOOqWyyt2Nd3vWdoPq8+BjA=",
+	} {
+		if !strings.Contains(moduleFile+sumFile, want) {
+			t.Fatalf("legacy scaffold missing %q", want)
+		}
+	}
 }
 
 func TestInitRejectsUnsafeOrIncompleteRequests(t *testing.T) {

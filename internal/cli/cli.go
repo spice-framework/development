@@ -700,7 +700,7 @@ Usage:
   spice-dev go-release verify --root path --repo name --version vX.Y.Z --artifacts path
   spice-dev distribution-release render --root path --repo name --version vX.Y.Z --output new-path
   spice-dev distribution-release verify --root path --repo name --version vX.Y.Z --artifacts path
-  spice-dev agent-extension init --directory new-path --module module/path --tool-name name --profile compiled-tool-autoconfigure/v1alpha1-preview5
+  spice-dev agent-extension init --directory new-path --module module/path --tool-name name --profile compiled-tool-autoconfigure/v1alpha1-preview6
   spice-dev agent-extension check --root materialized-path
 `)
 	return err

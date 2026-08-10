@@ -260,28 +260,39 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	}
 }
 
-func TestDefaultCatalogPinsInitialAgentExtensionProfile(t *testing.T) {
+func TestDefaultCatalogPinsImmutableAgentExtensionProfiles(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
 	if err != nil {
 		t.Fatal(err)
 	}
-	profile, found := value.AgentExtensionProfile("compiled-tool-autoconfigure/v1alpha1-preview5")
-	if !found {
-		t.Fatal("initial Agent extension profile is missing")
+	if len(value.AgentExtensions.Profiles) != 2 {
+		t.Fatalf("Agent extension profiles = %#v", value.AgentExtensions.Profiles)
 	}
-	if profile.Schema != "spice.agent.extension/v1alpha1" ||
-		profile.Kind != "compiled-tool-autoconfigure" ||
-		profile.Status != "experimental" || profile.Activation != "explicit-autoconfigure" ||
-		profile.GoDirective != "1.26.0" || profile.GoToolchain != "go1.26.5" ||
-		profile.RuntimeGo != "1.26.5" || len(profile.Modules) != 3 || len(profile.Tools) != 2 {
-		t.Fatalf("Agent extension profile = %#v", profile)
+	for _, id := range []string{
+		"compiled-tool-autoconfigure/v1alpha1-preview5",
+		"compiled-tool-autoconfigure/v1alpha1-preview6",
+	} {
+		profile, found := value.AgentExtensionProfile(id)
+		if !found {
+			t.Fatalf("Agent extension profile %q is missing", id)
+		}
+		wantModules, _ := agentExtensionProfileModules(id)
+		if profile.Schema != "spice.agent.extension/v1alpha1" ||
+			profile.Kind != "compiled-tool-autoconfigure" ||
+			profile.Status != "experimental" || profile.Activation != "explicit-autoconfigure" ||
+			profile.GoDirective != "1.26.0" || profile.GoToolchain != "go1.26.5" ||
+			profile.RuntimeGo != "1.26.5" || !slices.Equal(profile.Modules, wantModules) || len(profile.Tools) != 2 {
+			t.Fatalf("Agent extension profile %q = %#v", id, profile)
+		}
 	}
-	if profile.Modules[1].Path != "github.com/spice-framework/spice-agent" ||
-		profile.Modules[1].Version != "v0.1.0-preview.5" ||
-		profile.Modules[1].Sum != "h1:rGND9DYx3pssliD1tZQOvPDOZ5GVfQLDc7VJQI3HLOM=" {
-		t.Fatalf("Agent extension core pin = %#v", profile.Modules[1])
+	legacy, _ := value.AgentExtensionProfile("compiled-tool-autoconfigure/v1alpha1-preview5")
+	current, _ := value.AgentExtensionProfile("compiled-tool-autoconfigure/v1alpha1-preview6")
+	if legacy.Modules[1].Version != "v0.1.0-preview.5" || current.Modules[1].Version != "v0.1.0-preview.6" ||
+		legacy.Modules[2].Version == current.Modules[2].Version {
+		t.Fatalf("immutable profile evolution = legacy %#v, current %#v", legacy.Modules, current.Modules)
 	}
+	var found bool
 	if _, found = value.AgentExtensionProfile("compiled-tool-autoconfigure/v1alpha2"); found {
 		t.Fatal("unsupported Agent extension profile unexpectedly resolved")
 	}
@@ -293,28 +304,30 @@ func TestAgentExtensionProfileValidationFailsClosed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	profile := value.AgentExtensions.Profiles[0]
-	for name, mutate := range map[string]func(*AgentExtensionProfile){
-		"identity":   func(value *AgentExtensionProfile) { value.ID = "latest" },
-		"status":     func(value *AgentExtensionProfile) { value.Status = "stable" },
-		"Go":         func(value *AgentExtensionProfile) { value.RuntimeGo = "1.27.0" },
-		"activation": func(value *AgentExtensionProfile) { value.Activation = "implicit" },
-		"module order": func(value *AgentExtensionProfile) {
-			value.Modules[0], value.Modules[1] = value.Modules[1], value.Modules[0]
-		},
-		"module sum":  func(value *AgentExtensionProfile) { value.Modules[0].Sum = "sha256:bad" },
-		"tool":        func(value *AgentExtensionProfile) { value.Tools = append(value.Tools, "example.invalid/tool") },
-		"composition": func(value *AgentExtensionProfile) { value.Composition.Generated = "../escape" },
-	} {
-		t.Run(name, func(t *testing.T) {
-			copy := profile
-			copy.Modules = slices.Clone(profile.Modules)
-			copy.Tools = slices.Clone(profile.Tools)
-			mutate(&copy)
-			if err := copy.validate(); err == nil {
-				t.Fatal("profile validation error = nil")
-			}
-		})
+	for _, profile := range value.AgentExtensions.Profiles {
+		for name, mutate := range map[string]func(*AgentExtensionProfile){
+			"identity":   func(value *AgentExtensionProfile) { value.ID = "latest" },
+			"status":     func(value *AgentExtensionProfile) { value.Status = "stable" },
+			"Go":         func(value *AgentExtensionProfile) { value.RuntimeGo = "1.27.0" },
+			"activation": func(value *AgentExtensionProfile) { value.Activation = "implicit" },
+			"module order": func(value *AgentExtensionProfile) {
+				value.Modules[0], value.Modules[1] = value.Modules[1], value.Modules[0]
+			},
+			"module version": func(value *AgentExtensionProfile) { value.Modules[1].Version = "v0.1.0" },
+			"module sum":     func(value *AgentExtensionProfile) { value.Modules[0].Sum = "sha256:bad" },
+			"tool":           func(value *AgentExtensionProfile) { value.Tools = append(value.Tools, "example.invalid/tool") },
+			"composition":    func(value *AgentExtensionProfile) { value.Composition.Generated = "../escape" },
+		} {
+			t.Run(profile.ID+"/"+name, func(t *testing.T) {
+				copy := profile
+				copy.Modules = slices.Clone(profile.Modules)
+				copy.Tools = slices.Clone(profile.Tools)
+				mutate(&copy)
+				if err := copy.validate(); err == nil {
+					t.Fatal("profile validation error = nil")
+				}
+			})
+		}
 	}
 }
 

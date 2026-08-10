@@ -25,8 +25,14 @@ func render(options InitOptions, profile catalog.AgentExtensionProfile) ([]plann
 		"{{TOOL_NAME}}", options.ToolName,
 		"{{PROFILE}}", profile.ID,
 		"{{SPICE_VERSION}}", spice.Version,
+		"{{SPICE_SUM}}", spice.Sum,
+		"{{SPICE_GO_MOD_SUM}}", spice.GoModSum,
 		"{{AGENT_VERSION}}", agent.Version,
+		"{{AGENT_SUM}}", agent.Sum,
+		"{{AGENT_GO_MOD_SUM}}", agent.GoModSum,
 		"{{TOOLCHAIN_VERSION}}", toolchain.Version,
+		"{{TOOLCHAIN_SUM}}", toolchain.Sum,
+		"{{TOOLCHAIN_GO_MOD_SUM}}", toolchain.GoModSum,
 	)
 	manifest := Manifest{
 		Schema: ManifestSchema, Profile: profile.ID, Module: options.Module,
@@ -176,12 +182,12 @@ require (
 
 require github.com/spice-framework/toolchain {{TOOLCHAIN_VERSION}} // indirect
 `,
-	"go.sum": `github.com/spice-framework/spice {{SPICE_VERSION}} h1:5pYgTlUUzC/xZISetG/U6c1L/I3f8dUQSZhuo6YqxiA=
-github.com/spice-framework/spice {{SPICE_VERSION}}/go.mod h1:dBZV5UZcbY6pzhfGNtvAwQIJ8YsFna+jf1SAlmukJfk=
-github.com/spice-framework/spice-agent {{AGENT_VERSION}} h1:rGND9DYx3pssliD1tZQOvPDOZ5GVfQLDc7VJQI3HLOM=
-github.com/spice-framework/spice-agent {{AGENT_VERSION}}/go.mod h1:pbhYOeNgn4pCIhEmcdbjnFjJijY4ZSLM8ZHxaF2dxz0=
-github.com/spice-framework/toolchain {{TOOLCHAIN_VERSION}} h1:paTYw/o/6OsbNAvOWvjicOOqWyyt2Nd3vWdoPq8+BjA=
-github.com/spice-framework/toolchain {{TOOLCHAIN_VERSION}}/go.mod h1:5qwAMEFRzVhJTTD96xwQXMYFlUYwBWlwNNeOhZqqPeg=
+	"go.sum": `github.com/spice-framework/spice {{SPICE_VERSION}} {{SPICE_SUM}}
+github.com/spice-framework/spice {{SPICE_VERSION}}/go.mod {{SPICE_GO_MOD_SUM}}
+github.com/spice-framework/spice-agent {{AGENT_VERSION}} {{AGENT_SUM}}
+github.com/spice-framework/spice-agent {{AGENT_VERSION}}/go.mod {{AGENT_GO_MOD_SUM}}
+github.com/spice-framework/toolchain {{TOOLCHAIN_VERSION}} {{TOOLCHAIN_SUM}}
+github.com/spice-framework/toolchain {{TOOLCHAIN_VERSION}}/go.mod {{TOOLCHAIN_GO_MOD_SUM}}
 `,
 	"manifest.go": `package extension
 

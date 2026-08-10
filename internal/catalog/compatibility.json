@@ -58,6 +58,51 @@
           "generated": "internal/spicegen/extensionproof",
           "ownership_file": ".spice/extensionproof.manifest.json"
         }
+      },
+      {
+        "id": "compiled-tool-autoconfigure/v1alpha1-preview6",
+        "schema": "spice.agent.extension/v1alpha1",
+        "kind": "compiled-tool-autoconfigure",
+        "status": "experimental",
+        "go_directive": "1.26.0",
+        "go_toolchain": "go1.26.5",
+        "runtime_go": "1.26.5",
+        "activation": "explicit-autoconfigure",
+        "spice_compatibility": {
+          "schema": 1,
+          "minimum_spice": "v0.1.0-preview.2",
+          "current_spice": "v0.1.0-preview.2"
+        },
+        "modules": [
+          {
+            "path": "github.com/spice-framework/spice",
+            "version": "v0.1.0-preview.2",
+            "sum": "h1:5pYgTlUUzC/xZISetG/U6c1L/I3f8dUQSZhuo6YqxiA=",
+            "go_mod_sum": "h1:dBZV5UZcbY6pzhfGNtvAwQIJ8YsFna+jf1SAlmukJfk="
+          },
+          {
+            "path": "github.com/spice-framework/spice-agent",
+            "version": "v0.1.0-preview.6",
+            "sum": "h1:XJKJge+xWP/FLNoL1/rXq8z8tdu/5iEkKfmu1dTgFms=",
+            "go_mod_sum": "h1:pbhYOeNgn4pCIhEmcdbjnFjJijY4ZSLM8ZHxaF2dxz0="
+          },
+          {
+            "path": "github.com/spice-framework/toolchain",
+            "version": "v0.1.0-preview.2",
+            "sum": "h1:Hv/Ur+Uc3cG00jVCo/R5zINZ1w33jH0O6/ekeNOrFyk=",
+            "go_mod_sum": "h1:LZ04RGO793x7rSetV5T8xZnGvXjbI8u6WCyzdwN2wOI="
+          }
+        ],
+        "tools": [
+          "github.com/spice-framework/toolchain/cmd/spice",
+          "github.com/spice-framework/toolchain/cmd/spice-annotation-core"
+        ],
+        "composition": {
+          "target": "ExtensionProof",
+          "package": "./internal/composition",
+          "generated": "internal/spicegen/extensionproof",
+          "ownership_file": ".spice/extensionproof.manifest.json"
+        }
       }
     ]
   },

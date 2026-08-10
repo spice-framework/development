@@ -8,10 +8,13 @@ runtime activation mechanism. The generated extension is an ordinary Go module
 whose default `tool.Tool` becomes a Spice fallback bean only when an application
 explicitly blank-imports its `/autoconfigure` package.
 
-Only `compiled-tool-autoconfigure/v1alpha1-preview5` exists. This intentionally
-does not imply provider, stage, UI, persistence, or runtime-plugin scaffolding.
-Adding another kind or dependency line requires a new reviewed catalog profile,
-tests, migration text, and compatibility evidence.
+Two immutable profiles exist. `compiled-tool-autoconfigure/v1alpha1-preview5`
+retains the original Agent preview5/development-generator graph for existing
+modules. `compiled-tool-autoconfigure/v1alpha1-preview6` is current and pins the
+released Agent preview6 plus Toolchain preview2 ownership-schema-6 generator.
+Neither profile implies provider, stage, UI, persistence, or runtime-plugin
+scaffolding. Adding another kind or dependency line requires a new reviewed
+catalog profile, tests, migration text, and compatibility evidence.
 
 Development currently has no immutable public tool release. Run this command
 from an exact reviewed Development checkout; do not add it as a generated
@@ -26,7 +29,7 @@ go run ./cmd/spice-dev agent-extension init \
   --directory ../example-agent-tool \
   --module example.com/acme/agent-tool \
   --tool-name acme.inspect \
-  --profile compiled-tool-autoconfigure/v1alpha1-preview5
+  --profile compiled-tool-autoconfigure/v1alpha1-preview6
 ```
 
 Initialization accepts only a new or empty real directory. It rejects path
@@ -40,7 +43,7 @@ Go, Git, Spice, VCS setup, module resolution, or the network.
 The source scaffold includes:
 
 - exact Go 1.26.0 and `toolchain go1.26.5` declarations;
-- exact Spice preview2, Agent preview5, Toolchain pseudo-version, Go sums, and
+- exact Spice preview2, Agent preview6, Toolchain preview2, Go sums, and
   approved Go tool declarations;
 - strict authoring and Spice compatibility manifests;
 - typed `starter.Manifest`, explicit `/autoconfigure`, and a deterministic
@@ -84,10 +87,10 @@ race, fuzz, coverage, and behavioral tests.
 
 ## Compatibility and deletion
 
-The authoring schema and profile are v1alpha1. A checker accepts the exact
-recorded supported profile; it never silently moves a module to a newer one.
-Changing the schema adds a new profile and migration instead of permissive
-fields. Developer source and documentation remain author-owned;
+The authoring schema and profiles are v1alpha1. A checker accepts the exact
+recorded supported profile; it never silently moves a preview5 module to
+preview6 or any later profile. Changing the schema or dependency graph adds a
+new profile and migration instead of permissive fields. Developer source and documentation remain author-owned;
 `internal/spicegen` and `.spice` remain generator-owned.
 
 Delete an extension by removing its application blank import and module

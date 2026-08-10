@@ -53,25 +53,21 @@ func TestCheckRejectsManifestAndModuleMutations(t *testing.T) {
 		"unknown manifest field": {
 			mutate: func(t *testing.T, root string) {
 				path := filepath.Join(root, "spice-agent-extension.json")
-				content := string(mustRead(t, path))
-				content = strings.Replace(content, "\n}", ",\n  \"mystery\": true\n}", 1)
-				mustWrite(t, path, []byte(content))
+				replaceFileContent(t, path, "\n}", ",\n  \"mystery\": true\n}")
 			},
 			want: "unknown field",
 		},
 		"stale profile": {
 			mutate: func(t *testing.T, root string) {
 				path := filepath.Join(root, "spice-agent-extension.json")
-				content := strings.Replace(string(mustRead(t, path)), ProfileID, "compiled-tool/latest", 1)
-				mustWrite(t, path, []byte(content))
+				replaceFileContent(t, path, ProfileID, "compiled-tool/latest")
 			},
 			want: "not catalog-authorized",
 		},
 		"unsafe composition path": {
 			mutate: func(t *testing.T, root string) {
 				path := filepath.Join(root, "spice-agent-extension.json")
-				content := strings.Replace(string(mustRead(t, path)), "internal/spicegen/extensionproof", "../escape", 1)
-				mustWrite(t, path, []byte(content))
+				replaceFileContent(t, path, "internal/spicegen/extensionproof", "../escape")
 			},
 			want: "composition layout is stale",
 		},
@@ -85,16 +81,14 @@ func TestCheckRejectsManifestAndModuleMutations(t *testing.T) {
 		"missing sum": {
 			mutate: func(t *testing.T, root string) {
 				path := filepath.Join(root, "go.sum")
-				content := strings.Replace(string(mustRead(t, path)), "github.com/spice-framework/spice-agent v0.1.0-preview.5 h1:rGND9DYx3pssliD1tZQOvPDOZ5GVfQLDc7VJQI3HLOM=\n", "", 1)
-				mustWrite(t, path, []byte(content))
+				replaceFileContent(t, path, "github.com/spice-framework/spice-agent v0.1.0-preview.6 h1:XJKJge+xWP/FLNoL1/rXq8z8tdu/5iEkKfmu1dTgFms=\n", "")
 			},
 			want: "missing catalog pin",
 		},
 		"stale vendor": {
 			mutate: func(t *testing.T, root string) {
 				path := filepath.Join(root, "vendor", "modules.txt")
-				content := strings.Replace(string(mustRead(t, path)), "v0.1.0-preview.5", "v0.1.0-preview.4", 1)
-				mustWrite(t, path, []byte(content))
+				replaceFileContent(t, path, "# github.com/spice-framework/spice-agent v0.1.0-preview.6", "# github.com/spice-framework/spice-agent v0.1.0-preview.5")
 			},
 			want: "missing exact selection",
 		},
@@ -125,6 +119,16 @@ func TestCheckRejectsManifestAndModuleMutations(t *testing.T) {
 			}
 		})
 	}
+}
+
+func replaceFileContent(t *testing.T, path, old, replacement string) {
+	t.Helper()
+	content := string(mustRead(t, path))
+	mutated := strings.Replace(content, old, replacement, 1)
+	if mutated == content {
+		t.Fatalf("mutation %q did not apply to %s", old, path)
+	}
+	mustWrite(t, path, []byte(mutated))
 }
 
 func TestCheckRejectsUnmaterializedLinksCancellationAndRunnerFailures(t *testing.T) {

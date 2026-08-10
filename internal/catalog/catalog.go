@@ -309,7 +309,8 @@ func (value AgentExtensionAuthoring) validate() error {
 }
 
 func (value AgentExtensionProfile) validate() error {
-	if value.ID != "compiled-tool-autoconfigure/v1alpha1-preview5" {
+	expectedModules, supported := agentExtensionProfileModules(value.ID)
+	if !supported {
 		return fmt.Errorf("profile ID %q is unsupported", value.ID)
 	}
 	if value.Schema != "spice.agent.extension/v1alpha1" ||
@@ -329,19 +330,22 @@ func (value AgentExtensionProfile) validate() error {
 		value.SpiceCompatibility.MinimumSpice != value.SpiceCompatibility.CurrentSpice {
 		return errors.New("Spice compatibility must select one exact schema-1 preview")
 	}
-	wantModules := []string{
+	wantModulePaths := []string{
 		"github.com/spice-framework/spice",
 		"github.com/spice-framework/spice-agent",
 		"github.com/spice-framework/toolchain",
 	}
-	if len(value.Modules) != len(wantModules) {
-		return fmt.Errorf("module selection has %d entries; want %d", len(value.Modules), len(wantModules))
+	if len(value.Modules) != len(wantModulePaths) {
+		return fmt.Errorf("module selection has %d entries; want %d", len(value.Modules), len(wantModulePaths))
 	}
 	for index, module := range value.Modules {
-		if module.Path != wantModules[index] || !ValidModuleVersion(module.Version) ||
+		if module.Path != wantModulePaths[index] || !ValidModuleVersion(module.Version) ||
 			!validGoSum(module.Sum) || !validGoSum(module.GoModSum) {
 			return fmt.Errorf("module selection %d is malformed", index)
 		}
+	}
+	if !slices.Equal(value.Modules, expectedModules) {
+		return errors.New("module selection differs from the immutable profile")
 	}
 	wantTools := []string{
 		"github.com/spice-framework/toolchain/cmd/spice",
@@ -357,6 +361,29 @@ func (value AgentExtensionProfile) validate() error {
 		return errors.New("composition layout must match the v1alpha1 proof contract")
 	}
 	return nil
+}
+
+func agentExtensionProfileModules(id string) ([]AgentExtensionModule, bool) {
+	spice := AgentExtensionModule{
+		Path: "github.com/spice-framework/spice", Version: "v0.1.0-preview.2",
+		Sum: "h1:5pYgTlUUzC/xZISetG/U6c1L/I3f8dUQSZhuo6YqxiA=", GoModSum: "h1:dBZV5UZcbY6pzhfGNtvAwQIJ8YsFna+jf1SAlmukJfk=",
+	}
+	switch id {
+	case "compiled-tool-autoconfigure/v1alpha1-preview5":
+		return []AgentExtensionModule{
+			spice,
+			{Path: "github.com/spice-framework/spice-agent", Version: "v0.1.0-preview.5", Sum: "h1:rGND9DYx3pssliD1tZQOvPDOZ5GVfQLDc7VJQI3HLOM=", GoModSum: "h1:pbhYOeNgn4pCIhEmcdbjnFjJijY4ZSLM8ZHxaF2dxz0="},
+			{Path: "github.com/spice-framework/toolchain", Version: "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6", Sum: "h1:paTYw/o/6OsbNAvOWvjicOOqWyyt2Nd3vWdoPq8+BjA=", GoModSum: "h1:5qwAMEFRzVhJTTD96xwQXMYFlUYwBWlwNNeOhZqqPeg="},
+		}, true
+	case "compiled-tool-autoconfigure/v1alpha1-preview6":
+		return []AgentExtensionModule{
+			spice,
+			{Path: "github.com/spice-framework/spice-agent", Version: "v0.1.0-preview.6", Sum: "h1:XJKJge+xWP/FLNoL1/rXq8z8tdu/5iEkKfmu1dTgFms=", GoModSum: "h1:pbhYOeNgn4pCIhEmcdbjnFjJijY4ZSLM8ZHxaF2dxz0="},
+			{Path: "github.com/spice-framework/toolchain", Version: "v0.1.0-preview.2", Sum: "h1:Hv/Ur+Uc3cG00jVCo/R5zINZ1w33jH0O6/ekeNOrFyk=", GoModSum: "h1:LZ04RGO793x7rSetV5T8xZnGvXjbI8u6WCyzdwN2wOI="},
+		}, true
+	default:
+		return nil, false
+	}
 }
 
 func validGoSum(value string) bool {
