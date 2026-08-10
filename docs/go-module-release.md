@@ -37,7 +37,7 @@ exact toolchain selection remains
 `v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
 
 This authorization is deliberately repository-scoped. `spice-agent` is now
-authorized at `v0.1.0-preview.6` for a new candidate carrying the public
+published at `v0.1.0-preview.6` with the public
 `VerifiedLauncher` boundary, the removable Phase 7/8 experiment evidence, and
 the enforced pre-v1 API/protocol/durable/security compatibility policy. This
 own-version advance does not silently move downstream graphs: the provider,
@@ -87,11 +87,15 @@ keyless attestation, provenance authentication, and protected publication. The
 non-draft GitHub prerelease contains the exact source archive, SPDX SBOM,
 release metadata, checksums, and portable Sigstore provenance bundle.
 
-The new `v0.1.0-preview.6` catalog entry is pre-tag policy authorization only.
-It does not move an immutable tag, alter any downstream module selection,
-create a tag, approve the protected environment, or publish a release.
-Candidate verification, independent policy agreement, attestation, and
-publication remain later boundaries.
+The `v0.1.0-preview.6` catalog entry began as pre-tag policy authorization.
+The later annotated tag object
+`ee8436262fb755c4bf4897254650cd6d84e2e9fc` resolves to exact candidate commit
+`f771caa3b150d87845417c4e26938e2a889441a6`. Release workflow
+[31428824060](https://github.com/spice-framework/spice-agent/actions/runs/31428824060)
+completed candidate verification, deterministic rendering, independent
+verification, keyless attestation, provenance authentication, and protected
+publication. The non-draft prerelease contains the exact five-asset module
+set. Publication did not alter any downstream module selection.
 
 The sole graphless exception is a catalog entry with no required modules whose
 root module genuinely selects no dependencies. In that mode both root
