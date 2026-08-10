@@ -62,6 +62,13 @@ func runAt(
 			return command(ctx, root, runner, "go", "test", "-race", "-shuffle=on", "-count=1", "./...")
 		}},
 		{name: "coverage", run: func() error { return coverage(ctx, root, runner) }},
+		{name: "Agent extension manifest fuzz", run: func() error {
+			return command(
+				ctx, root, runner,
+				"go", "test", "./internal/agentextension", "-run=^$",
+				"-fuzz=FuzzParseManifest", "-fuzztime=100x",
+			)
+		}},
 		{name: "trimpath build", run: func() error {
 			return command(ctx, root, runner, "go", "build", "-trimpath", "./...")
 		}},

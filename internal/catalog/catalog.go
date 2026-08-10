@@ -4,6 +4,7 @@ package catalog
 import (
 	"bytes"
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 	"strings"
 )
 
-const CurrentSchema = 5
+const CurrentSchema = 6
 
 const (
 	ReleaseProfileGoModule     = "go-module-v1"
@@ -31,7 +32,53 @@ type Catalog struct {
 	Schema               int                        `json:"schema"`
 	Toolchains           Toolchains                 `json:"toolchains"`
 	StarterCompatibility StarterCompatibilityPolicy `json:"starter_compatibility"`
+	AgentExtensions      AgentExtensionAuthoring    `json:"agent_extensions,omitempty"`
 	Repositories         []Repository               `json:"repositories"`
+}
+
+// AgentExtensionAuthoring is the catalog-owned, pre-stable set of exact
+// source-scaffold profiles. It authorizes no release and never implies that a
+// generated extension has been materialized or independently verified.
+type AgentExtensionAuthoring struct {
+	Profiles []AgentExtensionProfile `json:"profiles,omitempty"`
+}
+
+// AgentExtensionProfile pins one deliberately narrow authoring contract.
+// Profiles are immutable identities: later dependency lines add a new profile
+// instead of silently moving an existing scaffold.
+type AgentExtensionProfile struct {
+	ID                 string                      `json:"id"`
+	Schema             string                      `json:"schema"`
+	Kind               string                      `json:"kind"`
+	Status             string                      `json:"status"`
+	GoDirective        string                      `json:"go_directive"`
+	GoToolchain        string                      `json:"go_toolchain"`
+	RuntimeGo          string                      `json:"runtime_go"`
+	Activation         string                      `json:"activation"`
+	SpiceCompatibility AgentExtensionCompatibility `json:"spice_compatibility"`
+	Modules            []AgentExtensionModule      `json:"modules"`
+	Tools              []string                    `json:"tools"`
+	Composition        AgentExtensionComposition   `json:"composition"`
+}
+
+type AgentExtensionCompatibility struct {
+	Schema       int    `json:"schema"`
+	MinimumSpice string `json:"minimum_spice"`
+	CurrentSpice string `json:"current_spice"`
+}
+
+type AgentExtensionModule struct {
+	Path     string `json:"path"`
+	Version  string `json:"version"`
+	Sum      string `json:"sum"`
+	GoModSum string `json:"go_mod_sum"`
+}
+
+type AgentExtensionComposition struct {
+	Target        string `json:"target"`
+	Package       string `json:"package"`
+	Generated     string `json:"generated"`
+	OwnershipFile string `json:"ownership_file"`
 }
 
 type Toolchains struct {
@@ -158,6 +205,9 @@ func (value Catalog) Validate() error {
 	if err := value.StarterCompatibility.validate(); err != nil {
 		return err
 	}
+	if err := value.AgentExtensions.validate(); err != nil {
+		return err
+	}
 	if len(value.Repositories) == 0 {
 		return errors.New("compatibility catalog has no repositories")
 	}
@@ -232,6 +282,89 @@ func (value Catalog) Validate() error {
 		return fmt.Errorf("repository dependency cycle: %s", strings.Join(cycle, " -> "))
 	}
 	return nil
+}
+
+// AgentExtensionProfile returns one exact authoring profile by immutable ID.
+func (value Catalog) AgentExtensionProfile(id string) (AgentExtensionProfile, bool) {
+	for _, profile := range value.AgentExtensions.Profiles {
+		if profile.ID == id {
+			return profile, true
+		}
+	}
+	return AgentExtensionProfile{}, false
+}
+
+func (value AgentExtensionAuthoring) validate() error {
+	seen := make(map[string]struct{}, len(value.Profiles))
+	for _, profile := range value.Profiles {
+		if _, duplicate := seen[profile.ID]; duplicate {
+			return fmt.Errorf("agent extension profile %q is duplicated", profile.ID)
+		}
+		seen[profile.ID] = struct{}{}
+		if err := profile.validate(); err != nil {
+			return fmt.Errorf("agent extension profile %q: %w", profile.ID, err)
+		}
+	}
+	return nil
+}
+
+func (value AgentExtensionProfile) validate() error {
+	if value.ID != "compiled-tool-autoconfigure/v1alpha1-preview5" {
+		return fmt.Errorf("profile ID %q is unsupported", value.ID)
+	}
+	if value.Schema != "spice.agent.extension/v1alpha1" ||
+		value.Kind != "compiled-tool-autoconfigure" || value.Status != "experimental" {
+		return errors.New("schema, kind, and experimental status must be exact")
+	}
+	if value.GoDirective != "1.26.0" || value.GoToolchain != "go1.26.5" ||
+		value.RuntimeGo != "1.26.5" {
+		return errors.New("Go directive and toolchain selections must be exact")
+	}
+	if value.Activation != "explicit-autoconfigure" {
+		return fmt.Errorf("activation %q is unsupported", value.Activation)
+	}
+	if value.SpiceCompatibility.Schema != 1 ||
+		!ValidModuleVersion(value.SpiceCompatibility.MinimumSpice) ||
+		!ValidModuleVersion(value.SpiceCompatibility.CurrentSpice) ||
+		value.SpiceCompatibility.MinimumSpice != value.SpiceCompatibility.CurrentSpice {
+		return errors.New("Spice compatibility must select one exact schema-1 preview")
+	}
+	wantModules := []string{
+		"github.com/spice-framework/spice",
+		"github.com/spice-framework/spice-agent",
+		"github.com/spice-framework/toolchain",
+	}
+	if len(value.Modules) != len(wantModules) {
+		return fmt.Errorf("module selection has %d entries; want %d", len(value.Modules), len(wantModules))
+	}
+	for index, module := range value.Modules {
+		if module.Path != wantModules[index] || !ValidModuleVersion(module.Version) ||
+			!validGoSum(module.Sum) || !validGoSum(module.GoModSum) {
+			return fmt.Errorf("module selection %d is malformed", index)
+		}
+	}
+	wantTools := []string{
+		"github.com/spice-framework/toolchain/cmd/spice",
+		"github.com/spice-framework/toolchain/cmd/spice-annotation-core",
+	}
+	if !slices.Equal(value.Tools, wantTools) {
+		return fmt.Errorf("tool selection is %#v; want %#v", value.Tools, wantTools)
+	}
+	if value.Composition.Target != "ExtensionProof" ||
+		value.Composition.Package != "./internal/composition" ||
+		value.Composition.Generated != "internal/spicegen/extensionproof" ||
+		value.Composition.OwnershipFile != ".spice/extensionproof.manifest.json" {
+		return errors.New("composition layout must match the v1alpha1 proof contract")
+	}
+	return nil
+}
+
+func validGoSum(value string) bool {
+	if !strings.HasPrefix(value, "h1:") || len(value) < 10 || strings.TrimSpace(value) != value {
+		return false
+	}
+	digest, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(value, "h1:"))
+	return err == nil && len(digest) == 32
 }
 
 // Applies reports whether the central policy governs a repository.

@@ -44,7 +44,9 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 		!strings.Contains(stdout.String(), "go-release render") ||
 		!strings.Contains(stdout.String(), "go-release verify") ||
 		!strings.Contains(stdout.String(), "distribution-release render") ||
-		!strings.Contains(stdout.String(), "distribution-release verify") {
+		!strings.Contains(stdout.String(), "distribution-release verify") ||
+		!strings.Contains(stdout.String(), "agent-extension init") ||
+		!strings.Contains(stdout.String(), "agent-extension check") {
 		t.Fatalf("help code=%d stdout=%q", code, stdout.String())
 	}
 	stdout.Reset()
@@ -56,6 +58,39 @@ func TestRuntimeCatalogAndHelp(t *testing.T) {
 	if code := runtime.Run(t.Context(), []string{"catalog"}, &stdout, &stderr); code != 0 ||
 		!strings.Contains(stdout.String(), "spice\tactive") {
 		t.Fatalf("catalog text code=%d stdout=%q", code, stdout.String())
+	}
+}
+
+func TestRuntimeInitializesSourceOnlyAgentExtensionWithoutRunner(t *testing.T) {
+	t.Parallel()
+	value, err := catalog.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(t.TempDir(), "extension")
+	var stdout, stderr strings.Builder
+	code := (Runtime{Catalog: value, Runner: nil}).Run(t.Context(), []string{
+		"agent-extension", "init", "--directory", root,
+		"--module", "example.com/acme/agent-tool", "--tool-name", "acme.inspect",
+		"--profile", "compiled-tool-autoconfigure/v1alpha1-preview5",
+	}, &stdout, &stderr)
+	if code != 0 || !strings.Contains(stdout.String(), "source-only") || stderr.Len() != 0 {
+		t.Fatalf("agent-extension init = %d, %q, %q", code, stdout.String(), stderr.String())
+	}
+	if _, err := os.Stat(filepath.Join(root, "spice-agent-extension.json")); err != nil {
+		t.Fatal(err)
+	}
+	for _, arguments := range [][]string{
+		{"agent-extension"},
+		{"agent-extension", "unknown"},
+		{"agent-extension", "init", "extra"},
+		{"agent-extension", "check", "extra"},
+	} {
+		stdout.Reset()
+		stderr.Reset()
+		if code := (Runtime{Catalog: value}).Run(t.Context(), arguments, &stdout, &stderr); code != 2 {
+			t.Fatalf("Run(%v) code = %d, stderr=%q", arguments, code, stderr.String())
+		}
 	}
 }
 

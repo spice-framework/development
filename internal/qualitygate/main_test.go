@@ -37,8 +37,15 @@ func TestRunAtExecutesCompleteGate(t *testing.T) {
 	if err := runAt(t.Context(), root, runner); err != nil {
 		t.Fatal(err)
 	}
-	if len(runner.calls) != 10 {
+	if len(runner.calls) != 11 {
 		t.Fatalf("runAt() calls = %#v", runner.calls)
+	}
+	wantFuzz := []string{
+		"go", "test", "./internal/agentextension", "-run=^$",
+		"-fuzz=FuzzParseManifest", "-fuzztime=100x",
+	}
+	if !slices.ContainsFunc(runner.calls, func(call []string) bool { return slices.Equal(call, wantFuzz) }) {
+		t.Fatalf("runAt() did not lock Agent extension fuzz smoke: %#v", runner.calls)
 	}
 	for _, executable := range []string{"gofmt", "git", "go"} {
 		if !runner.used(executable) {

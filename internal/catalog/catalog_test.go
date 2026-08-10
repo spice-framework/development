@@ -260,6 +260,64 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	}
 }
 
+func TestDefaultCatalogPinsInitialAgentExtensionProfile(t *testing.T) {
+	t.Parallel()
+	value, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, found := value.AgentExtensionProfile("compiled-tool-autoconfigure/v1alpha1-preview5")
+	if !found {
+		t.Fatal("initial Agent extension profile is missing")
+	}
+	if profile.Schema != "spice.agent.extension/v1alpha1" ||
+		profile.Kind != "compiled-tool-autoconfigure" ||
+		profile.Status != "experimental" || profile.Activation != "explicit-autoconfigure" ||
+		profile.GoDirective != "1.26.0" || profile.GoToolchain != "go1.26.5" ||
+		profile.RuntimeGo != "1.26.5" || len(profile.Modules) != 3 || len(profile.Tools) != 2 {
+		t.Fatalf("Agent extension profile = %#v", profile)
+	}
+	if profile.Modules[1].Path != "github.com/spice-framework/spice-agent" ||
+		profile.Modules[1].Version != "v0.1.0-preview.5" ||
+		profile.Modules[1].Sum != "h1:rGND9DYx3pssliD1tZQOvPDOZ5GVfQLDc7VJQI3HLOM=" {
+		t.Fatalf("Agent extension core pin = %#v", profile.Modules[1])
+	}
+	if _, found = value.AgentExtensionProfile("compiled-tool-autoconfigure/v1alpha2"); found {
+		t.Fatal("unsupported Agent extension profile unexpectedly resolved")
+	}
+}
+
+func TestAgentExtensionProfileValidationFailsClosed(t *testing.T) {
+	t.Parallel()
+	value, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile := value.AgentExtensions.Profiles[0]
+	for name, mutate := range map[string]func(*AgentExtensionProfile){
+		"identity":   func(value *AgentExtensionProfile) { value.ID = "latest" },
+		"status":     func(value *AgentExtensionProfile) { value.Status = "stable" },
+		"Go":         func(value *AgentExtensionProfile) { value.RuntimeGo = "1.27.0" },
+		"activation": func(value *AgentExtensionProfile) { value.Activation = "implicit" },
+		"module order": func(value *AgentExtensionProfile) {
+			value.Modules[0], value.Modules[1] = value.Modules[1], value.Modules[0]
+		},
+		"module sum":  func(value *AgentExtensionProfile) { value.Modules[0].Sum = "sha256:bad" },
+		"tool":        func(value *AgentExtensionProfile) { value.Tools = append(value.Tools, "example.invalid/tool") },
+		"composition": func(value *AgentExtensionProfile) { value.Composition.Generated = "../escape" },
+	} {
+		t.Run(name, func(t *testing.T) {
+			copy := profile
+			copy.Modules = slices.Clone(profile.Modules)
+			copy.Tools = slices.Clone(profile.Tools)
+			mutate(&copy)
+			if err := copy.validate(); err == nil {
+				t.Fatal("profile validation error = nil")
+			}
+		})
+	}
+}
+
 func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
@@ -427,7 +485,7 @@ func TestAgentReleasePoliciesRejectStaleSelections(t *testing.T) {
 func TestParseRejectsMalformedCatalogs(t *testing.T) {
 	t.Parallel()
 	base := `{
-  "schema": 5,
+  "schema": 6,
   "toolchains": {"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
   "starter_compatibility": {"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260806053623-2ec6f862073f"},
   "repositories": [%s]
@@ -465,7 +523,7 @@ func TestParseRejectsMalformedCatalogs(t *testing.T) {
 func TestParseRejectsMissingDependenciesAndCycles(t *testing.T) {
 	t.Parallel()
 	content := `{
-  "schema":5,
+  "schema":6,
   "toolchains":{"go":"1.26.5","java":"25","goland":"2026.2.0.1"},
   "starter_compatibility":{"repository_prefix":"starter-","metadata_file":"spice-compatibility.json","metadata_schema":1,"core_module":"github.com/spice-framework/spice","current_core":"v0.0.0-20260806053623-2ec6f862073f"},
   "repositories":[

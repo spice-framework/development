@@ -1,5 +1,5 @@
 {
-  "schema": 5,
+  "schema": 6,
   "toolchains": {
     "go": "1.26.5",
     "java": "25",
@@ -11,6 +11,55 @@
     "metadata_schema": 1,
     "core_module": "github.com/spice-framework/spice",
     "current_core": "v0.0.0-20260806053623-2ec6f862073f"
+  },
+  "agent_extensions": {
+    "profiles": [
+      {
+        "id": "compiled-tool-autoconfigure/v1alpha1-preview5",
+        "schema": "spice.agent.extension/v1alpha1",
+        "kind": "compiled-tool-autoconfigure",
+        "status": "experimental",
+        "go_directive": "1.26.0",
+        "go_toolchain": "go1.26.5",
+        "runtime_go": "1.26.5",
+        "activation": "explicit-autoconfigure",
+        "spice_compatibility": {
+          "schema": 1,
+          "minimum_spice": "v0.1.0-preview.2",
+          "current_spice": "v0.1.0-preview.2"
+        },
+        "modules": [
+          {
+            "path": "github.com/spice-framework/spice",
+            "version": "v0.1.0-preview.2",
+            "sum": "h1:5pYgTlUUzC/xZISetG/U6c1L/I3f8dUQSZhuo6YqxiA=",
+            "go_mod_sum": "h1:dBZV5UZcbY6pzhfGNtvAwQIJ8YsFna+jf1SAlmukJfk="
+          },
+          {
+            "path": "github.com/spice-framework/spice-agent",
+            "version": "v0.1.0-preview.5",
+            "sum": "h1:rGND9DYx3pssliD1tZQOvPDOZ5GVfQLDc7VJQI3HLOM=",
+            "go_mod_sum": "h1:pbhYOeNgn4pCIhEmcdbjnFjJijY4ZSLM8ZHxaF2dxz0="
+          },
+          {
+            "path": "github.com/spice-framework/toolchain",
+            "version": "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6",
+            "sum": "h1:paTYw/o/6OsbNAvOWvjicOOqWyyt2Nd3vWdoPq8+BjA=",
+            "go_mod_sum": "h1:5qwAMEFRzVhJTTD96xwQXMYFlUYwBWlwNNeOhZqqPeg="
+          }
+        ],
+        "tools": [
+          "github.com/spice-framework/toolchain/cmd/spice",
+          "github.com/spice-framework/toolchain/cmd/spice-annotation-core"
+        ],
+        "composition": {
+          "target": "ExtensionProof",
+          "package": "./internal/composition",
+          "generated": "internal/spicegen/extensionproof",
+          "ownership_file": ".spice/extensionproof.manifest.json"
+        }
+      }
+    ]
   },
   "repositories": [
     {

@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/spice-framework/development/internal/agentextension"
 	"github.com/spice-framework/development/internal/bootstrap"
 	"github.com/spice-framework/development/internal/catalog"
 	"github.com/spice-framework/development/internal/distributionrelease"
@@ -82,6 +83,8 @@ func (runtime Runtime) Run(
 		code = runtime.goReleaseCommand(ctx, arguments[1:], stdout, stderr)
 	case "distribution-release":
 		code = runtime.distributionReleaseCommand(ctx, arguments[1:], stdout, stderr)
+	case "agent-extension":
+		code = runtime.agentExtensionCommand(ctx, arguments[1:], stdout, stderr)
 	case "snapshot":
 		code = runtime.snapshotCommand(ctx, arguments[1:], stdout, stderr)
 	default:
@@ -91,6 +94,57 @@ func (runtime Runtime) Run(
 		code = 2
 	}
 	return code
+}
+
+func (runtime Runtime) agentExtensionCommand(
+	ctx context.Context,
+	arguments []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	if len(arguments) == 0 || (arguments[0] != "init" && arguments[0] != "check") {
+		return usageError(stderr, "agent-extension requires the init or check subcommand")
+	}
+	subcommand := arguments[0]
+	flags := flag.NewFlagSet("agent-extension "+subcommand, flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	if subcommand == "init" {
+		directory := flags.String("directory", "", "new or empty extension directory")
+		module := flags.String("module", "", "canonical extension Go module path")
+		toolName := flags.String("tool-name", "", "canonical static and model-visible tool name")
+		profile := flags.String("profile", "", "exact catalog authoring profile")
+		if err := flags.Parse(arguments[1:]); err != nil {
+			return flagCode(err)
+		}
+		if flags.NArg() != 0 {
+			return usageError(stderr, "agent-extension init accepts no positional arguments")
+		}
+		result, err := agentextension.Init(ctx, agentextension.InitOptions{
+			Directory: *directory, Module: *module, ToolName: *toolName, Profile: *profile,
+		}, runtime.Catalog)
+		if err != nil {
+			return commandError(stderr, "agent-extension init", err)
+		}
+		if _, err := fmt.Fprintf(stdout, "created\t%s\t%d files\tsource-only\n", result.Root, len(result.Files)); err != nil {
+			return 1
+		}
+		return 0
+	}
+	root := flags.String("root", "", "materialized extension module root")
+	if err := flags.Parse(arguments[1:]); err != nil {
+		return flagCode(err)
+	}
+	if flags.NArg() != 0 {
+		return usageError(stderr, "agent-extension check accepts no positional arguments")
+	}
+	result, err := agentextension.Check(ctx, *root, runtime.Catalog, runtime.Runner)
+	if err != nil {
+		return commandError(stderr, "agent-extension check", err)
+	}
+	if _, err := fmt.Fprintf(stdout, "verified\t%s\tmaterialized\n", result.Root); err != nil {
+		return 1
+	}
+	return 0
 }
 
 func (runtime Runtime) distributionReleaseCommand(
@@ -646,6 +700,8 @@ Usage:
   spice-dev go-release verify --root path --repo name --version vX.Y.Z --artifacts path
   spice-dev distribution-release render --root path --repo name --version vX.Y.Z --output new-path
   spice-dev distribution-release verify --root path --repo name --version vX.Y.Z --artifacts path
+  spice-dev agent-extension init --directory new-path --module module/path --tool-name name --profile compiled-tool-autoconfigure/v1alpha1-preview5
+  spice-dev agent-extension check --root materialized-path
 `)
 	return err
 }

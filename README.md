@@ -17,6 +17,7 @@ go run ./cmd/spice-dev workspace --root ../spice-workspace
 go run ./cmd/spice-dev verify --root ../spice-workspace
 go run ./cmd/spice-dev snapshot materialize --lock ecosystem.lock.json --root ../snapshot
 go run ./cmd/spice-dev snapshot verify --lock ecosystem.lock.json --root ../snapshot --offline
+go run ./cmd/spice-dev agent-extension init --directory ../example-agent-tool --module example.com/acme/agent-tool --tool-name acme.inspect --profile compiled-tool-autoconfigure/v1alpha1-preview5
 go run ./cmd/spice-dev library-release plan --root ../starter-smtp --repo starter-smtp --version v1.2.3 --rehearsal > plan.json
 go run ./cmd/spice-dev library-release render --root ../starter-smtp --plan plan.json --output dist/rehearsal
 ```
@@ -30,6 +31,17 @@ rewrites their origin.
 `workspace` generates an owned `go.work` and `spice.code-workspace`. It is
 idempotent and refuses to overwrite files without its marker. Use `--check` in
 automation to require freshness without writing.
+
+`agent-extension init` is a deterministic, transactional, network-free source
+scaffold for the one pre-stable
+`compiled-tool-autoconfigure/v1alpha1-preview5` profile. It does not invoke Go,
+Git, Spice, or module resolution and deliberately does not copy a vendor tree
+or generated Go. The created repository owns an explicit `make materialize`
+step for those network-capable operations. `agent-extension check` is the
+read-only, offline structural and pin check for the resulting materialized
+tree. This Development utility is not yet an immutable distributed tool, and a
+generated first-party fixture is not independent external-author evidence. See
+[`docs/agent-extension-authoring.md`](docs/agent-extension-authoring.md).
 
 `verify` runs repository-owned commands. Fast mode is the default; `--full`
 runs complete gates. Selected repositories execute in dependency-ordered waves;
