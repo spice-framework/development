@@ -136,7 +136,7 @@ bundled vendor tree or copied generated output. Run make materialize as an
 explicit network-capable action, review and commit vendor plus generated files,
 then run make verify and spice-dev agent-extension check --root . offline.
 Development's spice-dev utility is currently source-run and non-distributed;
-this scaffold does not count as independent external-author acceptance.
+this scaffold does not count as clean-room public-authoring acceptance.
 `,
 	"Makefile": `.PHONY: materialize fast check verify benchmark
 
@@ -432,7 +432,7 @@ make materialize is the only network-capable repository operation: it resolves
 the exact graph, commits vendor, and generates the construction proof. Review
 that diff. make fast/check/verify and spice-dev agent-extension check are
 offline. The Development utility is pre-stable and currently source-run, not a
-published tool dependency. Independent external-author proof remains pending.
+published tool dependency. Clean-room public-authoring proof remains pending.
 `,
 	"internal/qualitygate/main.go": qualityGateTemplate,
 }

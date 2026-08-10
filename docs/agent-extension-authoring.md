@@ -94,8 +94,10 @@ Delete an extension by removing its application blank import and module
 dependency, regenerating affected application targets, and deleting its
 repository. No kernel state, registry entry, or runtime cleanup remains.
 
-This architecture proof does not satisfy Phase 8's independent-author exit
-criterion. That requires a genuinely external author to create, configure,
-debug, test, version, and publish a separate module using only released public
-contracts. Do not count this template, a nested fixture, or one of the five
-first-party Agent repositories as that evidence.
+This architecture proof does not by itself satisfy Phase 8's clean-room
+public-authoring criterion. That requires three separately versioned modules
+created in repository-external directories from immutable released artifacts
+and public documentation, with fresh module and build caches, `GOWORK=off`, no
+workspace path or replacement directive, and Linux plus Windows vendor-offline
+verification. Do not count this source-run template or an existing first-party
+fixture as that evidence.

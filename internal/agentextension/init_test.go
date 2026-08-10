@@ -87,7 +87,9 @@ func TestInitCreatesDeterministicSourceOnlyScaffold(t *testing.T) {
 	}
 	readme, err := os.ReadFile(filepath.Join(first, "README.md"))
 	if err != nil || !strings.Contains(string(readme), "not publishable yet") ||
-		!strings.Contains(string(readme), "non-distributed") {
+		!strings.Contains(string(readme), "non-distributed") ||
+		!strings.Contains(string(readme), "clean-room public-authoring") ||
+		strings.Contains(string(readme), "external-author") {
 		t.Fatalf("README boundary = %q, %v", readme, err)
 	}
 }

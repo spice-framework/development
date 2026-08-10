@@ -40,7 +40,7 @@ or generated Go. The created repository owns an explicit `make materialize`
 step for those network-capable operations. `agent-extension check` is the
 read-only, offline structural and pin check for the resulting materialized
 tree. This Development utility is not yet an immutable distributed tool, and a
-generated first-party fixture is not independent external-author evidence. See
+locally generated fixture is not clean-room public-authoring evidence. See
 [`docs/agent-extension-authoring.md`](docs/agent-extension-authoring.md).
 
 `verify` runs repository-owned commands. Fast mode is the default; `--full`
