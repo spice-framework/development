@@ -17,10 +17,17 @@ snapshot contracts. The provider, coding-tools, and distribution graphs remain
 on Agent `v0.1.0-preview.4`; the TUI, provider, and coding-tools own release
 versions remain `v0.1.0-preview.1`. Distribution preview.2 was also published,
 and the catalog now authorizes only its own release version at
-`v0.1.0-preview.3` for the installed-archive execution gate. Its immutable
-preview.1 attempt
+`v0.1.0-preview.4` for recovery from the installed-archive execution gate. Its
+immutable preview.1 attempt
 [failed in candidate validation](https://github.com/spice-framework/spice-agent-coding/actions/runs/31333877865)
 before rendering or artifacts when the candidate lacked `make verify-release`.
+Its immutable preview.3 attempt
+[failed in installed-archive execution](https://github.com/spice-framework/spice-agent-coding/actions/runs/31345003119)
+after candidate validation, rendering, and independent verification: Linux
+still expected preview.2 artifact subjects, while Windows passed a mixed-path
+artifact directory that the candidate correctly rejected as noncanonical.
+Attestation, provenance authentication, and publication were skipped, and no
+release was created.
 Every distribution toolchain, sibling, metadata, binary, payload, target, and
 build-identity selection is unchanged, including Agent preview.4. Neither new
 catalog authorization creates a tag, repins a caller, or publishes a release.

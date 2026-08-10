@@ -16,7 +16,7 @@ other generic profiles:
   "profile": "go-distribution-v1",
   "repository": "spice-agent-coding",
   "module": "github.com/spice-framework/spice-agent-coding",
-  "version": "v0.1.0-preview.3"
+  "version": "v0.1.0-preview.4"
 }
 ```
 
@@ -33,14 +33,14 @@ Before any caller or tag change, the catalog-only policy comparison is:
 spice-dev go-release policy-check \
   --repo spice-agent-coding \
   --module github.com/spice-framework/spice-agent-coding \
-  --version v0.1.0-preview.3 \
+  --version v0.1.0-preview.4 \
   --profile go-distribution-v1
 ```
 
 It performs no source, tag, artifact, or network operation and emits exactly:
 
 ```text
-go-distribution-v1	spice-agent-coding	github.com/spice-framework/spice-agent-coding	v0.1.0-preview.3
+go-distribution-v1	spice-agent-coding	github.com/spice-framework/spice-agent-coding	v0.1.0-preview.4
 ```
 
 The independent verifier must authorize the same ordered tuple before tag
@@ -153,13 +153,24 @@ Recovery advances only the distribution's own release version to
 binaries, targets, payload files, and build-identity symbols remain unchanged.
 
 Preview.2 was subsequently published as the architecture-proof distribution.
-The catalog now authorizes `v0.1.0-preview.3` as a new own-version candidate for
-the installed-archive execution gate. That gate consumes the independent
-verifier's exact nine-subject handoff and executes the candidate's documented
-installed-byte acceptance on fixed Linux and disposable Windows runners before
-attestation. The policy advance changes no required module, toolchain, sibling,
-metadata filename, binary, target, payload, or build-identity field. In
-particular, the distribution continues to require Agent
+
+The immutable `spice-agent-coding v0.1.0-preview.3` tag records a failed
+pre-attestation execution attempt, not a published distribution. Its
+[release run](https://github.com/spice-framework/spice-agent-coding/actions/runs/31345003119)
+completed candidate validation, rendering, and independent verification. The
+Linux installed-byte job then rejected the correct preview.3 artifact set
+because the candidate's acceptance fixture still expected preview.2 names. The
+Windows job separately received a mixed Git Bash and native Windows artifact
+path, which the candidate correctly rejected as noncanonical. Both execution
+jobs failed, so attestation, provenance authentication, and publication were
+skipped; GitHub contains no release or release assets for preview.3. The
+immutable tag must never be moved or reused.
+
+Recovery advances only the distribution's own release version to
+`v0.1.0-preview.4`. Its installed-archive fixture and policy tuple advance with
+that own version. The required module graph, toolchain, siblings, metadata
+filename, binaries, targets, payload files, and build-identity symbols remain
+unchanged. In particular, the distribution continues to require Agent
 `v0.1.0-preview.4`; Agent preview.5 is not selected implicitly. Catalog
 authorization alone does not repin the caller, create a tag, or publish a
 release.

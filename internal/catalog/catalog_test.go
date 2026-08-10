@@ -85,7 +85,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		}) || len(agentCoding.Fast) != 1 || len(agentCoding.Full) != 1 ||
 		!slices.Contains(agentCoding.Fast[0].Arguments, "-mode=fast") ||
 		agentCoding.Release == nil || agentCoding.Release.Profile != ReleaseProfileDistribution ||
-		agentCoding.Release.Version != "v0.1.0-preview.3" ||
+		agentCoding.Release.Version != "v0.1.0-preview.4" ||
 		len(agentCoding.Release.Binaries) != 2 || len(agentCoding.Release.Targets) != 6 ||
 		agentCoding.Release.BuildIdentity == nil ||
 		agentCoding.Release.BuildIdentity.VersionSymbol != agentCoding.Module+"/internal/distribution.Version" ||
@@ -271,7 +271,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		agentReleaseVersion    = "v0.1.0-preview.5"
 		agentDependencyVersion = "v0.1.0-preview.4"
 		componentVersion       = "v0.1.0-preview.1"
-		distributionVersion    = "v0.1.0-preview.3"
+		distributionVersion    = "v0.1.0-preview.4"
 		toolchainVersion       = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
 		distributionToolchain  = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
 		foundationModule       = "github.com/spice-framework/spice"
@@ -375,10 +375,10 @@ func TestAgentCodingReleaseRejectsStaleVersions(t *testing.T) {
 		t.Fatal(err)
 	}
 	repository := requireRepository(t, value.Repositories, "spice-agent-coding")
-	stale := []string{"v0.1.0-preview.1", "v0.1.0-preview.2"}
+	stale := []string{"v0.1.0-preview.1", "v0.1.0-preview.2", "v0.1.0-preview.3"}
 	if repository.Release == nil || slices.Contains(stale, repository.Release.Version) ||
-		repository.Release.Version != "v0.1.0-preview.3" {
-		t.Fatalf("spice-agent-coding release version = %#v, require preview.3 and reject %v", repository.Release, stale)
+		repository.Release.Version != "v0.1.0-preview.4" {
+		t.Fatalf("spice-agent-coding release version = %#v, require preview.4 and reject %v", repository.Release, stale)
 	}
 }
 

@@ -87,10 +87,10 @@ func TestRuntimeChecksGoReleasePolicyWithoutReleaseInputs(t *testing.T) {
 				"go-release", "policy-check",
 				"--repo", "spice-agent-coding",
 				"--module", "github.com/spice-framework/spice-agent-coding",
-				"--version", "v0.1.0-preview.3",
+				"--version", "v0.1.0-preview.4",
 				"--profile", "go-distribution-v1",
 			},
-			want: "go-distribution-v1\tspice-agent-coding\tgithub.com/spice-framework/spice-agent-coding\tv0.1.0-preview.3\n",
+			want: "go-distribution-v1\tspice-agent-coding\tgithub.com/spice-framework/spice-agent-coding\tv0.1.0-preview.4\n",
 		},
 	}
 	for _, test := range accepted {
@@ -116,6 +116,7 @@ func TestRuntimeChecksGoReleasePolicyWithoutReleaseInputs(t *testing.T) {
 		{name: "stale preview.3", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.3", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
 		{name: "stale preview.4", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.4", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
 		{name: "stale distribution preview.2", arguments: []string{"--repo", "spice-agent-coding", "--module", "github.com/spice-framework/spice-agent-coding", "--version", "v0.1.0-preview.2", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "does not match catalog"},
+		{name: "stale distribution preview.3", arguments: []string{"--repo", "spice-agent-coding", "--module", "github.com/spice-framework/spice-agent-coding", "--version", "v0.1.0-preview.3", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "does not match catalog"},
 		{name: "module drift", arguments: []string{"--repo", "spice-agent", "--module", "example.invalid/agent", "--version", "v0.1.0-preview.5", "--profile", "go-module-v1"}, wantCode: 1, wantError: "module does not match"},
 		{name: "profile drift", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.5", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "profile does not match"},
 		{name: "unknown repository", arguments: []string{"--repo", "unknown", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.5", "--profile", "go-module-v1"}, wantCode: 1, wantError: "not in the catalog"},

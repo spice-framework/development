@@ -101,9 +101,9 @@ to establish release trust. See [`docs/go-module-release.md`](docs/go-module-rel
 Binary applications use the separate catalog-closed distribution boundary:
 
 ```text
-spice-dev go-release policy-check --repo spice-agent-coding --module github.com/spice-framework/spice-agent-coding --version v0.1.0-preview.3 --profile go-distribution-v1
-spice-dev distribution-release render --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.3 --output ../distribution
-spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.3 --artifacts ../distribution
+spice-dev go-release policy-check --repo spice-agent-coding --module github.com/spice-framework/spice-agent-coding --version v0.1.0-preview.4 --profile go-distribution-v1
+spice-dev distribution-release render --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.4 --output ../distribution
+spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.4 --artifacts ../distribution
 ```
 
 Only a `go-distribution-v1` catalog entry can select that command. The catalog,

@@ -44,7 +44,7 @@ silently move downstream graphs: the provider, coding-tools, and distribution
 policies continue to select the published Agent `v0.1.0-preview.4` exactly.
 The provider, coding-tools, and TUI own release versions remain
 `v0.1.0-preview.1`. The separate `spice-agent-coding` own release version is
-authorized at `v0.1.0-preview.3`; its toolchain, Agent preview.4 and remaining
+authorized at `v0.1.0-preview.4`; its toolchain, Agent preview.4 and remaining
 sibling selections, metadata, binary, payload, target, and build-identity
 contracts are unchanged. See
 [the distribution release history](go-distribution-release.md#immutable-preview1-recovery).
