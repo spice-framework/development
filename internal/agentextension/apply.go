@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 )
@@ -151,25 +150,7 @@ func requireRealDirectory(path string) error {
 	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
 		return fmt.Errorf("%q is not a real directory", path)
 	}
-	real, err := filepath.EvalSymlinks(path)
-	if err != nil {
-		return fmt.Errorf("resolve %q: %w", path, err)
-	}
-	absolute, err := filepath.Abs(path)
-	if err != nil {
-		return err
-	}
-	if !samePath(filepath.Clean(absolute), filepath.Clean(real)) {
-		return fmt.Errorf("%q traverses a symbolic link or reparse point", path)
-	}
 	return nil
-}
-
-func samePath(left, right string) bool {
-	if runtime.GOOS == "windows" {
-		return strings.EqualFold(left, right)
-	}
-	return left == right
 }
 
 func resultFor(root string, files []plannedFile, materialized bool) Result {
