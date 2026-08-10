@@ -90,9 +90,9 @@ authorization alone publishes nothing.
 The first generic renderer is available through an isolated command boundary:
 
 ```text
-spice-dev go-release policy-check --repo spice-agent --module github.com/spice-framework/spice-agent --version v0.1.0-preview.5 --profile go-module-v1
-spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.5 --output ../release
-spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.5 --artifacts ../release
+spice-dev go-release policy-check --repo spice-agent --module github.com/spice-framework/spice-agent --version v0.1.0-preview.6 --profile go-module-v1
+spice-dev go-release render --root ../spice-agent --repo spice-agent --version v0.1.0-preview.6 --output ../release
+spice-dev go-release verify --root ../spice-agent --repo spice-agent --version v0.1.0-preview.6 --artifacts ../release
 ```
 
 `policy-check` reads only the embedded catalog and emits one stable tab-separated

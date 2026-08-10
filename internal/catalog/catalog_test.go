@@ -54,7 +54,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 			len(repository.Fast) != 1 || len(repository.Full) != 1 ||
 			!slices.Contains(repository.Fast[0].Arguments, "-mode=fast") ||
 			repository.Release == nil || repository.Release.Profile != ReleaseProfileGoModule ||
-			repository.Release.Version != "v0.1.0-preview.5" {
+			repository.Release.Version != "v0.1.0-preview.6" {
 			t.Fatalf("%s repository identity = %#v", name, repository)
 		}
 	}
@@ -326,7 +326,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 	}
 	const (
 		foundationVersion      = "v0.1.0-preview.2"
-		agentReleaseVersion    = "v0.1.0-preview.5"
+		agentReleaseVersion    = "v0.1.0-preview.6"
 		agentDependencyVersion = "v0.1.0-preview.4"
 		componentVersion       = "v0.1.0-preview.1"
 		distributionVersion    = "v0.1.0-preview.4"
@@ -448,16 +448,16 @@ func TestAgentReleasePoliciesRejectStaleSelections(t *testing.T) {
 	}
 	const (
 		agentModule            = "github.com/spice-framework/spice-agent"
-		agentReleaseVersion    = "v0.1.0-preview.5"
+		agentReleaseVersion    = "v0.1.0-preview.6"
 		agentDependencyVersion = "v0.1.0-preview.4"
 	)
-	staleReleaseVersions := []string{"v0.1.0-preview.2", "v0.1.0-preview.3", "v0.1.0-preview.4"}
+	staleReleaseVersions := []string{"v0.1.0-preview.2", "v0.1.0-preview.3", "v0.1.0-preview.4", "v0.1.0-preview.5"}
 	agent := requireRepository(t, value.Repositories, "spice-agent")
 	if agent.Release == nil || slices.Contains(staleReleaseVersions, agent.Release.Version) ||
 		agent.Release.Version != agentReleaseVersion {
 		t.Fatalf("spice-agent release version = %#v, require %q and reject %v", agent.Release, agentReleaseVersion, staleReleaseVersions)
 	}
-	disallowedDependencyVersions := []string{"v0.1.0-preview.2", "v0.1.0-preview.3", agentReleaseVersion}
+	disallowedDependencyVersions := []string{"v0.1.0-preview.2", "v0.1.0-preview.3", "v0.1.0-preview.5", agentReleaseVersion}
 	for _, name := range []string{
 		"spice-agent-provider-openai",
 		"spice-agent-tools-coding",

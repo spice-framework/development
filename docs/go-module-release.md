@@ -15,7 +15,7 @@ The catalog names the metadata file. Version 1 is a closed JSON object:
   "profile": "go-module-v1",
   "repository": "spice-agent",
   "module": "github.com/spice-framework/spice-agent",
-  "version": "v0.1.0-preview.5"
+  "version": "v0.1.0-preview.6"
 }
 ```
 
@@ -37,11 +37,12 @@ exact toolchain selection remains
 `v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
 
 This authorization is deliberately repository-scoped. `spice-agent` is now
-authorized at `v0.1.0-preview.5` for a new candidate carrying the Phase 7
-terminal dispatch guard, run-owned interaction requester, typed tool-start
-occurrence, and v1alpha3 snapshot contracts. This own-version advance does not
-silently move downstream graphs: the provider, coding-tools, and distribution
-policies continue to select the published Agent `v0.1.0-preview.4` exactly.
+authorized at `v0.1.0-preview.6` for a new candidate carrying the public
+`VerifiedLauncher` boundary, the removable Phase 7/8 experiment evidence, and
+the enforced pre-v1 API/protocol/durable/security compatibility policy. This
+own-version advance does not silently move downstream graphs: the provider,
+coding-tools, and distribution policies continue to select the published Agent
+`v0.1.0-preview.4` exactly.
 The provider, coding-tools, and TUI own release versions remain
 `v0.1.0-preview.1`. The separate `spice-agent-coding` own release version is
 authorized at `v0.1.0-preview.4`; its toolchain, Agent preview.4 and remaining
@@ -78,11 +79,19 @@ advances the Agent release version and its downstream selections to
 `v0.1.0-preview.4`.
 
 Agent `v0.1.0-preview.4` was subsequently published as the architecture-proof
-prerelease. The new `v0.1.0-preview.5` catalog entry is only pre-tag policy
-authorization for the Phase 7 core contracts described above. It does not move
-the immutable preview.4 tag, alter downstream module selections, create a tag,
-or publish a release. Candidate verification, independent policy agreement,
-attestation, and publication remain later boundaries.
+prerelease. The annotated `v0.1.0-preview.5` tag and public Go proxy module now
+exist. Its release workflow
+[31343998056](https://github.com/spice-framework/spice-agent/actions/runs/31343998056)
+completed candidate validation, central rendering, and independent
+verification, but remains waiting at the protected keyless-attestation
+environment and has no GitHub Release object. Tag, module publication, workflow
+state, and GitHub Release publication are separate facts.
+
+The new `v0.1.0-preview.6` catalog entry is pre-tag policy authorization only.
+It does not move an immutable tag, alter any downstream module selection,
+create a tag, approve the protected environment, or publish a release.
+Candidate verification, independent policy agreement, attestation, and
+publication remain later boundaries.
 
 The sole graphless exception is a catalog entry with no required modules whose
 root module genuinely selects no dependencies. In that mode both root
@@ -99,7 +108,7 @@ vendored release into this mode.
 spice-dev go-release policy-check \
   --repo spice-agent \
   --module github.com/spice-framework/spice-agent \
-  --version v0.1.0-preview.5 \
+  --version v0.1.0-preview.6 \
   --profile go-module-v1
 ```
 
@@ -107,7 +116,7 @@ The command validates the exact repository, module, version, and profile
 against the embedded catalog and prints exactly:
 
 ```text
-go-module-v1	spice-agent	github.com/spice-framework/spice-agent	v0.1.0-preview.5
+go-module-v1	spice-agent	github.com/spice-framework/spice-agent	v0.1.0-preview.6
 ```
 
 It does not read a checkout, tag, or artifact and performs no network access.

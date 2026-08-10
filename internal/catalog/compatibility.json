@@ -192,7 +192,7 @@
       "module": "github.com/spice-framework/spice-agent",
       "release": {
         "profile": "go-module-v1",
-        "version": "v0.1.0-preview.5",
+        "version": "v0.1.0-preview.6",
         "metadata_file": "spice-release.json",
         "required_modules": [
           {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.2"},

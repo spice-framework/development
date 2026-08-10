@@ -10,11 +10,14 @@ contracts. After the immutable `spice-agent v0.1.0-preview.1` tag failed before
 artifact rendering and the immutable `v0.1.0-preview.2` attempt failed in the
 independent verifier before attestation. The immutable `v0.1.0-preview.3`
 attempt also completed rendering but failed independent policy verification
-before attestation. Agent preview.4 was subsequently published. The catalog
-now authorizes `spice-agent v0.1.0-preview.5` as a new own-version candidate
-carrying the Phase 7 dispatch-guard, run interaction, typed occurrence, and
-snapshot contracts. The provider, coding-tools, and distribution graphs remain
-on Agent `v0.1.0-preview.4`; the TUI, provider, and coding-tools own release
+before attestation. Agent preview.4 was subsequently published. The annotated
+Agent preview.5 tag and public module now exist, while release run
+[31343998056](https://github.com/spice-framework/spice-agent/actions/runs/31343998056)
+remains waiting at protected attestation and no GitHub Release exists. The
+catalog now authorizes `spice-agent v0.1.0-preview.6` as a new own-version
+candidate carrying `VerifiedLauncher`, the Phase 7/8 experiment evidence, and
+the enforced pre-v1 compatibility policy. The provider, coding-tools, and
+distribution graphs remain on Agent `v0.1.0-preview.4`; the TUI, provider, and coding-tools own release
 versions remain `v0.1.0-preview.1`. Distribution preview.2 was also published,
 and the catalog now authorizes only its own release version at
 `v0.1.0-preview.4` for recovery from the installed-archive execution gate. Its
@@ -30,7 +33,8 @@ Attestation, provenance authentication, and publication were skipped, and no
 release was created.
 Every distribution toolchain, sibling, metadata, binary, payload, target, and
 build-identity selection is unchanged, including Agent preview.4. Neither new
-catalog authorization creates a tag, repins a caller, or publishes a release.
+catalog authorization creates a tag, repins a caller, approves an environment,
+or publishes a release.
 The dated source evidence below remains
 an accurate record of the earlier commits and is not the current release
 policy. Development's tag-independent `go-release policy-check`

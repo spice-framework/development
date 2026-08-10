@@ -31,9 +31,9 @@ func TestRenderAndVerifyDeterministicModuleRelease(t *testing.T) {
 	}
 	wantFiles := []string{
 		"checksums.txt",
-		"spice-agent_0.1.0-preview.5_release.json",
-		"spice-agent_0.1.0-preview.5_sbom.spdx.json",
-		"spice-agent_0.1.0-preview.5_source.tar.gz",
+		"spice-agent_0.1.0-preview.6_release.json",
+		"spice-agent_0.1.0-preview.6_sbom.spdx.json",
+		"spice-agent_0.1.0-preview.6_source.tar.gz",
 	}
 	if !slices.Equal(result.Files, wantFiles) || result.Commit != fixture.commit {
 		t.Fatalf("Render() = %#v", result)
@@ -62,7 +62,7 @@ func TestRenderAndVerifyDeterministicModuleRelease(t *testing.T) {
 			t.Fatalf("artifact %s differs between renders", name)
 		}
 	}
-	assertArchive(t, filepath.Join(first, wantFiles[3]), "spice-agent_0.1.0-preview.5/agent.go")
+	assertArchive(t, filepath.Join(first, wantFiles[3]), "spice-agent_0.1.0-preview.6/agent.go")
 	assertMetadata(t, filepath.Join(first, wantFiles[1]), fixture.commit)
 	if _, err := gitBinary(t.Context(), fixture.root, 1, "show", fixture.commit+":README.md"); err == nil || !strings.Contains(err.Error(), "exceeds 1 bytes") {
 		t.Fatalf("gitBinary(truncated) error = %v", err)
@@ -88,17 +88,17 @@ func TestRenderAndVerifyDependencyFreeModuleRelease(t *testing.T) {
 	if _, err := Verify(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err != nil {
 		t.Fatal(err)
 	}
-	archive := filepath.Join(output, "spice-agent_0.1.0-preview.5_source.tar.gz")
+	archive := filepath.Join(output, "spice-agent_0.1.0-preview.6_source.tar.gz")
 	entries := archiveEntries(t, archive)
 	for _, unexpected := range []string{
-		"spice-agent_0.1.0-preview.5/go.sum",
-		"spice-agent_0.1.0-preview.5/vendor/modules.txt",
+		"spice-agent_0.1.0-preview.6/go.sum",
+		"spice-agent_0.1.0-preview.6/vendor/modules.txt",
 	} {
 		if slices.Contains(entries, unexpected) {
 			t.Fatalf("dependency-free source archive unexpectedly contains %q", unexpected)
 		}
 	}
-	sbomContent, err := os.ReadFile(filepath.Join(output, "spice-agent_0.1.0-preview.5_sbom.spdx.json"))
+	sbomContent, err := os.ReadFile(filepath.Join(output, "spice-agent_0.1.0-preview.6_sbom.spdx.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		Profile:    catalog.ReleaseProfileGoModule,
 		Repository: "spice-agent",
 		Module:     "github.com/spice-framework/spice-agent",
-		Version:    "v0.1.0-preview.5",
+		Version:    "v0.1.0-preview.6",
 	}
 	got, err := CheckPolicy(PolicyOptions{
 		Profile:    want.Profile,
@@ -169,6 +169,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		{name: "stale preview.2", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale preview.3", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},
 		{name: "stale preview.4", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.4"}, want: "does not match catalog"},
+		{name: "stale preview.5", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.5"}, want: "does not match catalog"},
 		{name: "missing profile", options: PolicyOptions{Repository: want.Repository, Module: want.Module, Version: want.Version}, want: "profile is required"},
 		{name: "profile drift", options: PolicyOptions{Profile: catalog.ReleaseProfileDistribution, Repository: want.Repository, Module: want.Module, Version: want.Version}, want: "profile does not match"},
 		{name: "missing module", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Version: want.Version}, want: "module is required"},
@@ -201,6 +202,7 @@ func TestRenderRejectsUntrustedSourceAndPolicy(t *testing.T) {
 		{name: "stale preview.2", mutate: func(value *releaseFixture) { value.options.Version = "v0.1.0-preview.2" }, want: "does not match catalog"},
 		{name: "stale preview.3", mutate: func(value *releaseFixture) { value.options.Version = "v0.1.0-preview.3" }, want: "does not match catalog"},
 		{name: "stale preview.4", mutate: func(value *releaseFixture) { value.options.Version = "v0.1.0-preview.4" }, want: "does not match catalog"},
+		{name: "stale preview.5", mutate: func(value *releaseFixture) { value.options.Version = "v0.1.0-preview.5" }, want: "does not match catalog"},
 		{name: "distribution profile", mutate: func(value *releaseFixture) { value.options.Repository = "spice-agent-coding" }, want: "not authorized"},
 		{name: "starter bypass", mutate: func(value *releaseFixture) { value.options.Repository = "starter-smtp" }, want: "must use library-release"},
 		{name: "origin mismatch", mutate: func(value *releaseFixture) {
@@ -462,7 +464,7 @@ func newReleaseFixture(t *testing.T, options fixtureOptions) releaseFixture {
 	if options.intentModule != "" {
 		intentModule = options.intentModule
 	}
-	metadata := `{"schema":1,"profile":"go-module-v1","repository":"spice-agent","module":"` + intentModule + `","version":"v0.1.0-preview.5"}`
+	metadata := `{"schema":1,"profile":"go-module-v1","repository":"spice-agent","module":"` + intentModule + `","version":"v0.1.0-preview.6"}`
 	if options.unknownIntent {
 		metadata = strings.TrimSuffix(metadata, "}") + `,"unexpected":true}`
 	}
