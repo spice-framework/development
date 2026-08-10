@@ -13,14 +13,16 @@ attempt also completed rendering but failed independent policy verification
 before attestation. Agent preview.4 was subsequently published. The annotated
 Agent preview.5 tag and public module now exist, while release run
 [31343998056](https://github.com/spice-framework/spice-agent/actions/runs/31343998056)
-remains waiting at protected attestation and no GitHub Release exists. The
+completed keyless attestation, provenance authentication, and protected
+publication of the five-asset non-draft prerelease. The
 catalog now authorizes `spice-agent v0.1.0-preview.6` as a new own-version
 candidate carrying `VerifiedLauncher`, the Phase 7/8 experiment evidence, and
 the enforced pre-v1 compatibility policy. The provider, coding-tools, and
 distribution graphs remain on Agent `v0.1.0-preview.4`; the TUI, provider, and coding-tools own release
 versions remain `v0.1.0-preview.1`. Distribution preview.2 was also published,
-and the catalog now authorizes only its own release version at
-`v0.1.0-preview.4` for recovery from the installed-archive execution gate. Its
+and distribution preview.4 was subsequently published by successful release
+run `31349650978` after passing the corrected Linux and Windows installed-byte
+gates. The catalog continues to authorize only that own release version. Its
 immutable preview.1 attempt
 [failed in candidate validation](https://github.com/spice-framework/spice-agent-coding/actions/runs/31333877865)
 before rendering or artifacts when the candidate lacked `make verify-release`.

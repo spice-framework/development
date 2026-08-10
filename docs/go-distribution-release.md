@@ -174,3 +174,13 @@ unchanged. In particular, the distribution continues to require Agent
 `v0.1.0-preview.4`; Agent preview.5 is not selected implicitly. Catalog
 authorization alone does not repin the caller, create a tag, or publish a
 release.
+
+The corrected candidate was later tagged without rewriting preview.3. Release
+run
+[31349650978](https://github.com/spice-framework/spice-agent-coding/actions/runs/31349650978)
+completed candidate validation, deterministic rendering, independent
+verification, installed-byte execution on Linux and Windows, keyless
+attestation, provenance authentication, and protected publication. The
+non-draft prerelease contains the exact six platform archives, release
+metadata, SPDX SBOM, checksums, and portable Sigstore provenance bundle: ten
+assets in total.

@@ -82,10 +82,10 @@ Agent `v0.1.0-preview.4` was subsequently published as the architecture-proof
 prerelease. The annotated `v0.1.0-preview.5` tag and public Go proxy module now
 exist. Its release workflow
 [31343998056](https://github.com/spice-framework/spice-agent/actions/runs/31343998056)
-completed candidate validation, central rendering, and independent
-verification, but remains waiting at the protected keyless-attestation
-environment and has no GitHub Release object. Tag, module publication, workflow
-state, and GitHub Release publication are separate facts.
+completed candidate validation, central rendering, independent verification,
+keyless attestation, provenance authentication, and protected publication. The
+non-draft GitHub prerelease contains the exact source archive, SPDX SBOM,
+release metadata, checksums, and portable Sigstore provenance bundle.
 
 The new `v0.1.0-preview.6` catalog entry is pre-tag policy authorization only.
 It does not move an immutable tag, alter any downstream module selection,
