@@ -116,6 +116,25 @@ func TestRenderToolchainRepositoryKeyedDistribution(t *testing.T) {
 	}
 }
 
+func TestToolchainDistributionRequiresRecoveryFoundation(t *testing.T) {
+	t.Parallel()
+	value, err := catalog.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repository, err := selectRepository(value, "toolchain", "v0.1.0-preview.3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []catalog.ReleaseModule{{
+		Path:    "github.com/spice-framework/spice",
+		Version: "v0.1.0-preview.4",
+	}}
+	if !slices.Equal(repository.Release.RequiredModules, want) {
+		t.Fatalf("Toolchain recovery foundation = %#v, want %#v", repository.Release.RequiredModules, want)
+	}
+}
+
 func TestRenderRejectsUntrustedDistributionInputs(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

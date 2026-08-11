@@ -111,10 +111,10 @@ func TestRuntimeChecksGoReleasePolicyWithoutReleaseInputs(t *testing.T) {
 				"go-release", "policy-check",
 				"--repo", "spice",
 				"--module", "github.com/spice-framework/spice",
-				"--version", "v0.1.0-preview.3",
+				"--version", "v0.1.0-preview.4",
 				"--profile", "go-module-v1",
 			},
-			want: "go-module-v1\tspice\tgithub.com/spice-framework/spice\tv0.1.0-preview.3\n",
+			want: "go-module-v1\tspice\tgithub.com/spice-framework/spice\tv0.1.0-preview.4\n",
 		},
 		{
 			name: "Toolchain distribution",
@@ -182,6 +182,7 @@ func TestRuntimeChecksGoReleasePolicyWithoutReleaseInputs(t *testing.T) {
 	}{
 		{name: "stale preview.2", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.2", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
 		{name: "stale Spice foundation preview.2", arguments: []string{"--repo", "spice", "--module", "github.com/spice-framework/spice", "--version", "v0.1.0-preview.2", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
+		{name: "stale Spice foundation preview.3", arguments: []string{"--repo", "spice", "--module", "github.com/spice-framework/spice", "--version", "v0.1.0-preview.3", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},
 		{name: "stale Toolchain preview.1", arguments: []string{"--repo", "toolchain", "--module", "github.com/spice-framework/toolchain", "--version", "v0.1.0-preview.1", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "does not match catalog"},
 		{name: "stale Toolchain preview.2", arguments: []string{"--repo", "toolchain", "--module", "github.com/spice-framework/toolchain", "--version", "v0.1.0-preview.2", "--profile", "go-distribution-v1"}, wantCode: 1, wantError: "does not match catalog"},
 		{name: "stale preview.3", arguments: []string{"--repo", "spice-agent", "--module", "github.com/spice-framework/spice-agent", "--version", "v0.1.0-preview.3", "--profile", "go-module-v1"}, wantCode: 1, wantError: "does not match catalog"},

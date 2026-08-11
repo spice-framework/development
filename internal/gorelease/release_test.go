@@ -121,7 +121,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		Profile:    catalog.ReleaseProfileGoModule,
 		Repository: "spice",
 		Module:     "github.com/spice-framework/spice",
-		Version:    "v0.1.0-preview.3",
+		Version:    "v0.1.0-preview.4",
 	}
 	foundationGot, err := CheckPolicy(PolicyOptions{
 		Profile:    foundationWant.Profile,
@@ -219,6 +219,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		{name: "starter", options: PolicyOptions{Profile: want.Profile, Repository: "starter-smtp", Module: want.Module, Version: want.Version}, want: "must use library-release"},
 		{name: "distribution profile drift", options: PolicyOptions{Profile: want.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: distributionWant.Version}, want: "profile does not match"},
 		{name: "stale Spice foundation preview.2", options: PolicyOptions{Profile: foundationWant.Profile, Repository: foundationWant.Repository, Module: foundationWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
+		{name: "stale Spice foundation preview.3", options: PolicyOptions{Profile: foundationWant.Profile, Repository: foundationWant.Repository, Module: foundationWant.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},
 		{name: "stale Toolchain preview.1", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.1"}, want: "does not match catalog"},
 		{name: "stale Toolchain preview.2", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale distribution preview.2", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},

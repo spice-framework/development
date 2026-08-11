@@ -126,13 +126,14 @@ The same renderer now has a distinct pre-tag Toolchain preview.3 policy:
 spice-dev go-release policy-check --repo toolchain --module github.com/spice-framework/toolchain --version v0.1.0-preview.3 --profile go-distribution-v1
 ```
 
-That policy selects only `cmd/spice`, `LICENSE`, and `README.md`; it does not
-change Coding's two-binary, six-target policy or authorize a Toolchain tag,
-candidate, caller, attestation, or publication by itself.
+That policy requires the future authenticated Spice preview.4 foundation and
+selects only `cmd/spice`, `LICENSE`, and `README.md`; it does not change
+Coding's two-binary, six-target policy or authorize a Toolchain tag, candidate,
+caller, attestation, or publication by itself.
 
-TUI preview.2 is the only downstream policy advanced in the same authority
-wave: it requires immutable Spice preview.3 and Toolchain preview.3 before its
-candidate can be tagged. Agent, provider, coding-tools, Coding, and extension
+TUI preview.2 likewise requires authenticated Spice preview.4 while retaining
+Toolchain preview.3. Neither downstream candidate may be tagged before those
+foundation releases exist. Agent, provider, coding-tools, Coding, and extension
 profile selections remain unchanged.
 
 Only a `go-distribution-v1` catalog entry can select that command. The catalog,

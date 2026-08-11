@@ -141,8 +141,8 @@ the organization workflow and independent toolchain verifier.
 
 The catalog now contains a separate repository-keyed Toolchain distribution
 policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.3`
-candidate. It requires the planned immutable Spice foundation preview.3
-selection and authorizes exactly:
+candidate. It requires the planned immutable Spice foundation preview.4
+recovery selection and authorizes exactly:
 
 - binary `spice` from `./cmd/spice`;
 - payloads `LICENSE` and `README.md`;
@@ -165,11 +165,14 @@ its required identity variables, create release metadata, change a caller,
 approve an environment, create a tag, or publish assets. The existing
 Toolchain preview.1 and preview.2 tags and preview.2 release remain historical
 facts. Before an immutable preview.3 tag, an independently committed Toolchain
-verifier must authorize the byte-identical tuple and complete policy, and the
-candidate must satisfy the ordinary source and installed-byte contracts.
-Publication order remains Spice preview.3, Toolchain preview.3, then TUI
-preview.2; combined catalog authorization does not collapse those immutable
-release boundaries.
+verifier must authorize the byte-identical tuple and its exact Spice preview.4
+requirement, and the candidate must satisfy the ordinary source and
+installed-byte contracts. Publication order remains Spice preview.4,
+Toolchain preview.3, then TUI preview.2; combined catalog authorization does
+not collapse those immutable release boundaries. Spice preview.3 is an
+immutable tag-only failed attempt and did not publish an authenticated
+foundation release eligible for downstream release policy, as recorded in the
+[module release history](go-module-release.md#spice-foundation-preview4-recovery-authority).
 
 Coding remains independently authorized at preview.4 with both binaries, all
 seven payloads, the same six targets, and every existing dependency selection.
