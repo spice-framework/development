@@ -117,6 +117,42 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	foundationWant := Policy{
+		Profile:    catalog.ReleaseProfileGoModule,
+		Repository: "spice",
+		Module:     "github.com/spice-framework/spice",
+		Version:    "v0.1.0-preview.3",
+	}
+	foundationGot, err := CheckPolicy(PolicyOptions{
+		Profile:    foundationWant.Profile,
+		Repository: foundationWant.Repository,
+		Module:     foundationWant.Module,
+		Version:    foundationWant.Version,
+	}, value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if foundationGot != foundationWant {
+		t.Fatalf("CheckPolicy(Spice foundation) = %#v, want %#v", foundationGot, foundationWant)
+	}
+	toolchainWant := Policy{
+		Profile:    catalog.ReleaseProfileDistribution,
+		Repository: "toolchain",
+		Module:     "github.com/spice-framework/toolchain",
+		Version:    "v0.1.0-preview.3",
+	}
+	toolchainGot, err := CheckPolicy(PolicyOptions{
+		Profile:    toolchainWant.Profile,
+		Repository: toolchainWant.Repository,
+		Module:     toolchainWant.Module,
+		Version:    toolchainWant.Version,
+	}, value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if toolchainGot != toolchainWant {
+		t.Fatalf("CheckPolicy(Toolchain distribution) = %#v, want %#v", toolchainGot, toolchainWant)
+	}
 	want := Policy{
 		Profile:    catalog.ReleaseProfileGoModule,
 		Repository: "spice-agent",
@@ -182,6 +218,9 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		{name: "unknown repository", options: PolicyOptions{Profile: want.Profile, Repository: "unknown", Module: want.Module, Version: want.Version}, want: "not in the catalog"},
 		{name: "starter", options: PolicyOptions{Profile: want.Profile, Repository: "starter-smtp", Module: want.Module, Version: want.Version}, want: "must use library-release"},
 		{name: "distribution profile drift", options: PolicyOptions{Profile: want.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: distributionWant.Version}, want: "profile does not match"},
+		{name: "stale Spice foundation preview.2", options: PolicyOptions{Profile: foundationWant.Profile, Repository: foundationWant.Repository, Module: foundationWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
+		{name: "stale Toolchain preview.1", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.1"}, want: "does not match catalog"},
+		{name: "stale Toolchain preview.2", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale distribution preview.2", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale distribution preview.3", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},
 		{name: "stale TUI preview.1", options: PolicyOptions{Profile: tuiWant.Profile, Repository: tuiWant.Repository, Module: tuiWant.Module, Version: "v0.1.0-preview.1"}, want: "does not match catalog"},

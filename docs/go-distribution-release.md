@@ -137,6 +137,45 @@ This remains renderer-owned reproducibility evidence. Keyless signatures,
 provenance attestations, fresh-download verification, and publication belong to
 the organization workflow and independent toolchain verifier.
 
+## Toolchain preview.3 pre-tag authority
+
+The catalog now contains a separate repository-keyed Toolchain distribution
+policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.3`
+candidate. It requires the planned immutable Spice foundation preview.3
+selection and authorizes exactly:
+
+- binary `spice` from `./cmd/spice`;
+- payloads `LICENSE` and `README.md`;
+- darwin, Linux, and Windows on amd64 and arm64; and
+- linker identities
+  `github.com/spice-framework/toolchain/internal/cli.Version` and
+  `github.com/spice-framework/toolchain/internal/cli.Commit`.
+
+The renderer produces six archives, release metadata, an SPDX SBOM, and
+checksums: nine attestation subjects. A later organization workflow may add
+the authenticated `provenance.sigstore.json` bundle as the tenth published
+asset. The policy comparison output is exactly:
+
+```text
+go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.3
+```
+
+This Development change does not edit or validate a Toolchain candidate, add
+its required identity variables, create release metadata, change a caller,
+approve an environment, create a tag, or publish assets. The existing
+Toolchain preview.1 and preview.2 tags and preview.2 release remain historical
+facts. Before an immutable preview.3 tag, an independently committed Toolchain
+verifier must authorize the byte-identical tuple and complete policy, and the
+candidate must satisfy the ordinary source and installed-byte contracts.
+Publication order remains Spice preview.3, Toolchain preview.3, then TUI
+preview.2; combined catalog authorization does not collapse those immutable
+release boundaries.
+
+Coding remains independently authorized at preview.4 with both binaries, all
+seven payloads, the same six targets, and every existing dependency selection.
+Nothing in the Toolchain policy changes or substitutes that published
+distribution contract.
+
 ## Immutable preview.1 recovery
 
 The immutable `spice-agent-coding v0.1.0-preview.1` tag records a failed

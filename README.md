@@ -75,11 +75,12 @@ starter gate runs. This preflight is read-only, shell-free, and offline; it uses
 the rest of verification.
 
 The catalog separately authorizes generic `go-module-v1` and
-`go-distribution-v1` release profiles for Spice core and the five Spice Agent
-repositories. Those entries fix the preview version, strict
+`go-distribution-v1` release profiles for Spice core, Toolchain, and the five
+Spice Agent repositories. Those entries fix the preview version, strict
 `spice-release.json` file name, exact required module path-and-version
-selections, and—for the distribution only—the two binaries, six platform
-targets, and required payload files. Spice core uses the narrowly validated
+selections, and—for each distribution—the repository-specific binary,
+six-platform target, payload, and build-identity allowlists. Spice core uses
+the narrowly validated
 dependency-free form: both root graph files are absent, the catalog selects no
 modules, no `require`, `tool`, `replace`, or tracked `vendor/` content is
 allowed, and offline read-only Go inspection must report only the main module.
@@ -118,6 +119,21 @@ spice-dev go-release policy-check --repo spice-agent-coding --module github.com/
 spice-dev distribution-release render --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.4 --output ../distribution
 spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.4 --artifacts ../distribution
 ```
+
+The same renderer now has a distinct pre-tag Toolchain preview.3 policy:
+
+```text
+spice-dev go-release policy-check --repo toolchain --module github.com/spice-framework/toolchain --version v0.1.0-preview.3 --profile go-distribution-v1
+```
+
+That policy selects only `cmd/spice`, `LICENSE`, and `README.md`; it does not
+change Coding's two-binary, six-target policy or authorize a Toolchain tag,
+candidate, caller, attestation, or publication by itself.
+
+TUI preview.2 is the only downstream policy advanced in the same authority
+wave: it requires immutable Spice preview.3 and Toolchain preview.3 before its
+candidate can be tagged. Agent, provider, coding-tools, Coding, and extension
+profile selections remain unchanged.
 
 Only a `go-distribution-v1` catalog entry can select that command. The catalog,
 not command-line input or filesystem discovery, supplies every binary package,

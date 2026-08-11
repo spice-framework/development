@@ -28,7 +28,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		spice.Module != "github.com/spice-framework/spice" ||
 		spice.CanonicalModule != "" || spice.Release == nil ||
 		spice.Release.Profile != ReleaseProfileGoModule ||
-		spice.Release.Version != "v0.1.0-preview.2" ||
+		spice.Release.Version != "v0.1.0-preview.3" ||
 		spice.Release.MetadataFile != "spice-release.json" ||
 		len(spice.Release.RequiredModules) != 0 {
 		t.Fatalf("Spice repository identity = %#v", spice)
@@ -38,6 +38,8 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		toolchain.CanonicalURL != "https://github.com/spice-framework/toolchain" ||
 		toolchain.CloneURL != "https://github.com/spice-framework/toolchain.git" ||
 		toolchain.Module != "github.com/spice-framework/toolchain" ||
+		toolchain.Release == nil || toolchain.Release.Profile != ReleaseProfileDistribution ||
+		toolchain.Release.Version != "v0.1.0-preview.3" ||
 		!slices.Equal(toolchain.Dependencies, []string{".github", "development", "spice"}) ||
 		len(toolchain.Fast) != 1 || len(toolchain.Full) != 1 ||
 		!slices.Contains(toolchain.Fast[0].Arguments, "./internal/boundarygate/cmd") ||
@@ -94,7 +96,9 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		t.Fatalf("Spice Agent coding repository identity = %#v", agentCoding)
 	}
 	foundationSpiceVersion := "v0.1.0-preview.2"
+	tuiFoundationVersion := "v0.1.0-preview.3"
 	toolchainVersion := "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
+	tuiToolchainVersion := "v0.1.0-preview.3"
 	distributionToolchainVersion := "v0.1.0-preview.1.0.20260807044408-6598abca8196"
 	agentVersion := "v0.1.0-preview.4"
 	componentVersion := "v0.1.0-preview.1"
@@ -114,8 +118,8 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 			{Path: "github.com/spice-framework/spice-agent", Version: agentVersion},
 		},
 		"spice-agent-tui": {
-			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
-			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
+			{Path: "github.com/spice-framework/spice", Version: tuiFoundationVersion},
+			{Path: "github.com/spice-framework/toolchain", Version: tuiToolchainVersion},
 		},
 		"spice-agent-coding": {
 			{Path: "github.com/spice-framework/spice", Version: foundationSpiceVersion},
@@ -261,6 +265,66 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	}
 }
 
+func TestFoundationAndToolchainReleaseAuthorityIsExact(t *testing.T) {
+	t.Parallel()
+	value, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	foundation := requireRepository(t, value.Repositories, "spice")
+	previousFoundation := ReleasePolicy{
+		Profile:         ReleaseProfileGoModule,
+		Version:         "v0.1.0-preview.2",
+		MetadataFile:    "spice-release.json",
+		RequiredModules: []ReleaseModule{},
+	}
+	previousFoundation.Version = "v0.1.0-preview.3"
+	if foundation.Release == nil || !reflect.DeepEqual(*foundation.Release, previousFoundation) {
+		t.Fatalf("normalized Spice foundation delta changed more than release.version: got %#v, want %#v", foundation.Release, previousFoundation)
+	}
+
+	const (
+		foundationModule = "github.com/spice-framework/spice"
+		toolchainModule  = "github.com/spice-framework/toolchain"
+	)
+	wantToolchain := ReleasePolicy{
+		Profile:      ReleaseProfileDistribution,
+		Version:      "v0.1.0-preview.3",
+		MetadataFile: "spice-release.json",
+		RequiredModules: []ReleaseModule{
+			{Path: foundationModule, Version: "v0.1.0-preview.3"},
+		},
+		Binaries: []ReleaseBinary{{Name: "spice", Package: "./cmd/spice"}},
+		Targets: []ReleaseTarget{
+			{GOOS: "linux", GOARCH: "amd64"},
+			{GOOS: "linux", GOARCH: "arm64"},
+			{GOOS: "darwin", GOARCH: "amd64"},
+			{GOOS: "darwin", GOARCH: "arm64"},
+			{GOOS: "windows", GOARCH: "amd64"},
+			{GOOS: "windows", GOARCH: "arm64"},
+		},
+		PayloadFiles: []string{"LICENSE", "README.md"},
+		BuildIdentity: &ReleaseBuildIdentity{
+			VersionSymbol: toolchainModule + "/internal/cli.Version",
+			CommitSymbol:  toolchainModule + "/internal/cli.Commit",
+		},
+	}
+	toolchain := requireRepository(t, value.Repositories, "toolchain")
+	if toolchain.Release == nil || !reflect.DeepEqual(*toolchain.Release, wantToolchain) {
+		t.Fatalf("Toolchain release policy = %#v, want %#v", toolchain.Release, wantToolchain)
+	}
+	if rendered, published := len(toolchain.Release.Targets)+3, len(toolchain.Release.Targets)+4; rendered != 9 || published != 10 {
+		t.Fatalf("Toolchain artifact cardinality = %d rendered and %d published, want 9 and 10", rendered, published)
+	}
+
+	coding := requireRepository(t, value.Repositories, "spice-agent-coding")
+	if coding.Release == nil || len(coding.Release.Targets) != 6 || len(coding.Release.Binaries) != 2 ||
+		!slices.Equal(coding.Release.Targets, wantToolchain.Targets) {
+		t.Fatalf("Coding distribution policy changed while authorizing Toolchain: %#v", coding.Release)
+	}
+}
+
 func TestDefaultCatalogPinsImmutableAgentExtensionProfiles(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
@@ -340,12 +404,14 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 	}
 	const (
 		foundationVersion      = "v0.1.0-preview.2"
+		tuiFoundationVersion   = "v0.1.0-preview.3"
 		agentReleaseVersion    = "v0.1.0-preview.6"
 		agentDependencyVersion = "v0.1.0-preview.4"
 		componentVersion       = "v0.1.0-preview.1"
 		tuiReleaseVersion      = "v0.1.0-preview.2"
 		distributionVersion    = "v0.1.0-preview.4"
 		toolchainVersion       = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
+		tuiToolchainVersion    = "v0.1.0-preview.3"
 		distributionToolchain  = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
 		foundationModule       = "github.com/spice-framework/spice"
 		toolchainModule        = "github.com/spice-framework/toolchain"
@@ -390,8 +456,8 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 			Version:      tuiReleaseVersion,
 			MetadataFile: "spice-release.json",
 			RequiredModules: []ReleaseModule{
-				{Path: foundationModule, Version: foundationVersion},
-				{Path: toolchainModule, Version: toolchainVersion},
+				{Path: foundationModule, Version: tuiFoundationVersion},
+				{Path: toolchainModule, Version: tuiToolchainVersion},
 			},
 		},
 		"spice-agent-coding": {
@@ -441,19 +507,16 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 	}
 }
 
-func TestAgentTUIReleaseCatalogDeltaIsNormalizedVersionOnly(t *testing.T) {
+func TestAgentTUIReleaseCatalogDeltaIsNormalizedDependenciesOnly(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
 	if err != nil {
 		t.Fatal(err)
 	}
-	const (
-		previousVersion = "v0.1.0-preview.1"
-		currentVersion  = "v0.1.0-preview.2"
-	)
+	const currentVersion = "v0.1.0-preview.2"
 	previous := ReleasePolicy{
 		Profile:      ReleaseProfileGoModule,
-		Version:      previousVersion,
+		Version:      currentVersion,
 		MetadataFile: "spice-release.json",
 		RequiredModules: []ReleaseModule{
 			{Path: "github.com/spice-framework/spice", Version: "v0.1.0-preview.2"},
@@ -464,7 +527,8 @@ func TestAgentTUIReleaseCatalogDeltaIsNormalizedVersionOnly(t *testing.T) {
 	if tui.Release == nil || tui.Release.Version != currentVersion {
 		t.Fatalf("spice-agent-tui release policy = %#v, require %q", tui.Release, currentVersion)
 	}
-	previous.Version = currentVersion
+	previous.RequiredModules[0].Version = "v0.1.0-preview.3"
+	previous.RequiredModules[1].Version = "v0.1.0-preview.3"
 	want, err := json.Marshal(previous)
 	if err != nil {
 		t.Fatal(err)
@@ -474,7 +538,12 @@ func TestAgentTUIReleaseCatalogDeltaIsNormalizedVersionOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(got) != string(want) {
-		t.Fatalf("normalized spice-agent-tui catalog delta changed more than release.version:\n got %s\nwant %s", got, want)
+		t.Fatalf("normalized spice-agent-tui catalog delta changed more than required module versions:\n got %s\nwant %s", got, want)
+	}
+	for _, required := range tui.Release.RequiredModules {
+		if required.Version != "v0.1.0-preview.3" {
+			t.Fatalf("spice-agent-tui retains stale foundation/toolchain selection %s@%s", required.Path, required.Version)
+		}
 	}
 
 	distribution := requireRepository(t, value.Repositories, "spice-agent-coding")
@@ -484,8 +553,8 @@ func TestAgentTUIReleaseCatalogDeltaIsNormalizedVersionOnly(t *testing.T) {
 			selected = required.Version
 		}
 	}
-	if selected != previousVersion {
-		t.Fatalf("spice-agent-coding TUI selection = %q, require preserved %q", selected, previousVersion)
+	if selected != "v0.1.0-preview.1" {
+		t.Fatalf("spice-agent-coding TUI selection = %q, require preserved preview.1", selected)
 	}
 }
 

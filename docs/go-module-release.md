@@ -28,13 +28,45 @@ The entry may be marked indirect when
 Go derives it from a `tool` directive. Releases reject every `replace`
 directive, including remote replacements.
 
+## Spice foundation preview.3 authority
+
+The catalog authorizes the next dependency-free Spice foundation source
+release as `github.com/spice-framework/spice v0.1.0-preview.3`. The reviewed
+product authority is core commit
+`0e79bc4f3b294cd0a429598c4921391f2e4d10e2`, which adds Spice-native
+structured logging and contains the canonical schema-two `CODE_STYLE.md` with
+SHA-256
+`09c014e2d7eb93bf2b395e24e4e6ff2466c05d164d4778a11cf7433164bffb76`.
+Release-preparation metadata may advance the eventual tagged commit without
+changing those reviewed bytes.
+
+This is pre-tag policy authorization only. It does not create a candidate,
+tag, module proxy version, attestation, approval, or release. The existing
+immutable preview.2 release and its history remain unchanged. The normalized
+catalog delta changes only Spice's own `release.version`; the graphless module
+policy remains exact.
+
+```text
+go-module-v1	spice	github.com/spice-framework/spice	v0.1.0-preview.3
+```
+
+TUI preview.2 is the sole downstream policy advanced in the same explicit
+authority wave: it now requires immutable Spice preview.3 and Toolchain
+preview.3 before its candidate can be tagged. Agent, provider, coding-tools,
+Coding distribution, extension-profile, starter, application, and editor
+selections continue to use their recorded versions.
+
 ## Current Agent foundation authorization
 
 The catalog currently authorizes `spice-agent`, `spice-agent-provider-openai`,
-`spice-agent-tools-coding`, and `spice-agent-tui` to select the immutable
+and `spice-agent-tools-coding` to select the immutable
 `github.com/spice-framework/spice v0.1.0-preview.2` foundation release. Their
-exact toolchain selection remains
+exact historical toolchain selection remains
 `v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
+
+The independently authorized TUI preview.2 policy instead selects Spice
+preview.3 and Toolchain preview.3. Those are future immutable prerequisites,
+not permission to tag TUI before both foundation releases complete.
 
 This authorization is deliberately repository-scoped. `spice-agent` is now
 published at `v0.1.0-preview.6` with the public

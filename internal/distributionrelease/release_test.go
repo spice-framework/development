@@ -81,6 +81,41 @@ func TestRenderAndVerifyDeterministicCrossPlatformDistribution(t *testing.T) {
 	}
 }
 
+func TestRenderToolchainRepositoryKeyedDistribution(t *testing.T) {
+	t.Parallel()
+	fixture := newDistributionFixture(t, fixtureOptions{repositoryName: "toolchain"})
+	output := filepath.Join(fixture.parent, "toolchain-release")
+	result, err := Render(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantFiles := []string{
+		"checksums.txt",
+		"toolchain_0.1.0-preview.3_linux_amd64.tar.gz",
+		"toolchain_0.1.0-preview.3_release.json",
+		"toolchain_0.1.0-preview.3_sbom.spdx.json",
+		"toolchain_0.1.0-preview.3_windows_amd64.zip",
+	}
+	if result.Commit != fixture.commit || !slices.Equal(result.Files, wantFiles) {
+		t.Fatalf("Render(Toolchain) = %#v, want files %v", result, wantFiles)
+	}
+	if _, err := Verify(t.Context(), fixture.options, fixture.catalog, process.ExecRunner{}, output); err != nil {
+		t.Fatal(err)
+	}
+	assertToolchainTarDistribution(t, filepath.Join(output, wantFiles[1]), fixture.commit)
+	var metadata releaseMetadata
+	if err := json.Unmarshal(readTestFile(t, filepath.Join(output, wantFiles[2])), &metadata); err != nil {
+		t.Fatal(err)
+	}
+	if metadata.Repository != "toolchain" || metadata.Module != "github.com/spice-framework/toolchain" ||
+		metadata.Version != "v0.1.0-preview.3" || len(metadata.Targets) != 2 || len(metadata.Payloads) != 2 ||
+		metadata.Build.Identity.VersionSymbol != "github.com/spice-framework/toolchain/internal/cli.Version" ||
+		metadata.Build.Identity.CommitSymbol != "github.com/spice-framework/toolchain/internal/cli.Commit" ||
+		metadata.Build.Identity.CommitValue != fixture.commit {
+		t.Fatalf("Toolchain release metadata = %#v", metadata)
+	}
+}
+
 func TestRenderRejectsUntrustedDistributionInputs(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -510,6 +545,7 @@ func TestDistributionPureValidation(t *testing.T) {
 }
 
 type fixtureOptions struct {
+	repositoryName   string
 	unknownMetadata  bool
 	metadataModule   string
 	replaceDirective bool
@@ -535,26 +571,45 @@ func newDistributionFixture(t *testing.T, options fixtureOptions) distributionFi
 	if err != nil {
 		t.Fatal(err)
 	}
+	repositoryName := options.repositoryName
+	if repositoryName == "" {
+		repositoryName = "spice-agent-coding"
+	}
 	index := slices.IndexFunc(value.Repositories, func(repository catalog.Repository) bool {
-		return repository.Name == "spice-agent-coding"
+		return repository.Name == repositoryName
 	})
+	if index < 0 {
+		t.Fatalf("fixture repository %q is absent", repositoryName)
+	}
 	repository := value.Repositories[index]
 	repository.Release.RequiredModules = nil
 	if options.toolDependency {
 		repository.Release.RequiredModules = []catalog.ReleaseModule{{Path: "example.com/tool", Version: "v1.2.3"}}
 	}
-	repository.Release.Binaries = []catalog.ReleaseBinary{
-		{Name: "agent", Package: "./cmd/agent"},
-		{Name: "agentd", Package: "./cmd/agentd"},
+	if repositoryName == "toolchain" {
+		repository.Release.Binaries = []catalog.ReleaseBinary{{Name: "spice", Package: "./cmd/spice"}}
+	} else {
+		repository.Release.Binaries = []catalog.ReleaseBinary{
+			{Name: "agent", Package: "./cmd/agent"},
+			{Name: "agentd", Package: "./cmd/agentd"},
+		}
 	}
 	repository.Release.Targets = []catalog.ReleaseTarget{
 		{GOOS: "linux", GOARCH: "amd64"},
 		{GOOS: "windows", GOARCH: "amd64"},
 	}
-	repository.Release.PayloadFiles = []string{"LICENSE", "docs/configuration.md", "protocol-descriptors.pb"}
-	repository.Release.BuildIdentity = &catalog.ReleaseBuildIdentity{
-		VersionSymbol: repository.Module + "/internal/buildidentity.Version",
-		CommitSymbol:  repository.Module + "/internal/buildidentity.Commit",
+	if repositoryName == "toolchain" {
+		repository.Release.PayloadFiles = []string{"LICENSE", "README.md"}
+		repository.Release.BuildIdentity = &catalog.ReleaseBuildIdentity{
+			VersionSymbol: repository.Module + "/internal/cli.Version",
+			CommitSymbol:  repository.Module + "/internal/cli.Commit",
+		}
+	} else {
+		repository.Release.PayloadFiles = []string{"LICENSE", "docs/configuration.md", "protocol-descriptors.pb"}
+		repository.Release.BuildIdentity = &catalog.ReleaseBuildIdentity{
+			VersionSymbol: repository.Module + "/internal/buildidentity.Version",
+			CommitSymbol:  repository.Module + "/internal/buildidentity.Commit",
+		}
 	}
 	if options.symlinkPayload {
 		repository.Release.PayloadFiles = []string{"link"}
@@ -566,7 +621,7 @@ func newDistributionFixture(t *testing.T, options fixtureOptions) distributionFi
 	if options.metadataModule != "" {
 		metadataModule = options.metadataModule
 	}
-	metadata := `{"schema":1,"profile":"go-distribution-v1","repository":"spice-agent-coding","module":"` + metadataModule + `","version":"v0.1.0-preview.4"}`
+	metadata := `{"schema":1,"profile":"go-distribution-v1","repository":"` + repository.Name + `","module":"` + metadataModule + `","version":"` + repository.Release.Version + `"}`
 	if options.unknownMetadata {
 		metadata = strings.TrimSuffix(metadata, "}") + `,"unknown":true}`
 	}
@@ -602,6 +657,10 @@ func newDistributionFixture(t *testing.T, options fixtureOptions) distributionFi
 		"protocol-descriptors.pb":            {0x00, 0x01, 0xff, 0x0a},
 		"spice-release.json":                 []byte(metadata + "\n"),
 		"vendor/modules.txt":                 nil,
+	}
+	if repositoryName == "toolchain" {
+		files["cmd/spice/main.go"] = []byte("package main\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\n\t\"" + repository.Module + "/internal/cli\"\n)\n\nfunc main() { if len(os.Args) == 2 && os.Args[1] == \"--version\" { fmt.Printf(\"spice %s (%s)\\n\", cli.Version, cli.Commit) } }\n")
+		files["internal/cli/identity.go"] = []byte("package cli\n\nvar Version = \"development\"\nvar Commit = \"development\"\n")
 	}
 	if options.toolDependency {
 		files["vendor/modules.txt"] = []byte("# example.com/tool v1.2.3\n## explicit; go 1.26.0\nexample.com/tool/cmd/tool\n")
@@ -744,6 +803,53 @@ func assertTarDistribution(t *testing.T, name string, commit string) {
 	for entry, found := range want {
 		if !found {
 			t.Errorf("tar missing %q", entry)
+		}
+	}
+}
+
+func assertToolchainTarDistribution(t *testing.T, name string, commit string) {
+	t.Helper()
+	file, err := os.Open(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	gzipReader, err := gzip.NewReader(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer gzipReader.Close()
+	reader := tar.NewReader(gzipReader)
+	want := map[string]bool{
+		"toolchain_0.1.0-preview.3_linux_amd64/spice":     false,
+		"toolchain_0.1.0-preview.3_linux_amd64/LICENSE":   false,
+		"toolchain_0.1.0-preview.3_linux_amd64/README.md": false,
+	}
+	for {
+		header, readErr := reader.Next()
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		if _, found := want[header.Name]; !found || header.Typeflag != tar.TypeReg {
+			t.Fatalf("unexpected Toolchain tar entry %#v", header)
+		}
+		want[header.Name] = true
+		if strings.HasSuffix(header.Name, "/spice") {
+			content, readErr := io.ReadAll(reader)
+			if readErr != nil || header.Mode != 0o755 || len(content) < 4 ||
+				!bytes.Equal(content[:4], []byte{0x7f, 'E', 'L', 'F'}) ||
+				!bytes.Contains(content, []byte("0.1.0-preview.3")) ||
+				!bytes.Contains(content, []byte(commit)) {
+				t.Fatalf("Toolchain binary identity or format is invalid: mode=%o error=%v", header.Mode, readErr)
+			}
+		}
+	}
+	for entry, found := range want {
+		if !found {
+			t.Errorf("Toolchain tar missing %q", entry)
 		}
 	}
 }

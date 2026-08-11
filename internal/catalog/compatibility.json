@@ -160,7 +160,7 @@
       "module": "github.com/spice-framework/spice",
       "release": {
         "profile": "go-module-v1",
-        "version": "v0.1.0-preview.2",
+        "version": "v0.1.0-preview.3",
         "metadata_file": "spice-release.json",
         "required_modules": []
       },
@@ -199,6 +199,33 @@
       "clone_url": "https://github.com/spice-framework/toolchain.git",
       "artifact": "go-module",
       "module": "github.com/spice-framework/toolchain",
+      "release": {
+        "profile": "go-distribution-v1",
+        "version": "v0.1.0-preview.3",
+        "metadata_file": "spice-release.json",
+        "required_modules": [
+          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.3"}
+        ],
+        "binaries": [
+          {"name": "spice", "package": "./cmd/spice"}
+        ],
+        "targets": [
+          {"goos": "linux", "goarch": "amd64"},
+          {"goos": "linux", "goarch": "arm64"},
+          {"goos": "darwin", "goarch": "amd64"},
+          {"goos": "darwin", "goarch": "arm64"},
+          {"goos": "windows", "goarch": "amd64"},
+          {"goos": "windows", "goarch": "arm64"}
+        ],
+        "payload_files": [
+          "LICENSE",
+          "README.md"
+        ],
+        "build_identity": {
+          "version_symbol": "github.com/spice-framework/toolchain/internal/cli.Version",
+          "commit_symbol": "github.com/spice-framework/toolchain/internal/cli.Commit"
+        }
+      },
       "dependencies": [
         ".github",
         "development",
@@ -382,8 +409,8 @@
         "version": "v0.1.0-preview.2",
         "metadata_file": "spice-release.json",
         "required_modules": [
-          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.2"},
-          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"}
+          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.3"},
+          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.3"}
         ]
       },
       "dependencies": [

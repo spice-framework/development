@@ -4,9 +4,12 @@ This is a dated compatibility and verification snapshot, not a second
 implementation roadmap. Product status and sequencing remain owned by the
 [canonical Spice Agent implementation ledger](https://github.com/spice-framework/spice-agent/tree/main/docs/implementation).
 
-The current release catalog selects
-`github.com/spice-framework/spice v0.1.0-preview.2` for all five Agent release
-contracts. After the immutable `spice-agent v0.1.0-preview.1` tag failed before
+The current release catalog preserves
+`github.com/spice-framework/spice v0.1.0-preview.2` for Agent, provider,
+coding-tools, and Coding distribution contracts. TUI preview.2 alone is
+pre-authorized to require the future immutable Spice preview.3 and Toolchain
+preview.3 releases; it cannot be tagged before those prerequisites exist.
+After the immutable `spice-agent v0.1.0-preview.1` tag failed before
 artifact rendering and the immutable `v0.1.0-preview.2` attempt failed in the
 independent verifier before attestation. The immutable `v0.1.0-preview.3`
 attempt also completed rendering but failed independent policy verification
