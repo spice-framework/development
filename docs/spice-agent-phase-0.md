@@ -19,9 +19,10 @@ the independently published `spice-agent v0.1.0-preview.6`, whose release run
 [31428824060](https://github.com/spice-framework/spice-agent/actions/runs/31428824060)
 completed the same protected five-asset publication contract. Preview.6 carries
 `VerifiedLauncher`, the Phase 7/8 experiment evidence, and the enforced pre-v1
-compatibility policy. The provider, coding-tools, and
-distribution graphs remain on Agent `v0.1.0-preview.4`; the TUI, provider, and coding-tools own release
-versions remain `v0.1.0-preview.1`. Distribution preview.2 was also published,
+compatibility policy. The provider, coding-tools, and distribution graphs
+remain on Agent `v0.1.0-preview.4`; the provider and coding-tools own release
+versions remain `v0.1.0-preview.1`, while the TUI own release version is now
+authorized at `v0.1.0-preview.2`. Distribution preview.2 was also published,
 and distribution preview.4 was subsequently published by successful release
 run `31349650978` after passing the corrected Linux and Windows installed-byte
 gates. The catalog continues to authorize only that own release version. Its

@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"encoding/json"
 	"reflect"
 	"slices"
 	"strings"
@@ -342,6 +343,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		agentReleaseVersion    = "v0.1.0-preview.6"
 		agentDependencyVersion = "v0.1.0-preview.4"
 		componentVersion       = "v0.1.0-preview.1"
+		tuiReleaseVersion      = "v0.1.0-preview.2"
 		distributionVersion    = "v0.1.0-preview.4"
 		toolchainVersion       = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
 		distributionToolchain  = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
@@ -385,7 +387,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		},
 		"spice-agent-tui": {
 			Profile:      ReleaseProfileGoModule,
-			Version:      componentVersion,
+			Version:      tuiReleaseVersion,
 			MetadataFile: "spice-release.json",
 			RequiredModules: []ReleaseModule{
 				{Path: foundationModule, Version: foundationVersion},
@@ -436,6 +438,54 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		if repository.Release == nil || !reflect.DeepEqual(*repository.Release, expected) {
 			t.Fatalf("%s release policy = %#v, want %#v", name, repository.Release, expected)
 		}
+	}
+}
+
+func TestAgentTUIReleaseCatalogDeltaIsNormalizedVersionOnly(t *testing.T) {
+	t.Parallel()
+	value, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	const (
+		previousVersion = "v0.1.0-preview.1"
+		currentVersion  = "v0.1.0-preview.2"
+	)
+	previous := ReleasePolicy{
+		Profile:      ReleaseProfileGoModule,
+		Version:      previousVersion,
+		MetadataFile: "spice-release.json",
+		RequiredModules: []ReleaseModule{
+			{Path: "github.com/spice-framework/spice", Version: "v0.1.0-preview.2"},
+			{Path: "github.com/spice-framework/toolchain", Version: "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"},
+		},
+	}
+	tui := requireRepository(t, value.Repositories, "spice-agent-tui")
+	if tui.Release == nil || tui.Release.Version != currentVersion {
+		t.Fatalf("spice-agent-tui release policy = %#v, require %q", tui.Release, currentVersion)
+	}
+	previous.Version = currentVersion
+	want, err := json.Marshal(previous)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := json.Marshal(tui.Release)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("normalized spice-agent-tui catalog delta changed more than release.version:\n got %s\nwant %s", got, want)
+	}
+
+	distribution := requireRepository(t, value.Repositories, "spice-agent-coding")
+	selected := ""
+	for _, required := range distribution.Release.RequiredModules {
+		if required.Path == tui.Module {
+			selected = required.Version
+		}
+	}
+	if selected != previousVersion {
+		t.Fatalf("spice-agent-coding TUI selection = %q, require preserved %q", selected, previousVersion)
 	}
 }
 

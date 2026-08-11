@@ -43,11 +43,12 @@ the enforced pre-v1 API/protocol/durable/security compatibility policy. This
 own-version advance does not silently move downstream graphs: the provider,
 coding-tools, and distribution policies continue to select the published Agent
 `v0.1.0-preview.4` exactly.
-The provider, coding-tools, and TUI own release versions remain
-`v0.1.0-preview.1`. The separate `spice-agent-coding` own release version is
-authorized at `v0.1.0-preview.4`; its toolchain, Agent preview.4 and remaining
-sibling selections, metadata, binary, payload, target, and build-identity
-contracts are unchanged. See
+The provider and coding-tools own release versions remain
+`v0.1.0-preview.1`; the TUI own release version is now authorized at
+`v0.1.0-preview.2`. The separate `spice-agent-coding` own release version is
+authorized at `v0.1.0-preview.4`; its toolchain, Agent preview.4, TUI preview.1
+and remaining sibling selections, metadata, binary, payload, target, and
+build-identity contracts are unchanged. See
 [the distribution release history](go-distribution-release.md#immutable-preview1-recovery).
 
 The immutable `spice-agent v0.1.0-preview.1` tag records a failed pre-artifact

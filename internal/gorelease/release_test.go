@@ -135,6 +135,24 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 	if got != want {
 		t.Fatalf("CheckPolicy() = %#v, want %#v", got, want)
 	}
+	tuiWant := Policy{
+		Profile:    catalog.ReleaseProfileGoModule,
+		Repository: "spice-agent-tui",
+		Module:     "github.com/spice-framework/spice-agent-tui",
+		Version:    "v0.1.0-preview.2",
+	}
+	tuiGot, err := CheckPolicy(PolicyOptions{
+		Profile:    tuiWant.Profile,
+		Repository: tuiWant.Repository,
+		Module:     tuiWant.Module,
+		Version:    tuiWant.Version,
+	}, value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tuiGot != tuiWant {
+		t.Fatalf("CheckPolicy(TUI) = %#v, want %#v", tuiGot, tuiWant)
+	}
 	distributionWant := Policy{
 		Profile:    catalog.ReleaseProfileDistribution,
 		Repository: "spice-agent-coding",
@@ -166,6 +184,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		{name: "distribution profile drift", options: PolicyOptions{Profile: want.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: distributionWant.Version}, want: "profile does not match"},
 		{name: "stale distribution preview.2", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale distribution preview.3", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},
+		{name: "stale TUI preview.1", options: PolicyOptions{Profile: tuiWant.Profile, Repository: tuiWant.Repository, Module: tuiWant.Module, Version: "v0.1.0-preview.1"}, want: "does not match catalog"},
 		{name: "stale preview.2", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale preview.3", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},
 		{name: "stale preview.4", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.4"}, want: "does not match catalog"},
