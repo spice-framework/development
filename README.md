@@ -107,7 +107,9 @@ The Agent preview.7 policy requires the published Spice preview.4 and Toolchain
 preview.2 modules. It is pre-tag authorization only: this Development change
 does not create an Agent candidate, tag, attestation, approval, or Release.
 Provider, coding-tools, TUI, Coding distribution, extension-profile, and
-Toolchain preview.4 policies retain their recorded versions and dependencies.
+published Toolchain preview.4 policies retain their recorded versions and
+dependencies. The separate Toolchain preview.5 authority below advances only
+Toolchain's next distribution identity.
 
 It requires a clean tagged checkout, an exact catalog origin and module,
 `go 1.26.0`, `toolchain go1.26.5`, a strict committed
@@ -126,11 +128,11 @@ spice-dev distribution-release render --root ../spice-agent-coding --repo spice-
 spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.4 --artifacts ../distribution
 ```
 
-The same renderer now has a distinct pre-tag Toolchain preview.4 recovery
+The same renderer now has a distinct pre-tag Toolchain preview.5
 policy:
 
 ```text
-spice-dev go-release policy-check --repo toolchain --module github.com/spice-framework/toolchain --version v0.1.0-preview.4 --profile go-distribution-v1
+spice-dev go-release policy-check --repo toolchain --module github.com/spice-framework/toolchain --version v0.1.0-preview.5 --profile go-distribution-v1
 ```
 
 That policy requires the authenticated Spice preview.4 foundation and
@@ -138,15 +140,19 @@ selects only `cmd/spice`, `LICENSE`, and `README.md`; it does not change
 Coding's two-binary, six-target policy or authorize a Toolchain tag, candidate,
 caller, attestation, or publication by itself.
 
-The immutable Toolchain preview.3 tag-only attempt passed validation,
-rendering, independent verification, and Linux installed execution, then its
-[release run](https://github.com/spice-framework/toolchain/actions/runs/31501018109)
-failed when Windows correctly rejected the mixed-separator verified-artifact
-directory before attestation or deployment. No Release or assets were
-published. Recovery advances only Toolchain's own version and TUI preview.2's
-required Toolchain version to preview.4. TUI still requires Spice preview.4;
-Agent, provider, coding-tools, Coding, and extension-profile selections remain
-unchanged.
+Toolchain preview.4 was subsequently published from candidate commit
+`35cb1315bb30bc31b82fdd71c99c6313b4b4a923` by successful
+[release run](https://github.com/spice-framework/toolchain/actions/runs/31522099046)
+with its exact ten-asset prerelease. Preview.5 is a distinct identity for the
+reviewed Toolchain product line through commit
+`24e015a15e9436a28032baa92edf0f6bd96d85db`, including application-scoped
+configured analysis and the additive defensive `ApplicationScopes` result
+API. This Development authority changes exactly Toolchain's own release
+version. Its Spice preview.4 requirement is unchanged; TUI preview.2 remains
+on published Toolchain preview.4, and every Agent, provider, coding-tools,
+Coding, and extension-profile selection remains unchanged. It does not edit
+or validate a Toolchain candidate, repin a caller, create a tag, approve an
+environment, attest bytes, or publish assets.
 
 Only a `go-distribution-v1` catalog entry can select that command. The catalog,
 not command-line input or filesystem discovery, supplies every binary package,

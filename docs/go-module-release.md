@@ -58,9 +58,11 @@ normalized catalog changes at that authority point; Toolchain and TUI retained
 their own release versions and TUI retained Toolchain preview.3. Spice
 preview.4 was subsequently published. The immutable Toolchain preview.3
 tag-only attempt later failed Windows installed execution before attestation
-or deployment and produced no Release, so current recovery policy advances
-Toolchain's own version and TUI's Toolchain requirement to preview.4 without
-changing their Spice preview.4 selections.
+or deployment and produced no Release. Recovery then advanced Toolchain's own
+version and TUI's Toolchain requirement to preview.4 without changing their
+Spice preview.4 selections. Toolchain preview.4 was subsequently published.
+The separate preview.5 authority now advances only Toolchain's own next
+distribution version; TUI remains pinned to published preview.4.
 
 At that authority point this was pre-tag policy authorization only; the
 Development change did not itself create a preview.4 candidate, tag, module
@@ -72,8 +74,8 @@ immutable preview.2 release and its history remain unchanged.
 go-module-v1	spice	github.com/spice-framework/spice	v0.1.0-preview.4
 ```
 
-Toolchain preview.4 and TUI preview.2 require immutable Spice preview.4; TUI
-also requires Toolchain preview.4. Agent, provider, coding-tools, Coding
+Toolchain preview.5 and TUI preview.2 require immutable Spice preview.4; TUI
+continues to require Toolchain preview.4. Agent, provider, coding-tools, Coding
 distribution, extension-profile, starter, application, and editor selections
 continue to use their recorded versions.
 
@@ -92,9 +94,8 @@ Coding distribution and TUI policies likewise retain their recorded module
 graphs; Agent preview.7 does not silently repin any downstream repository.
 
 The independently authorized TUI preview.2 policy instead selects Spice
-preview.4 and Toolchain preview.4. The Toolchain selection is a future
-immutable prerequisite, not permission to tag TUI before that recovery release
-completes.
+preview.4 and published Toolchain preview.4. The separate Toolchain preview.5
+authority does not repin or authorize a TUI candidate.
 
 This authorization is deliberately repository-scoped. `spice-agent`
 preview.6 remains published with the public

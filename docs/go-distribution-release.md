@@ -137,11 +137,11 @@ This remains renderer-owned reproducibility evidence. Keyless signatures,
 provenance attestations, fresh-download verification, and publication belong to
 the organization workflow and independent toolchain verifier.
 
-## Toolchain preview.4 recovery authority
+## Toolchain preview.5 authority
 
 The catalog now contains a separate repository-keyed Toolchain distribution
-policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.4`
-recovery candidate. It requires the published immutable Spice foundation
+policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.5`
+candidate. It requires the published immutable Spice foundation
 preview.4 selection and authorizes exactly:
 
 - binary `spice` from `./cmd/spice`;
@@ -157,32 +157,34 @@ the authenticated `provenance.sigstore.json` bundle as the tenth published
 asset. The policy comparison output is exactly:
 
 ```text
-go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.4
+go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.5
 ```
 
-The immutable preview.3 tag object
-`d21a39b736a88ce2f02464aa9a31982c367bbf5b` resolves to candidate commit
-`38ddce157e6e96827f8fd7dd69cd95e75eb4106d`. Its
-[release run](https://github.com/spice-framework/toolchain/actions/runs/31501018109)
-passed tag/source validation, artifact rendering, independent verification,
-and Linux installed execution. The Windows installed-execution job then
-correctly rejected the mixed-separator verified-artifact directory
-`D:\a\_temp/go-distribution-release-verified` as noncanonical. That failure
-occurred before attestation or any deployment; provenance authentication and
-publication were skipped. GitHub contains no preview.3 Release or assets, so
-the immutable tag must never be moved or reused and preview.3 is not a
-published Toolchain distribution eligible for TUI release policy.
+The immutable preview.4 tag object
+`c56a53983f4e36259ac83a016fd80326023a730d` resolves to candidate commit
+`35cb1315bb30bc31b82fdd71c99c6313b4b4a923`. Unique
+[release run](https://github.com/spice-framework/toolchain/actions/runs/31522099046)
+completed candidate validation, deterministic rendering, independent
+verification, Linux and Windows installed execution, keyless attestation,
+provenance authentication, and protected publication of the exact ten-asset
+prerelease. Preview.4 is immutable published history and remains the Toolchain
+selection of TUI preview.2.
 
-Recovery changes exactly two normalized catalog fields: Toolchain's own
-release version advances from preview.3 to preview.4, and TUI preview.2's
-required Toolchain module advances from preview.3 to preview.4. Toolchain's
-Spice preview.4 requirement, TUI's own version and Spice preview.4 requirement,
-and every Agent, provider, coding-tools, Coding, starter, application, and
-editor selection remain unchanged. This Development change does not edit or
-validate a Toolchain candidate, change its caller, approve an environment,
-create a recovery tag, or publish assets. Publication order is Toolchain
-preview.4 and then TUI preview.2; combined catalog authorization does not
-collapse those immutable release boundaries.
+Preview.5 is a distinct identity for the reviewed Toolchain product line
+through commit `24e015a15e9436a28032baa92edf0f6bd96d85db`. That product work
+scopes configured schema-two analysis to each application composition,
+retains selection-aware source ownership, and exposes the additive defensive
+`compiler/service.Result.ApplicationScopes` API. Release preparation may
+advance the eventual candidate commit without changing those reviewed product
+bytes.
+
+This authority changes exactly one normalized catalog field: Toolchain's own
+release version advances from preview.4 to preview.5. Toolchain's Spice
+preview.4 requirement; TUI preview.2's own version, Spice preview.4, and
+Toolchain preview.4 requirements; and every Agent, provider, coding-tools,
+Coding, starter, application, and editor selection remain unchanged. This
+Development change does not edit or validate a Toolchain candidate, change its
+caller, approve an environment, create a tag, or publish assets.
 
 Coding remains independently authorized at preview.4 with both binaries, all
 seven payloads, the same six targets, and every existing dependency selection.
