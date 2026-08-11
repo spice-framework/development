@@ -15,7 +15,7 @@ The catalog names the metadata file. Version 1 is a closed JSON object:
   "profile": "go-module-v1",
   "repository": "spice-agent",
   "module": "github.com/spice-framework/spice-agent",
-  "version": "v0.1.0-preview.6"
+  "version": "v0.1.0-preview.7"
 }
 ```
 
@@ -79,24 +79,28 @@ continue to use their recorded versions.
 
 ## Current Agent foundation authorization
 
-The catalog currently authorizes `spice-agent`, `spice-agent-provider-openai`,
-and `spice-agent-tools-coding` to select the immutable
-`github.com/spice-framework/spice v0.1.0-preview.2` foundation release. Their
-exact historical toolchain selection remains
-`v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
+The catalog authorizes the next `spice-agent v0.1.0-preview.7` source release
+to select immutable `github.com/spice-framework/spice v0.1.0-preview.4` and
+`github.com/spice-framework/toolchain v0.1.0-preview.2`. This is pre-tag policy
+authorization only and does not create a candidate, tag, module proxy version,
+attestation, approval, or Release.
+
+The provider and coding-tools policies remain on Spice preview.2, their exact
+historical Toolchain pseudo-version
+`v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`, and Agent preview.4. The
+Coding distribution and TUI policies likewise retain their recorded module
+graphs; Agent preview.7 does not silently repin any downstream repository.
 
 The independently authorized TUI preview.2 policy instead selects Spice
 preview.4 and Toolchain preview.4. The Toolchain selection is a future
 immutable prerequisite, not permission to tag TUI before that recovery release
 completes.
 
-This authorization is deliberately repository-scoped. `spice-agent` is now
-published at `v0.1.0-preview.6` with the public
+This authorization is deliberately repository-scoped. `spice-agent`
+preview.6 remains published with the public
 `VerifiedLauncher` boundary, the removable Phase 7/8 experiment evidence, and
-the enforced pre-v1 API/protocol/durable/security compatibility policy. This
-own-version advance does not silently move downstream graphs: the provider,
-coding-tools, and distribution policies continue to select the published Agent
-`v0.1.0-preview.4` exactly.
+the enforced pre-v1 API/protocol/durable/security compatibility policy.
+Authorizing preview.7 does not rewrite that immutable release history.
 The provider and coding-tools own release versions remain
 `v0.1.0-preview.1`; the TUI own release version is now authorized at
 `v0.1.0-preview.2`. The separate `spice-agent-coding` own release version is
@@ -167,7 +171,7 @@ vendored release into this mode.
 spice-dev go-release policy-check \
   --repo spice-agent \
   --module github.com/spice-framework/spice-agent \
-  --version v0.1.0-preview.6 \
+  --version v0.1.0-preview.7 \
   --profile go-module-v1
 ```
 
@@ -175,7 +179,7 @@ The command validates the exact repository, module, version, and profile
 against the embedded catalog and prints exactly:
 
 ```text
-go-module-v1	spice-agent	github.com/spice-framework/spice-agent	v0.1.0-preview.6
+go-module-v1	spice-agent	github.com/spice-framework/spice-agent	v0.1.0-preview.7
 ```
 
 It does not read a checkout, tag, or artifact and performs no network access.

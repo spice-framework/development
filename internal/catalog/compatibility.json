@@ -264,11 +264,11 @@
       "module": "github.com/spice-framework/spice-agent",
       "release": {
         "profile": "go-module-v1",
-        "version": "v0.1.0-preview.6",
+        "version": "v0.1.0-preview.7",
         "metadata_file": "spice-release.json",
         "required_modules": [
-          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.2"},
-          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"}
+          {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.4"},
+          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.2"}
         ]
       },
       "dependencies": [

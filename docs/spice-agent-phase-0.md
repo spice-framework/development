@@ -27,13 +27,16 @@ before attestation. Agent preview.4 was subsequently published. The annotated
 Agent preview.5 tag and public module now exist, while release run
 [31343998056](https://github.com/spice-framework/spice-agent/actions/runs/31343998056)
 completed keyless attestation, provenance authentication, and protected
-publication of the five-asset non-draft prerelease. The catalog now authorizes
-the independently published `spice-agent v0.1.0-preview.6`, whose release run
+publication of the five-asset non-draft prerelease. The independently published
+`spice-agent v0.1.0-preview.6` release run
 [31428824060](https://github.com/spice-framework/spice-agent/actions/runs/31428824060)
 completed the same protected five-asset publication contract. Preview.6 carries
 `VerifiedLauncher`, the Phase 7/8 experiment evidence, and the enforced pre-v1
-compatibility policy. The provider, coding-tools, and distribution graphs
-remain on Agent `v0.1.0-preview.4`; the provider and coding-tools own release
+compatibility policy. The current catalog separately authorizes an Agent
+preview.7 candidate to require published Spice preview.4 and Toolchain
+preview.2; that pre-tag authority does not claim a tag or Release. The
+provider, coding-tools, and distribution graphs remain on Agent
+`v0.1.0-preview.4`; the provider and coding-tools own release
 versions remain `v0.1.0-preview.1`, while the TUI own release version is now
 authorized at `v0.1.0-preview.2`. Distribution preview.2 was also published,
 and distribution preview.4 was subsequently published by successful release
