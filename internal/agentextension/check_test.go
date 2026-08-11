@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -40,6 +41,26 @@ func TestCheckAcceptsExactMaterializedScaffold(t *testing.T) {
 	}
 	if !result.Materialized || result.Root != root || runner.calls != 1 {
 		t.Fatalf("Check() = %#v, calls=%d", result, runner.calls)
+	}
+}
+
+func TestCheckAcceptsJavaStructuredSourceFilenames(t *testing.T) {
+	t.Parallel()
+	root, profile := materializedFixture(t)
+	if err := os.Rename(filepath.Join(root, "tool.go"), filepath.Join(root, "json_inspector.go")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(filepath.Join(root, "tool_test.go"), filepath.Join(root, "json_inspector_test.go")); err != nil {
+		t.Fatal(err)
+	}
+	runner := &checkRunner{output: moduleJSON(t, "example.com/acme/agent-tool", profile, "")}
+	result, err := Check(t.Context(), root, testCatalog(t), runner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(result.Files, "json_inspector.go") || !slices.Contains(result.Files, "json_inspector_test.go") ||
+		slices.Contains(result.Files, "tool.go") || slices.Contains(result.Files, "tool_test.go") {
+		t.Fatalf("Check() files = %#v", result.Files)
 	}
 }
 
@@ -99,6 +120,22 @@ func TestCheckRejectsManifestAndModuleMutations(t *testing.T) {
 				}
 			},
 			want: "generated proof",
+		},
+		"missing implementation source": {
+			mutate: func(t *testing.T, root string) {
+				if err := os.Remove(filepath.Join(root, "tool.go")); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: "no handwritten implementation source",
+		},
+		"missing implementation tests": {
+			mutate: func(t *testing.T, root string) {
+				if err := os.Remove(filepath.Join(root, "tool_test.go")); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: "no handwritten implementation tests",
 		},
 		"replace directive": {directive: "replace", want: "must not contain replace"},
 		"exclude directive": {directive: "exclude", want: "must not contain replace"},

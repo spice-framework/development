@@ -79,8 +79,12 @@ disabled.
 `check` strictly rejects unknown or trailing manifest fields, stale or unknown
 profiles, module/Go/tool/pin/sum drift, replace/exclude/retract/ignore
 directives, unapproved Go tools, links, missing review documents, incomplete
-vendor selection, and absent generated ownership or source-map structure. It
-uses shell-free offline `go mod edit -json` for Go grammar and does not execute
+vendor selection, missing handwritten implementation or test sources, and
+absent generated ownership or source-map structure. Handwritten implementation
+filenames are deliberately semantic rather than fixed: authors may replace the
+starter `tool.go` with Java-structured one-primary-type files such as
+`json_inspector.go`, and the checker reports those actual files. It uses
+shell-free offline `go mod edit -json` for Go grammar and does not execute
 extension initialization, tests, or application code. The repository-owned
 `make verify` remains responsible for byte-identical Spice regeneration, vet,
 race, fuzz, coverage, and behavioral tests.

@@ -86,7 +86,14 @@ func check(ctx context.Context, root string, ecosystem catalog.Catalog, runner p
 	if err := verifyLayout(root, manifest, profile); err != nil {
 		return Result{}, err
 	}
-	return Result{Root: root, Files: requiredFiles(manifest, profile), Materialized: true}, nil
+	files := requiredFiles(manifest, profile)
+	sources, err := rootSourceFiles(root)
+	if err != nil {
+		return Result{}, err
+	}
+	files = append(files, sources...)
+	slices.Sort(files)
+	return Result{Root: root, Files: files, Materialized: true}, nil
 }
 
 func validateManifest(value Manifest, profile catalog.AgentExtensionProfile) error {
@@ -215,6 +222,9 @@ func verifySums(root string, profile catalog.AgentExtensionProfile) error {
 }
 
 func verifyLayout(root string, manifest Manifest, profile catalog.AgentExtensionProfile) error {
+	if _, err := rootSourceFiles(root); err != nil {
+		return err
+	}
 	files := requiredFiles(manifest, profile)
 	for _, name := range files {
 		info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(name)))
@@ -250,11 +260,50 @@ func requiredFiles(manifest Manifest, profile catalog.AgentExtensionProfile) []s
 		"docs/deletion.md", "docs/verification.md", "go.mod", "go.sum",
 		"internal/composition/application.go", "internal/composition/composition_test.go",
 		"internal/composition/proof.go", "internal/qualitygate/main.go", "manifest.go",
-		"spice-agent-extension.json", "spice-compatibility.json", "tool.go", "tool_test.go",
+		"spice-agent-extension.json", "spice-compatibility.json",
 		"vendor/modules.txt", profile.Composition.OwnershipFile,
 	}
 	slices.Sort(result)
 	return result
+}
+
+func rootSourceFiles(root string) ([]string, error) {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return nil, fmt.Errorf("inspect Agent extension package sources: %w", err)
+	}
+	production := make([]string, 0, 1)
+	tests := make([]string, 0, 1)
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return nil, fmt.Errorf("inspect Agent extension source %s: %w", entry.Name(), err)
+		}
+		if !info.Mode().IsRegular() {
+			return nil, fmt.Errorf("Agent extension source %s is not regular", entry.Name())
+		}
+		switch entry.Name() {
+		case "doc.go", "manifest.go", "manifest_test.go":
+			continue
+		}
+		if strings.HasSuffix(entry.Name(), "_test.go") {
+			tests = append(tests, entry.Name())
+			continue
+		}
+		production = append(production, entry.Name())
+	}
+	if len(production) == 0 {
+		return nil, errors.New("Agent extension has no handwritten implementation source")
+	}
+	if len(tests) == 0 {
+		return nil, errors.New("Agent extension has no handwritten implementation tests")
+	}
+	result := append(production, tests...)
+	slices.Sort(result)
+	return result, nil
 }
 
 func rejectLinks(ctx context.Context, root string) error {
