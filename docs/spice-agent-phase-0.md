@@ -7,9 +7,15 @@ implementation roadmap. Product status and sequencing remain owned by the
 The current release catalog preserves
 `github.com/spice-framework/spice v0.1.0-preview.2` for Agent, provider,
 coding-tools, and Coding distribution contracts. TUI preview.2 alone is
-pre-authorized to require the future authenticated Spice preview.4 and
-Toolchain preview.3 releases; it cannot be tagged before those prerequisites
-exist. The immutable Spice preview.3 tag-only attempt failed candidate
+pre-authorized to require the published Spice preview.4 and future Toolchain
+preview.4 releases; it cannot be tagged before that remaining prerequisite
+exists. The immutable Toolchain preview.3 tag-only attempt passed validation,
+rendering, independent verification, and Linux installed execution, then
+[failed Windows installed execution](https://github.com/spice-framework/toolchain/actions/runs/31501018109)
+because the candidate correctly rejected a mixed-separator artifact directory
+as noncanonical. The failure occurred before attestation or any deployment and
+produced no GitHub Release. The immutable Spice preview.3 tag-only attempt
+failed candidate
 bootstrap before rendering, attestation, or deployment and produced no GitHub
 Release, so current recovery policy does not treat it as a downstream
 foundation release.

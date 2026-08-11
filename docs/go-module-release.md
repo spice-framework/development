@@ -52,27 +52,30 @@ deployment were skipped. GitHub contains no preview.3 Release or assets, so
 the tag must never be moved or reused and preview.3 is not an authenticated
 foundation release that downstream release policies can select.
 
-Recovery advances Spice's own version and the Spice requirement of Toolchain
-preview.3 and TUI preview.2 to preview.4. Those are the only three normalized
-catalog changes; Toolchain and TUI retain their own release versions, TUI
-retains Toolchain preview.3, and every other release and dependency policy is
-unchanged. The graphless Spice module policy also remains exact. A future
-preview.4 Spice candidate must explicitly satisfy the candidate-owned
-bootstrap contract before tagging.
+That recovery advanced Spice's own version and the Spice requirement of
+Toolchain preview.3 and TUI preview.2 to preview.4. Those were the only three
+normalized catalog changes at that authority point; Toolchain and TUI retained
+their own release versions and TUI retained Toolchain preview.3. Spice
+preview.4 was subsequently published. The immutable Toolchain preview.3
+tag-only attempt later failed Windows installed execution before attestation
+or deployment and produced no Release, so current recovery policy advances
+Toolchain's own version and TUI's Toolchain requirement to preview.4 without
+changing their Spice preview.4 selections.
 
-This is pre-tag policy authorization only. It does not create a preview.4
-candidate, tag, module proxy version, attestation, approval, or release. The
-existing immutable preview.2 release and its history remain unchanged.
+At that authority point this was pre-tag policy authorization only; the
+Development change did not itself create a preview.4 candidate, tag, module
+proxy version, attestation, approval, or release. Spice preview.4 was later
+published through its separately protected release workflow. The existing
+immutable preview.2 release and its history remain unchanged.
 
 ```text
 go-module-v1	spice	github.com/spice-framework/spice	v0.1.0-preview.4
 ```
 
-Toolchain preview.3 and TUI preview.2 now require immutable Spice preview.4;
-TUI continues to require Toolchain preview.3. Neither downstream candidate may
-be tagged before its prerequisites exist. Agent, provider, coding-tools,
-Coding distribution, extension-profile, starter, application, and editor
-selections continue to use their recorded versions.
+Toolchain preview.4 and TUI preview.2 require immutable Spice preview.4; TUI
+also requires Toolchain preview.4. Agent, provider, coding-tools, Coding
+distribution, extension-profile, starter, application, and editor selections
+continue to use their recorded versions.
 
 ## Current Agent foundation authorization
 
@@ -83,8 +86,9 @@ exact historical toolchain selection remains
 `v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`.
 
 The independently authorized TUI preview.2 policy instead selects Spice
-preview.4 and Toolchain preview.3. Those are future immutable prerequisites,
-not permission to tag TUI before both foundation releases complete.
+preview.4 and Toolchain preview.4. The Toolchain selection is a future
+immutable prerequisite, not permission to tag TUI before that recovery release
+completes.
 
 This authorization is deliberately repository-scoped. `spice-agent` is now
 published at `v0.1.0-preview.6` with the public

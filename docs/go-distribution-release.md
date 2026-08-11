@@ -137,12 +137,12 @@ This remains renderer-owned reproducibility evidence. Keyless signatures,
 provenance attestations, fresh-download verification, and publication belong to
 the organization workflow and independent toolchain verifier.
 
-## Toolchain preview.3 pre-tag authority
+## Toolchain preview.4 recovery authority
 
 The catalog now contains a separate repository-keyed Toolchain distribution
-policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.3`
-candidate. It requires the planned immutable Spice foundation preview.4
-recovery selection and authorizes exactly:
+policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.4`
+recovery candidate. It requires the published immutable Spice foundation
+preview.4 selection and authorizes exactly:
 
 - binary `spice` from `./cmd/spice`;
 - payloads `LICENSE` and `README.md`;
@@ -157,22 +157,32 @@ the authenticated `provenance.sigstore.json` bundle as the tenth published
 asset. The policy comparison output is exactly:
 
 ```text
-go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.3
+go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.4
 ```
 
-This Development change does not edit or validate a Toolchain candidate, add
-its required identity variables, create release metadata, change a caller,
-approve an environment, create a tag, or publish assets. The existing
-Toolchain preview.1 and preview.2 tags and preview.2 release remain historical
-facts. Before an immutable preview.3 tag, an independently committed Toolchain
-verifier must authorize the byte-identical tuple and its exact Spice preview.4
-requirement, and the candidate must satisfy the ordinary source and
-installed-byte contracts. Publication order remains Spice preview.4,
-Toolchain preview.3, then TUI preview.2; combined catalog authorization does
-not collapse those immutable release boundaries. Spice preview.3 is an
-immutable tag-only failed attempt and did not publish an authenticated
-foundation release eligible for downstream release policy, as recorded in the
-[module release history](go-module-release.md#spice-foundation-preview4-recovery-authority).
+The immutable preview.3 tag object
+`d21a39b736a88ce2f02464aa9a31982c367bbf5b` resolves to candidate commit
+`38ddce157e6e96827f8fd7dd69cd95e75eb4106d`. Its
+[release run](https://github.com/spice-framework/toolchain/actions/runs/31501018109)
+passed tag/source validation, artifact rendering, independent verification,
+and Linux installed execution. The Windows installed-execution job then
+correctly rejected the mixed-separator verified-artifact directory
+`D:\a\_temp/go-distribution-release-verified` as noncanonical. That failure
+occurred before attestation or any deployment; provenance authentication and
+publication were skipped. GitHub contains no preview.3 Release or assets, so
+the immutable tag must never be moved or reused and preview.3 is not a
+published Toolchain distribution eligible for TUI release policy.
+
+Recovery changes exactly two normalized catalog fields: Toolchain's own
+release version advances from preview.3 to preview.4, and TUI preview.2's
+required Toolchain module advances from preview.3 to preview.4. Toolchain's
+Spice preview.4 requirement, TUI's own version and Spice preview.4 requirement,
+and every Agent, provider, coding-tools, Coding, starter, application, and
+editor selection remain unchanged. This Development change does not edit or
+validate a Toolchain candidate, change its caller, approve an environment,
+create a recovery tag, or publish assets. Publication order is Toolchain
+preview.4 and then TUI preview.2; combined catalog authorization does not
+collapse those immutable release boundaries.
 
 Coding remains independently authorized at preview.4 with both binaries, all
 seven payloads, the same six targets, and every existing dependency selection.

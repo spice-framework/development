@@ -201,7 +201,7 @@
       "module": "github.com/spice-framework/toolchain",
       "release": {
         "profile": "go-distribution-v1",
-        "version": "v0.1.0-preview.3",
+        "version": "v0.1.0-preview.4",
         "metadata_file": "spice-release.json",
         "required_modules": [
           {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.4"}
@@ -410,7 +410,7 @@
         "metadata_file": "spice-release.json",
         "required_modules": [
           {"path": "github.com/spice-framework/spice", "version": "v0.1.0-preview.4"},
-          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.3"}
+          {"path": "github.com/spice-framework/toolchain", "version": "v0.1.0-preview.4"}
         ]
       },
       "dependencies": [

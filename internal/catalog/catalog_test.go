@@ -39,7 +39,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		toolchain.CloneURL != "https://github.com/spice-framework/toolchain.git" ||
 		toolchain.Module != "github.com/spice-framework/toolchain" ||
 		toolchain.Release == nil || toolchain.Release.Profile != ReleaseProfileDistribution ||
-		toolchain.Release.Version != "v0.1.0-preview.3" ||
+		toolchain.Release.Version != "v0.1.0-preview.4" ||
 		!slices.Equal(toolchain.Dependencies, []string{".github", "development", "spice"}) ||
 		len(toolchain.Fast) != 1 || len(toolchain.Full) != 1 ||
 		!slices.Contains(toolchain.Fast[0].Arguments, "./internal/boundarygate/cmd") ||
@@ -98,7 +98,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	foundationSpiceVersion := "v0.1.0-preview.2"
 	tuiFoundationVersion := "v0.1.0-preview.4"
 	toolchainVersion := "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
-	tuiToolchainVersion := "v0.1.0-preview.3"
+	tuiToolchainVersion := "v0.1.0-preview.4"
 	distributionToolchainVersion := "v0.1.0-preview.1.0.20260807044408-6598abca8196"
 	agentVersion := "v0.1.0-preview.4"
 	componentVersion := "v0.1.0-preview.1"
@@ -265,7 +265,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	}
 }
 
-func TestFoundationAndToolchainReleaseRecoveryAuthorityIsExact(t *testing.T) {
+func TestToolchainReleaseRecoveryAuthorityIsExact(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
 	if err != nil {
@@ -273,32 +273,18 @@ func TestFoundationAndToolchainReleaseRecoveryAuthorityIsExact(t *testing.T) {
 	}
 
 	const (
-		foundationModule          = "github.com/spice-framework/spice"
-		toolchainModule           = "github.com/spice-framework/toolchain"
-		failedFoundationVersion   = "v0.1.0-preview.3"
-		recoveryFoundationVersion = "v0.1.0-preview.4"
-		toolchainReleaseVersion   = "v0.1.0-preview.3"
+		foundationModule         = "github.com/spice-framework/spice"
+		foundationVersion        = "v0.1.0-preview.4"
+		toolchainModule          = "github.com/spice-framework/toolchain"
+		failedToolchainVersion   = "v0.1.0-preview.3"
+		recoveryToolchainVersion = "v0.1.0-preview.4"
 	)
-	previousFoundation := ReleasePolicy{
-		Profile:         ReleaseProfileGoModule,
-		Version:         failedFoundationVersion,
-		MetadataFile:    "spice-release.json",
-		RequiredModules: []ReleaseModule{},
-	}
-	wantFoundation := previousFoundation
-	wantFoundation.Version = recoveryFoundationVersion
-	foundation := requireRepository(t, value.Repositories, "spice")
-	if foundation.Release == nil || !reflect.DeepEqual(*foundation.Release, wantFoundation) ||
-		foundation.Release.Version == failedFoundationVersion {
-		t.Fatalf("normalized Spice recovery delta changed more than release.version: got %#v, want %#v", foundation.Release, wantFoundation)
-	}
-
 	previousToolchain := ReleasePolicy{
 		Profile:      ReleaseProfileDistribution,
-		Version:      toolchainReleaseVersion,
+		Version:      failedToolchainVersion,
 		MetadataFile: "spice-release.json",
 		RequiredModules: []ReleaseModule{
-			{Path: foundationModule, Version: failedFoundationVersion},
+			{Path: foundationModule, Version: foundationVersion},
 		},
 		Binaries: []ReleaseBinary{{Name: "spice", Package: "./cmd/spice"}},
 		Targets: []ReleaseTarget{
@@ -316,11 +302,11 @@ func TestFoundationAndToolchainReleaseRecoveryAuthorityIsExact(t *testing.T) {
 		},
 	}
 	wantToolchain := previousToolchain
-	wantToolchain.RequiredModules = slices.Clone(previousToolchain.RequiredModules)
-	wantToolchain.RequiredModules[0].Version = recoveryFoundationVersion
+	wantToolchain.Version = recoveryToolchainVersion
 	toolchain := requireRepository(t, value.Repositories, "toolchain")
-	if toolchain.Release == nil || !reflect.DeepEqual(*toolchain.Release, wantToolchain) {
-		t.Fatalf("normalized Toolchain recovery delta changed more than the Spice requirement: got %#v, want %#v", toolchain.Release, wantToolchain)
+	if toolchain.Release == nil || !reflect.DeepEqual(*toolchain.Release, wantToolchain) ||
+		toolchain.Release.Version == failedToolchainVersion {
+		t.Fatalf("normalized Toolchain recovery delta changed more than release.version: got %#v, want %#v", toolchain.Release, wantToolchain)
 	}
 	if rendered, published := len(toolchain.Release.Targets)+3, len(toolchain.Release.Targets)+4; rendered != 9 || published != 10 {
 		t.Fatalf("Toolchain artifact cardinality = %d rendered and %d published, want 9 and 10", rendered, published)
@@ -328,8 +314,8 @@ func TestFoundationAndToolchainReleaseRecoveryAuthorityIsExact(t *testing.T) {
 
 	coding := requireRepository(t, value.Repositories, "spice-agent-coding")
 	if coding.Release == nil || len(coding.Release.Targets) != 6 || len(coding.Release.Binaries) != 2 ||
-		!slices.Equal(coding.Release.Targets, wantToolchain.Targets) {
-		t.Fatalf("Coding distribution policy changed while authorizing Toolchain: %#v", coding.Release)
+		!slices.Equal(coding.Release.Targets, previousToolchain.Targets) {
+		t.Fatalf("Coding distribution policy changed during Toolchain recovery: %#v", coding.Release)
 	}
 }
 
@@ -419,7 +405,7 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 		tuiReleaseVersion      = "v0.1.0-preview.2"
 		distributionVersion    = "v0.1.0-preview.4"
 		toolchainVersion       = "v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6"
-		tuiToolchainVersion    = "v0.1.0-preview.3"
+		tuiToolchainVersion    = "v0.1.0-preview.4"
 		distributionToolchain  = "v0.1.0-preview.1.0.20260807044408-6598abca8196"
 		foundationModule       = "github.com/spice-framework/spice"
 		toolchainModule        = "github.com/spice-framework/toolchain"
@@ -515,25 +501,25 @@ func TestAgentReleasePoliciesRemainExact(t *testing.T) {
 	}
 }
 
-func TestAgentTUIReleaseCatalogDeltaIsNormalizedFoundationOnly(t *testing.T) {
+func TestAgentTUIReleaseCatalogDeltaIsNormalizedToolchainOnly(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
 	if err != nil {
 		t.Fatal(err)
 	}
 	const (
-		currentVersion            = "v0.1.0-preview.2"
-		failedFoundationVersion   = "v0.1.0-preview.3"
-		recoveryFoundationVersion = "v0.1.0-preview.4"
-		toolchainVersion          = "v0.1.0-preview.3"
+		currentVersion           = "v0.1.0-preview.2"
+		foundationVersion        = "v0.1.0-preview.4"
+		failedToolchainVersion   = "v0.1.0-preview.3"
+		recoveryToolchainVersion = "v0.1.0-preview.4"
 	)
 	previous := ReleasePolicy{
 		Profile:      ReleaseProfileGoModule,
 		Version:      currentVersion,
 		MetadataFile: "spice-release.json",
 		RequiredModules: []ReleaseModule{
-			{Path: "github.com/spice-framework/spice", Version: failedFoundationVersion},
-			{Path: "github.com/spice-framework/toolchain", Version: toolchainVersion},
+			{Path: "github.com/spice-framework/spice", Version: foundationVersion},
+			{Path: "github.com/spice-framework/toolchain", Version: failedToolchainVersion},
 		},
 	}
 	tui := requireRepository(t, value.Repositories, "spice-agent-tui")
@@ -542,7 +528,7 @@ func TestAgentTUIReleaseCatalogDeltaIsNormalizedFoundationOnly(t *testing.T) {
 	}
 	wantPolicy := previous
 	wantPolicy.RequiredModules = slices.Clone(previous.RequiredModules)
-	wantPolicy.RequiredModules[0].Version = recoveryFoundationVersion
+	wantPolicy.RequiredModules[1].Version = recoveryToolchainVersion
 	want, err := json.Marshal(wantPolicy)
 	if err != nil {
 		t.Fatal(err)
@@ -552,10 +538,10 @@ func TestAgentTUIReleaseCatalogDeltaIsNormalizedFoundationOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(got) != string(want) {
-		t.Fatalf("normalized spice-agent-tui recovery delta changed more than the Spice requirement:\n got %s\nwant %s", got, want)
+		t.Fatalf("normalized spice-agent-tui recovery delta changed more than the Toolchain requirement:\n got %s\nwant %s", got, want)
 	}
-	if tui.Release.RequiredModules[0].Version != recoveryFoundationVersion ||
-		tui.Release.RequiredModules[1].Version != toolchainVersion {
+	if tui.Release.RequiredModules[0].Version != foundationVersion ||
+		tui.Release.RequiredModules[1].Version != recoveryToolchainVersion {
 		t.Fatalf("spice-agent-tui recovery selections = %#v", tui.Release.RequiredModules)
 	}
 

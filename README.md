@@ -120,21 +120,27 @@ spice-dev distribution-release render --root ../spice-agent-coding --repo spice-
 spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.4 --artifacts ../distribution
 ```
 
-The same renderer now has a distinct pre-tag Toolchain preview.3 policy:
+The same renderer now has a distinct pre-tag Toolchain preview.4 recovery
+policy:
 
 ```text
-spice-dev go-release policy-check --repo toolchain --module github.com/spice-framework/toolchain --version v0.1.0-preview.3 --profile go-distribution-v1
+spice-dev go-release policy-check --repo toolchain --module github.com/spice-framework/toolchain --version v0.1.0-preview.4 --profile go-distribution-v1
 ```
 
-That policy requires the future authenticated Spice preview.4 foundation and
+That policy requires the authenticated Spice preview.4 foundation and
 selects only `cmd/spice`, `LICENSE`, and `README.md`; it does not change
 Coding's two-binary, six-target policy or authorize a Toolchain tag, candidate,
 caller, attestation, or publication by itself.
 
-TUI preview.2 likewise requires authenticated Spice preview.4 while retaining
-Toolchain preview.3. Neither downstream candidate may be tagged before those
-foundation releases exist. Agent, provider, coding-tools, Coding, and extension
-profile selections remain unchanged.
+The immutable Toolchain preview.3 tag-only attempt passed validation,
+rendering, independent verification, and Linux installed execution, then its
+[release run](https://github.com/spice-framework/toolchain/actions/runs/31501018109)
+failed when Windows correctly rejected the mixed-separator verified-artifact
+directory before attestation or deployment. No Release or assets were
+published. Recovery advances only Toolchain's own version and TUI preview.2's
+required Toolchain version to preview.4. TUI still requires Spice preview.4;
+Agent, provider, coding-tools, Coding, and extension-profile selections remain
+unchanged.
 
 Only a `go-distribution-v1` catalog entry can select that command. The catalog,
 not command-line input or filesystem discovery, supplies every binary package,
