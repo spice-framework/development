@@ -39,7 +39,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 		toolchain.CloneURL != "https://github.com/spice-framework/toolchain.git" ||
 		toolchain.Module != "github.com/spice-framework/toolchain" ||
 		toolchain.Release == nil || toolchain.Release.Profile != ReleaseProfileDistribution ||
-		toolchain.Release.Version != "v0.1.0-preview.5" ||
+		toolchain.Release.Version != "v0.1.0-preview.6" ||
 		!slices.Equal(toolchain.Dependencies, []string{".github", "development", "spice"}) ||
 		len(toolchain.Fast) != 1 || len(toolchain.Full) != 1 ||
 		!slices.Contains(toolchain.Fast[0].Arguments, "./internal/boundarygate/cmd") ||
@@ -267,7 +267,7 @@ func TestDefaultCatalogUsesCanonicalSpiceRepository(t *testing.T) {
 	}
 }
 
-func TestToolchainPreviewFiveAuthorityIsExact(t *testing.T) {
+func TestToolchainPreviewSixAuthorityIsExact(t *testing.T) {
 	t.Parallel()
 	value, err := Default()
 	if err != nil {
@@ -278,8 +278,9 @@ func TestToolchainPreviewFiveAuthorityIsExact(t *testing.T) {
 		foundationModule           = "github.com/spice-framework/spice"
 		foundationVersion          = "v0.1.0-preview.4"
 		toolchainModule            = "github.com/spice-framework/toolchain"
-		publishedToolchainVersion  = "v0.1.0-preview.4"
-		authorizedToolchainVersion = "v0.1.0-preview.5"
+		publishedToolchainVersion  = "v0.1.0-preview.5"
+		authorizedToolchainVersion = "v0.1.0-preview.6"
+		tuiToolchainVersion        = "v0.1.0-preview.4"
 	)
 	previousToolchain := ReleasePolicy{
 		Profile:      ReleaseProfileDistribution,
@@ -308,7 +309,7 @@ func TestToolchainPreviewFiveAuthorityIsExact(t *testing.T) {
 	toolchain := requireRepository(t, value.Repositories, "toolchain")
 	if toolchain.Release == nil || !reflect.DeepEqual(*toolchain.Release, wantToolchain) ||
 		toolchain.Release.Version == publishedToolchainVersion {
-		t.Fatalf("normalized Toolchain preview.5 delta changed more than release.version: got %#v, want %#v", toolchain.Release, wantToolchain)
+		t.Fatalf("normalized Toolchain preview.6 delta changed more than release.version: got %#v, want %#v", toolchain.Release, wantToolchain)
 	}
 	if rendered, published := len(toolchain.Release.Targets)+3, len(toolchain.Release.Targets)+4; rendered != 9 || published != 10 {
 		t.Fatalf("Toolchain artifact cardinality = %d rendered and %d published, want 9 and 10", rendered, published)
@@ -317,7 +318,7 @@ func TestToolchainPreviewFiveAuthorityIsExact(t *testing.T) {
 	coding := requireRepository(t, value.Repositories, "spice-agent-coding")
 	if coding.Release == nil || len(coding.Release.Targets) != 6 || len(coding.Release.Binaries) != 2 ||
 		!slices.Equal(coding.Release.Targets, previousToolchain.Targets) {
-		t.Fatalf("Coding distribution policy changed while authorizing Toolchain preview.5: %#v", coding.Release)
+		t.Fatalf("Coding distribution policy changed while authorizing Toolchain preview.6: %#v", coding.Release)
 	}
 
 	tui := requireRepository(t, value.Repositories, "spice-agent-tui")
@@ -327,11 +328,11 @@ func TestToolchainPreviewFiveAuthorityIsExact(t *testing.T) {
 		MetadataFile: "spice-release.json",
 		RequiredModules: []ReleaseModule{
 			{Path: foundationModule, Version: foundationVersion},
-			{Path: toolchainModule, Version: publishedToolchainVersion},
+			{Path: toolchainModule, Version: tuiToolchainVersion},
 		},
 	}
 	if tui.Release == nil || !reflect.DeepEqual(*tui.Release, wantTUI) {
-		t.Fatalf("TUI policy moved with Toolchain preview.5 authority: got %#v, want %#v", tui.Release, wantTUI)
+		t.Fatalf("TUI policy moved with Toolchain preview.6 authority: got %#v, want %#v", tui.Release, wantTUI)
 	}
 }
 

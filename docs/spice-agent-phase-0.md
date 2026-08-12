@@ -17,11 +17,14 @@ as noncanonical. The failure occurred before attestation or any deployment and
 produced no GitHub Release. Toolchain preview.4 was subsequently published by
 successful release run
 [31522099046](https://github.com/spice-framework/toolchain/actions/runs/31522099046)
-with its exact ten-asset prerelease. Current preview.5 authority advances only
-Toolchain's own next distribution version; TUI remains pinned to preview.4 and
-every Agent, provider, coding-tools, and Coding policy remains unchanged. The
-immutable Spice preview.3 tag-only attempt
-failed candidate
+with its exact ten-asset prerelease. Toolchain preview.5 was then published
+from candidate `3ed984b56faed8972ed9964c672b7fc2d42a5150` by successful release
+run [31557699706](https://github.com/spice-framework/toolchain/actions/runs/31557699706)
+with the same exact ten-asset contract. Current preview.6 authority advances
+only Toolchain's own next distribution version for the reviewed product line
+through `2fd6e6bdd4f7cb8587a8836ab6a180d372025b5f`; TUI remains pinned to
+preview.4 and every Agent, provider, coding-tools, and Coding policy remains
+unchanged. The immutable Spice preview.3 tag-only attempt failed candidate
 bootstrap before rendering, attestation, or deployment and produced no GitHub
 Release, so current recovery policy does not treat it as a downstream
 foundation release.

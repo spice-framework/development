@@ -139,7 +139,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		Profile:    catalog.ReleaseProfileDistribution,
 		Repository: "toolchain",
 		Module:     "github.com/spice-framework/toolchain",
-		Version:    "v0.1.0-preview.5",
+		Version:    "v0.1.0-preview.6",
 	}
 	toolchainGot, err := CheckPolicy(PolicyOptions{
 		Profile:    toolchainWant.Profile,
@@ -224,6 +224,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		{name: "stale Toolchain preview.2", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale Toolchain preview.3", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},
 		{name: "stale Toolchain preview.4", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.4"}, want: "does not match catalog"},
+		{name: "stale Toolchain preview.5", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.5"}, want: "does not match catalog"},
 		{name: "stale distribution preview.2", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale distribution preview.3", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},
 		{name: "stale TUI preview.1", options: PolicyOptions{Profile: tuiWant.Profile, Repository: tuiWant.Repository, Module: tuiWant.Module, Version: "v0.1.0-preview.1"}, want: "does not match catalog"},
