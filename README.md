@@ -108,7 +108,7 @@ preview.2 modules. It is pre-tag authorization only: this Development change
 does not create an Agent candidate, tag, attestation, approval, or Release.
 Provider, coding-tools, TUI, Coding distribution, extension-profile, and
 published Toolchain preview.4 policies retain their recorded versions and
-dependencies. The separate Toolchain preview.6 authority below advances only
+dependencies. The separate Toolchain preview.7 authority below advances only
 Toolchain's next distribution identity.
 
 It requires a clean tagged checkout, an exact catalog origin and module,
@@ -128,11 +128,11 @@ spice-dev distribution-release render --root ../spice-agent-coding --repo spice-
 spice-dev distribution-release verify --root ../spice-agent-coding --repo spice-agent-coding --version v0.1.0-preview.4 --artifacts ../distribution
 ```
 
-The same renderer now has a distinct pre-tag Toolchain preview.6
+The same renderer now has a distinct pre-tag Toolchain preview.7
 policy:
 
 ```text
-spice-dev go-release policy-check --repo toolchain --module github.com/spice-framework/toolchain --version v0.1.0-preview.6 --profile go-distribution-v1
+spice-dev go-release policy-check --repo toolchain --module github.com/spice-framework/toolchain --version v0.1.0-preview.7 --profile go-distribution-v1
 ```
 
 That policy requires the authenticated Spice preview.4 foundation and
@@ -140,16 +140,21 @@ selects only `cmd/spice`, `LICENSE`, and `README.md`; it does not change
 Coding's two-binary, six-target policy or authorize a Toolchain tag, candidate,
 caller, attestation, or publication by itself.
 
-Toolchain preview.5 was published from candidate commit
-`3ed984b56faed8972ed9964c672b7fc2d42a5150` by successful
-[release run](https://github.com/spice-framework/toolchain/actions/runs/31557699706)
-with its exact ten-asset prerelease. Preview.6 is a distinct identity for the
-reviewed Toolchain product line through commit
-`2fd6e6bdd4f7cb8587a8836ab6a180d372025b5f`. That bounded delta gives ordinary
-package-oriented generation a target-local, offline, compiler-validated
-registry for exact local module and named-interface identities, with identical
-containment for disk and overlay inputs. This Development authority changes
-exactly Toolchain's own release version from preview.5 to preview.6. Its Spice
+Toolchain preview.6 was published from annotated tag object
+`8a8fc61aa7e713704135be75690d46017e047e1d`, which resolves to candidate commit
+`8d1a1ed744d7ed77ed0b013318c8588e69f8177b`. Successful
+[release run](https://github.com/spice-framework/toolchain/actions/runs/31632016018)
+used attestation deployment `5876035930` and publication deployment
+`5876071036` to produce its exact ten-asset prerelease. Public proxy and
+checksum-database resolution records module sum
+`h1:aChpRT/e2DH7SC+FzL06FPzJxqLQ/jYQDP+xpXWlctI=` and go.mod sum
+`h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Preview.7 is a distinct
+identity for the reviewed Toolchain product line through commit
+`73d2189ee512c4988f1a223aa0b6afdf10bfb260`. That bounded delta gives ordinary
+validation the same exact local `@Module` and named-interface identity universe
+as generation without contributing dependency applications, providers,
+configuration, or generated targets. This Development authority changes
+exactly Toolchain's own release version from preview.6 to preview.7. Its Spice
 preview.4 requirement is unchanged; TUI preview.2 remains on published
 Toolchain preview.4, and every Agent, provider, coding-tools, Coding, and
 extension-profile selection remains unchanged. It does not edit or validate a

@@ -60,10 +60,20 @@ preview.4 was subsequently published. The immutable Toolchain preview.3
 tag-only attempt later failed Windows installed execution before attestation
 or deployment and produced no Release. Recovery then advanced Toolchain's own
 version and TUI's Toolchain requirement to preview.4 without changing their
-Spice preview.4 selections. Toolchain preview.4 and preview.5 were subsequently
-published through their distinct protected release workflows. The separate
-preview.6 authority now advances only Toolchain's own next distribution
-version; TUI remains pinned to published preview.4.
+Spice preview.4 selections. Toolchain preview.4, preview.5, and preview.6 were
+subsequently published through their distinct protected release workflows. The
+immutable preview.6 tag object `8a8fc61aa7e713704135be75690d46017e047e1d`
+resolves to candidate commit `8d1a1ed744d7ed77ed0b013318c8588e69f8177b`.
+Release run
+[31632016018](https://github.com/spice-framework/toolchain/actions/runs/31632016018)
+used attestation deployment `5876035930` and publication deployment
+`5876071036` to publish the exact ten-asset prerelease. Public resolution
+produces module sum `h1:aChpRT/e2DH7SC+FzL06FPzJxqLQ/jYQDP+xpXWlctI=` and
+go.mod sum `h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. The separate
+preview.7 authority now advances only Toolchain's own next distribution
+version for the product line through commit
+`73d2189ee512c4988f1a223aa0b6afdf10bfb260`; TUI remains pinned to published
+preview.4.
 
 At that authority point this was pre-tag policy authorization only; the
 Development change did not itself create a preview.4 candidate, tag, module
@@ -75,7 +85,7 @@ immutable preview.2 release and its history remain unchanged.
 go-module-v1	spice	github.com/spice-framework/spice	v0.1.0-preview.4
 ```
 
-Toolchain preview.6 and TUI preview.2 require immutable Spice preview.4; TUI
+Toolchain preview.7 and TUI preview.2 require immutable Spice preview.4; TUI
 continues to require Toolchain preview.4. Agent, provider, coding-tools, Coding
 distribution, extension-profile, starter, application, and editor selections
 continue to use their recorded versions.
@@ -95,7 +105,7 @@ Coding distribution and TUI policies likewise retain their recorded module
 graphs; Agent preview.7 does not silently repin any downstream repository.
 
 The independently authorized TUI preview.2 policy instead selects Spice
-preview.4 and published Toolchain preview.4. The separate Toolchain preview.6
+preview.4 and published Toolchain preview.4. The separate Toolchain preview.7
 authority does not repin or authorize a TUI candidate.
 
 This authorization is deliberately repository-scoped. `spice-agent`

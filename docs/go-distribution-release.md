@@ -137,10 +137,10 @@ This remains renderer-owned reproducibility evidence. Keyless signatures,
 provenance attestations, fresh-download verification, and publication belong to
 the organization workflow and independent toolchain verifier.
 
-## Toolchain preview.6 authority
+## Toolchain preview.7 authority
 
 The catalog now contains a separate repository-keyed Toolchain distribution
-policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.6`
+policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.7`
 candidate. It requires the published immutable Spice foundation
 preview.4 selection and authorizes exactly:
 
@@ -157,37 +157,38 @@ the authenticated `provenance.sigstore.json` bundle as the tenth published
 asset. The policy comparison output is exactly:
 
 ```text
-go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.6
+go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.7
 ```
 
 Including its terminal LF, that tuple is exactly 83 bytes with SHA-256
-`fde8f5c596008bb859a9776650849fbc19562cd7f2d822a05596a0e3e26b5b1d`.
+`8b335fcdbba2b099b1de707616662d10745bed2765e567302f49c07d09d119ad`.
 
-The immutable preview.5 tag object
-`50498dd91946ec9c049716c34807b4456f5abecd` resolves to candidate commit
-`3ed984b56faed8972ed9964c672b7fc2d42a5150`. Unique
-[release run](https://github.com/spice-framework/toolchain/actions/runs/31557699706)
+The immutable preview.6 tag object
+`8a8fc61aa7e713704135be75690d46017e047e1d` resolves to candidate commit
+`8d1a1ed744d7ed77ed0b013318c8588e69f8177b`. Unique
+[release run](https://github.com/spice-framework/toolchain/actions/runs/31632016018)
 completed candidate validation, deterministic rendering, independent
 verification, Linux and Windows installed execution, keyless attestation,
 provenance authentication, and protected publication of the exact ten-asset
-prerelease. Fresh public proxy and checksum-database resolution produces module
-sum `h1:FhCM7xedN+CJkIMLuUPjh709+LB54G802daP+Ko57/c=` and go.mod sum
-`h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Preview.5 is immutable
+prerelease through attestation deployment `5876035930` and publication
+deployment `5876071036`. Fresh public proxy and checksum-database resolution
+produces module sum `h1:aChpRT/e2DH7SC+FzL06FPzJxqLQ/jYQDP+xpXWlctI=` and
+go.mod sum `h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Preview.6 is immutable
 published history; TUI preview.2 deliberately remains on Toolchain preview.4.
 
-Preview.6 is a distinct identity for the reviewed Toolchain product line
-through commit `2fd6e6bdd4f7cb8587a8836ab6a180d372025b5f`. Its bounded delta
-keeps ordinary generation package-oriented while recursively inventorying only
-exact local modules named by the selected application's allowlist. Those
-target-local, offline identity loads build a compiler-validated module and
-named-interface registry without contributing applications, providers,
-configuration, or generated targets. Disk and overlay inputs use the same
+Preview.7 is a distinct identity for the reviewed Toolchain product line
+through commit `73d2189ee512c4988f1a223aa0b6afdf10bfb260`. Its bounded delta makes
+ordinary validation inventory the same exact local modules named by the
+selected application's allowlist that generation already inventories. Those
+target-local, offline identity loads contribute module and named-interface
+ownership only: dependency applications, providers, configuration, and
+generated targets remain excluded. Disk and overlay inputs retain the same
 repository, nested-module, generated, hidden, vendor, and test-data containment.
 Release preparation may advance the eventual candidate commit without changing
 those reviewed product bytes.
 
 This authority changes exactly one normalized catalog field: Toolchain's own
-release version advances from preview.5 to preview.6. Toolchain's Spice
+release version advances from preview.6 to preview.7. Toolchain's Spice
 preview.4 requirement; TUI preview.2's own version, Spice preview.4, and
 Toolchain preview.4 requirements; and every Agent, provider, coding-tools,
 Coding, starter, application, and editor selection remain unchanged. This

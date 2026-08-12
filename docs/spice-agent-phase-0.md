@@ -20,13 +20,20 @@ successful release run
 with its exact ten-asset prerelease. Toolchain preview.5 was then published
 from candidate `3ed984b56faed8972ed9964c672b7fc2d42a5150` by successful release
 run [31557699706](https://github.com/spice-framework/toolchain/actions/runs/31557699706)
-with the same exact ten-asset contract. Current preview.6 authority advances
-only Toolchain's own next distribution version for the reviewed product line
-through `2fd6e6bdd4f7cb8587a8836ab6a180d372025b5f`; TUI remains pinned to
-preview.4 and every Agent, provider, coding-tools, and Coding policy remains
-unchanged. The immutable Spice preview.3 tag-only attempt failed candidate
-bootstrap before rendering, attestation, or deployment and produced no GitHub
-Release, so current recovery policy does not treat it as a downstream
+with the same exact ten-asset contract. Toolchain preview.6 followed from tag
+object `8a8fc61aa7e713704135be75690d46017e047e1d` and candidate
+`8d1a1ed744d7ed77ed0b013318c8588e69f8177b` in successful release run
+[31632016018](https://github.com/spice-framework/toolchain/actions/runs/31632016018).
+Its attestation deployment `5876035930` and publication deployment `5876071036`
+produced the exact ten-asset prerelease; public module and go.mod sums are
+`h1:aChpRT/e2DH7SC+FzL06FPzJxqLQ/jYQDP+xpXWlctI=` and
+`h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Current preview.7 authority
+advances only Toolchain's own next distribution version for the reviewed
+product line through `73d2189ee512c4988f1a223aa0b6afdf10bfb260`; TUI remains
+pinned to preview.4 and every Agent, provider, coding-tools, and Coding policy
+remains unchanged. The immutable Spice preview.3 tag-only attempt failed
+candidate bootstrap before rendering, attestation, or deployment and produced
+no GitHub Release, so current recovery policy does not treat it as a downstream
 foundation release.
 After the immutable `spice-agent v0.1.0-preview.1` tag failed before
 artifact rendering and the immutable `v0.1.0-preview.2` attempt failed in the
