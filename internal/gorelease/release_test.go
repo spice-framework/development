@@ -193,7 +193,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		Profile:    catalog.ReleaseProfileDistribution,
 		Repository: "spice-agent-coding",
 		Module:     "github.com/spice-framework/spice-agent-coding",
-		Version:    "v0.1.0-preview.4",
+		Version:    "v0.1.0-preview.5",
 	}
 	distributionGot, err := CheckPolicy(PolicyOptions{
 		Profile:    distributionWant.Profile,
@@ -229,6 +229,7 @@ func TestCheckPolicyRequiresExactCatalogAuthorization(t *testing.T) {
 		{name: "stale Toolchain preview.7", options: PolicyOptions{Profile: toolchainWant.Profile, Repository: toolchainWant.Repository, Module: toolchainWant.Module, Version: "v0.1.0-preview.7"}, want: "does not match catalog"},
 		{name: "stale distribution preview.2", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale distribution preview.3", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},
+		{name: "stale distribution preview.4", options: PolicyOptions{Profile: distributionWant.Profile, Repository: distributionWant.Repository, Module: distributionWant.Module, Version: "v0.1.0-preview.4"}, want: "does not match catalog"},
 		{name: "stale TUI preview.1", options: PolicyOptions{Profile: tuiWant.Profile, Repository: tuiWant.Repository, Module: tuiWant.Module, Version: "v0.1.0-preview.1"}, want: "does not match catalog"},
 		{name: "stale preview.2", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.2"}, want: "does not match catalog"},
 		{name: "stale preview.3", options: PolicyOptions{Profile: want.Profile, Repository: want.Repository, Module: want.Module, Version: "v0.1.0-preview.3"}, want: "does not match catalog"},

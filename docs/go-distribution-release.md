@@ -137,12 +137,10 @@ This remains renderer-owned reproducibility evidence. Keyless signatures,
 provenance attestations, fresh-download verification, and publication belong to
 the organization workflow and independent toolchain verifier.
 
-## Toolchain preview.8 authority
+## Published Toolchain preview.8
 
-The catalog now contains a separate repository-keyed Toolchain distribution
-policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.8`
-candidate. It requires the published immutable Spice foundation
-preview.4 selection and authorizes exactly:
+The repository-keyed Toolchain distribution policy requires the published
+immutable Spice foundation preview.4 selection and authorizes exactly:
 
 - binary `spice` from `./cmd/spice`;
 - payloads `LICENSE` and `README.md`;
@@ -152,9 +150,9 @@ preview.4 selection and authorizes exactly:
   `github.com/spice-framework/toolchain/internal/cli.Commit`.
 
 The renderer produces six archives, release metadata, an SPDX SBOM, and
-checksums: nine attestation subjects. A later organization workflow may add
-the authenticated `provenance.sigstore.json` bundle as the tenth published
-asset. The policy comparison output is exactly:
+checksums: nine attestation subjects. The organization workflow adds the
+authenticated `provenance.sigstore.json` bundle as the tenth published asset.
+The policy comparison output is exactly:
 
 ```text
 go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.8
@@ -163,42 +161,43 @@ go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview
 Including its terminal LF, that tuple is exactly 83 bytes with SHA-256
 `08e8562e93ec3a39e06b977c1c0868b2fe6f3c0ef109eb8e50ed8ea05ad89702`.
 
-The immutable preview.7 tag object
-`5645e26fe2383713819554dccd1e92cfd03cc0bf` resolves to candidate commit
-`e83e4ff8639ed6e3aa49c6dd8b2e3ba0d5174e08`. Unique
-[release run](https://github.com/spice-framework/toolchain/actions/runs/31655704075)
-completed candidate validation, deterministic rendering, independent
+The immutable preview.8 tag object
+`656f3f82a5ddfdb35b83e7a705e173e0d9ba1469` resolves to candidate commit
+`2eb210494b806da023b518fcda8d07fdf32605e2`. Release run
+[31690826584](https://github.com/spice-framework/toolchain/actions/runs/31690826584)
+attempt 2 completed candidate validation, deterministic rendering, independent
 verification, Linux and Windows installed execution, keyless attestation,
 provenance authentication, and protected publication of the exact ten-asset
-prerelease through attestation deployment `5880057692` and publication
-deployment `5880086379`. Fresh public proxy and checksum-database resolution
-produces module sum `h1:XgNwiSCrnwh+iDxi3RJX8pbRTTpdL7NDiMedE861U6g=` and
-go.mod sum `h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Preview.7 is immutable
-published history; TUI preview.2 deliberately remains on Toolchain preview.4.
+prerelease through attestation deployment `5886610104` and publication
+deployment `5886635974`. Fresh public proxy and checksum-database resolution
+produces module sum `h1:syajJg1GSYZT1TZbvBmXFh/X/cDi3dnb+9t0GXGvaJg=` and
+go.mod sum `h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. TUI preview.2
+deliberately remains on Toolchain preview.4.
 
-Preview.8 is a distinct identity for the reviewed Toolchain product line
-through commit `9568be77a3dcb7ebdf61c5510cc1475e9cffe002`. Its bounded delta makes
-generated plan and manifest logging scopes use the complete compiler-validated,
-recursively inventoried local module identity set on Windows, Linux, and
-Darwin. Target composition remains host-selected: inactive packages,
-applications, providers, configuration, and dependency edges do not join the
-result. Disk and overlay inputs retain the same repository, nested-module,
-generated, hidden, vendor, and test-data containment.
-Release preparation may advance the eventual candidate commit without changing
-those reviewed product bytes.
+## Coding preview.5 authority
 
-This authority changes exactly one normalized catalog field: Toolchain's own
-release version advances from preview.7 to preview.8. Toolchain's Spice
-preview.4 requirement; TUI preview.2's own version, Spice preview.4, and
-Toolchain preview.4 requirements; and every Agent, provider, coding-tools,
-Coding, starter, application, and editor selection remain unchanged. This
-Development change does not edit or validate a Toolchain candidate, change its
-caller, approve an environment, create a tag, or publish assets.
+The catalog authorizes `github.com/spice-framework/spice-agent-coding
+v0.1.0-preview.5` with the exact published module graph:
 
-Coding remains independently authorized at preview.4 with both binaries, all
-seven payloads, the same six targets, and every existing dependency selection.
-Nothing in the Toolchain policy changes or substitutes that published
-distribution contract.
+- Spice `v0.1.0-preview.4`;
+- Toolchain `v0.1.0-preview.8`;
+- Agent `v0.1.0-preview.7`;
+- provider and coding-tools `v0.1.0-preview.1`; and
+- TUI `v0.1.0-preview.2`.
+
+The policy comparison output is exactly:
+
+```text
+go-distribution-v1	spice-agent-coding	github.com/spice-framework/spice-agent-coding	v0.1.0-preview.5
+```
+
+Including its terminal LF, that tuple is exactly 101 bytes with SHA-256
+`24077c7297c7927d22be93ae8d2fd2c41deaa2d89b8873909a7cb0fdb665b7d9`.
+The distribution retains exactly two binaries, six darwin/Linux/Windows
+amd64/arm64 targets, seven payloads, and its existing version and commit linker
+symbols. Every unrelated repository policy is unchanged. This Development
+authority does not edit or validate a Coding candidate, create a tag, approve
+an environment, attest bytes, or publish assets.
 
 ## Immutable preview.1 recovery
 

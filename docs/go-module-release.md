@@ -60,20 +60,17 @@ preview.4 was subsequently published. The immutable Toolchain preview.3
 tag-only attempt later failed Windows installed execution before attestation
 or deployment and produced no Release. Recovery then advanced Toolchain's own
 version and TUI's Toolchain requirement to preview.4 without changing their
-Spice preview.4 selections. Toolchain preview.4 through preview.7 were
+Spice preview.4 selections. Toolchain preview.4 through preview.8 were
 subsequently published through their distinct protected release workflows. The
-immutable preview.7 tag object `5645e26fe2383713819554dccd1e92cfd03cc0bf`
-resolves to candidate commit `e83e4ff8639ed6e3aa49c6dd8b2e3ba0d5174e08`.
+immutable preview.8 tag object `656f3f82a5ddfdb35b83e7a705e173e0d9ba1469`
+resolves to candidate commit `2eb210494b806da023b518fcda8d07fdf32605e2`.
 Release run
-[31655704075](https://github.com/spice-framework/toolchain/actions/runs/31655704075)
-used attestation deployment `5880057692` and publication deployment
-`5880086379` to publish the exact ten-asset prerelease. Public resolution
-produces module sum `h1:XgNwiSCrnwh+iDxi3RJX8pbRTTpdL7NDiMedE861U6g=` and
-go.mod sum `h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. The separate
-preview.8 authority now advances only Toolchain's own next distribution
-version for the product line through commit
-`9568be77a3dcb7ebdf61c5510cc1475e9cffe002`; TUI remains pinned to published
-preview.4.
+[31690826584](https://github.com/spice-framework/toolchain/actions/runs/31690826584)
+attempt 2 used attestation deployment `5886610104` and publication deployment
+`5886635974` to publish the exact ten-asset prerelease. Public resolution
+produces module sum `h1:syajJg1GSYZT1TZbvBmXFh/X/cDi3dnb+9t0GXGvaJg=` and
+go.mod sum `h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`; TUI remains pinned
+to published Toolchain preview.4.
 
 At that authority point this was pre-tag policy authorization only; the
 Development change did not itself create a preview.4 candidate, tag, module
@@ -100,9 +97,11 @@ attestation, approval, or Release.
 
 The provider and coding-tools policies remain on Spice preview.2, their exact
 historical Toolchain pseudo-version
-`v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`, and Agent preview.4. The
-Coding distribution and TUI policies likewise retain their recorded module
-graphs; Agent preview.7 does not silently repin any downstream repository.
+`v0.1.0-preview.1.0.20260806203056-d0b9ac086bd6`, and Agent preview.4. Agent
+preview.7 does not silently repin either component. The separately authorized
+Coding preview.5 distribution explicitly selects Spice preview.4, Toolchain
+preview.8, Agent preview.7, provider and coding-tools preview.1, and TUI
+preview.2.
 
 The independently authorized TUI preview.2 policy instead selects Spice
 preview.4 and published Toolchain preview.4. The separate Toolchain preview.8
@@ -114,10 +113,10 @@ preview.6 remains published with the public
 the enforced pre-v1 API/protocol/durable/security compatibility policy.
 Authorizing preview.7 does not rewrite that immutable release history.
 The provider and coding-tools own release versions remain
-`v0.1.0-preview.1`; the TUI own release version is now authorized at
+`v0.1.0-preview.1`; the TUI own release version is authorized at
 `v0.1.0-preview.2`. The separate `spice-agent-coding` own release version is
-authorized at `v0.1.0-preview.4`; its toolchain, Agent preview.4, TUI preview.1
-and remaining sibling selections, metadata, binary, payload, target, and
+authorized at `v0.1.0-preview.5` with the explicit current published graph
+above; its metadata, two binaries, seven payloads, six targets, and
 build-identity contracts are unchanged. See
 [the distribution release history](go-distribution-release.md#immutable-preview1-recovery).
 

@@ -20,19 +20,16 @@ successful release run
 with its exact ten-asset prerelease. Toolchain preview.5 was then published
 from candidate `3ed984b56faed8972ed9964c672b7fc2d42a5150` by successful release
 run [31557699706](https://github.com/spice-framework/toolchain/actions/runs/31557699706)
-with the same exact ten-asset contract. Toolchain preview.6 followed, and
-preview.7 was published from tag object
-`5645e26fe2383713819554dccd1e92cfd03cc0bf` and candidate
-`e83e4ff8639ed6e3aa49c6dd8b2e3ba0d5174e08` in successful release run
-[31655704075](https://github.com/spice-framework/toolchain/actions/runs/31655704075).
-Its attestation deployment `5880057692` and publication deployment `5880086379`
-produced the exact ten-asset prerelease; public module and go.mod sums are
-`h1:XgNwiSCrnwh+iDxi3RJX8pbRTTpdL7NDiMedE861U6g=` and
-`h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Current preview.8 authority
-advances only Toolchain's own next distribution version for the reviewed
-product line through `9568be77a3dcb7ebdf61c5510cc1475e9cffe002`; TUI remains
-pinned to preview.4 and every Agent, provider, coding-tools, and Coding policy
-remains unchanged. The immutable Spice preview.3 tag-only attempt failed
+with the same exact ten-asset contract. Toolchain preview.6 and preview.7
+followed. Preview.8 was published from tag object
+`656f3f82a5ddfdb35b83e7a705e173e0d9ba1469` and candidate
+`2eb210494b806da023b518fcda8d07fdf32605e2` in release run
+[31690826584](https://github.com/spice-framework/toolchain/actions/runs/31690826584)
+attempt 2. Its attestation deployment `5886610104` and publication deployment
+`5886635974` produced the exact ten-asset prerelease; public module and go.mod
+sums are `h1:syajJg1GSYZT1TZbvBmXFh/X/cDi3dnb+9t0GXGvaJg=` and
+`h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. TUI remains pinned to
+Toolchain preview.4. The immutable Spice preview.3 tag-only attempt failed
 candidate bootstrap before rendering, attestation, or deployment and produced
 no GitHub Release, so current recovery policy does not treat it as a downstream
 foundation release.
@@ -52,13 +49,14 @@ completed the same protected five-asset publication contract. Preview.6 carries
 compatibility policy. The current catalog separately authorizes an Agent
 preview.7 candidate to require published Spice preview.4 and Toolchain
 preview.2; that pre-tag authority does not claim a tag or Release. The
-provider, coding-tools, and distribution graphs remain on Agent
-`v0.1.0-preview.4`; the provider and coding-tools own release
-versions remain `v0.1.0-preview.1`, while the TUI own release version is now
-authorized at `v0.1.0-preview.2`. Distribution preview.2 was also published,
-and distribution preview.4 was subsequently published by successful release
-run `31349650978` after passing the corrected Linux and Windows installed-byte
-gates. The catalog continues to authorize only that own release version. Its
+provider and coding-tools graphs remain on Agent `v0.1.0-preview.4`; their own
+release versions remain `v0.1.0-preview.1`, while the TUI own release version is
+`v0.1.0-preview.2`. Distribution preview.2 was also published, and distribution
+preview.4 was subsequently published by successful release run `31349650978`
+after passing the corrected Linux and Windows installed-byte gates. The catalog
+now authorizes Coding preview.5 with published Spice preview.4, Toolchain
+preview.8, Agent preview.7, provider preview.1, coding-tools preview.1, and TUI
+preview.2. Its
 immutable preview.1 attempt
 [failed in candidate validation](https://github.com/spice-framework/spice-agent-coding/actions/runs/31333877865)
 before rendering or artifacts when the candidate lacked `make verify-release`.
@@ -69,11 +67,10 @@ still expected preview.2 artifact subjects, while Windows passed a mixed-path
 artifact directory that the candidate correctly rejected as noncanonical.
 Attestation, provenance authentication, and publication were skipped, and no
 release was created.
-Every distribution toolchain, sibling, metadata, binary, payload, target, and
-build-identity selection is unchanged, including Agent preview.4. The catalog
-authorizations alone did not create tags, repin callers, approve environments,
-or publish releases; the separately protected Agent and distribution workflows
-performed those later publications.
+metadata, two binaries, seven payloads, six targets, and build-identity symbols
+are unchanged. The catalog authorization alone does not create a tag, repin a
+caller, approve an environment, or publish a release; separately protected
+workflows own those mutations.
 The dated source evidence below remains
 an accurate record of the earlier commits and is not the current release
 policy. Development's tag-independent `go-release policy-check`
