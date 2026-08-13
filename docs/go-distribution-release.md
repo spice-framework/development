@@ -137,10 +137,10 @@ This remains renderer-owned reproducibility evidence. Keyless signatures,
 provenance attestations, fresh-download verification, and publication belong to
 the organization workflow and independent toolchain verifier.
 
-## Toolchain preview.7 authority
+## Toolchain preview.8 authority
 
 The catalog now contains a separate repository-keyed Toolchain distribution
-policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.7`
+policy for a later `github.com/spice-framework/toolchain v0.1.0-preview.8`
 candidate. It requires the published immutable Spice foundation
 preview.4 selection and authorizes exactly:
 
@@ -157,38 +157,38 @@ the authenticated `provenance.sigstore.json` bundle as the tenth published
 asset. The policy comparison output is exactly:
 
 ```text
-go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.7
+go-distribution-v1	toolchain	github.com/spice-framework/toolchain	v0.1.0-preview.8
 ```
 
 Including its terminal LF, that tuple is exactly 83 bytes with SHA-256
-`8b335fcdbba2b099b1de707616662d10745bed2765e567302f49c07d09d119ad`.
+`08e8562e93ec3a39e06b977c1c0868b2fe6f3c0ef109eb8e50ed8ea05ad89702`.
 
-The immutable preview.6 tag object
-`8a8fc61aa7e713704135be75690d46017e047e1d` resolves to candidate commit
-`8d1a1ed744d7ed77ed0b013318c8588e69f8177b`. Unique
-[release run](https://github.com/spice-framework/toolchain/actions/runs/31632016018)
+The immutable preview.7 tag object
+`5645e26fe2383713819554dccd1e92cfd03cc0bf` resolves to candidate commit
+`e83e4ff8639ed6e3aa49c6dd8b2e3ba0d5174e08`. Unique
+[release run](https://github.com/spice-framework/toolchain/actions/runs/31655704075)
 completed candidate validation, deterministic rendering, independent
 verification, Linux and Windows installed execution, keyless attestation,
 provenance authentication, and protected publication of the exact ten-asset
-prerelease through attestation deployment `5876035930` and publication
-deployment `5876071036`. Fresh public proxy and checksum-database resolution
-produces module sum `h1:aChpRT/e2DH7SC+FzL06FPzJxqLQ/jYQDP+xpXWlctI=` and
-go.mod sum `h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Preview.6 is immutable
+prerelease through attestation deployment `5880057692` and publication
+deployment `5880086379`. Fresh public proxy and checksum-database resolution
+produces module sum `h1:XgNwiSCrnwh+iDxi3RJX8pbRTTpdL7NDiMedE861U6g=` and
+go.mod sum `h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Preview.7 is immutable
 published history; TUI preview.2 deliberately remains on Toolchain preview.4.
 
-Preview.7 is a distinct identity for the reviewed Toolchain product line
-through commit `73d2189ee512c4988f1a223aa0b6afdf10bfb260`. Its bounded delta makes
-ordinary validation inventory the same exact local modules named by the
-selected application's allowlist that generation already inventories. Those
-target-local, offline identity loads contribute module and named-interface
-ownership only: dependency applications, providers, configuration, and
-generated targets remain excluded. Disk and overlay inputs retain the same
-repository, nested-module, generated, hidden, vendor, and test-data containment.
+Preview.8 is a distinct identity for the reviewed Toolchain product line
+through commit `9568be77a3dcb7ebdf61c5510cc1475e9cffe002`. Its bounded delta makes
+generated plan and manifest logging scopes use the complete compiler-validated,
+recursively inventoried local module identity set on Windows, Linux, and
+Darwin. Target composition remains host-selected: inactive packages,
+applications, providers, configuration, and dependency edges do not join the
+result. Disk and overlay inputs retain the same repository, nested-module,
+generated, hidden, vendor, and test-data containment.
 Release preparation may advance the eventual candidate commit without changing
 those reviewed product bytes.
 
 This authority changes exactly one normalized catalog field: Toolchain's own
-release version advances from preview.6 to preview.7. Toolchain's Spice
+release version advances from preview.7 to preview.8. Toolchain's Spice
 preview.4 requirement; TUI preview.2's own version, Spice preview.4, and
 Toolchain preview.4 requirements; and every Agent, provider, coding-tools,
 Coding, starter, application, and editor selection remain unchanged. This

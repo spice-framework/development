@@ -20,16 +20,17 @@ successful release run
 with its exact ten-asset prerelease. Toolchain preview.5 was then published
 from candidate `3ed984b56faed8972ed9964c672b7fc2d42a5150` by successful release
 run [31557699706](https://github.com/spice-framework/toolchain/actions/runs/31557699706)
-with the same exact ten-asset contract. Toolchain preview.6 followed from tag
-object `8a8fc61aa7e713704135be75690d46017e047e1d` and candidate
-`8d1a1ed744d7ed77ed0b013318c8588e69f8177b` in successful release run
-[31632016018](https://github.com/spice-framework/toolchain/actions/runs/31632016018).
-Its attestation deployment `5876035930` and publication deployment `5876071036`
+with the same exact ten-asset contract. Toolchain preview.6 followed, and
+preview.7 was published from tag object
+`5645e26fe2383713819554dccd1e92cfd03cc0bf` and candidate
+`e83e4ff8639ed6e3aa49c6dd8b2e3ba0d5174e08` in successful release run
+[31655704075](https://github.com/spice-framework/toolchain/actions/runs/31655704075).
+Its attestation deployment `5880057692` and publication deployment `5880086379`
 produced the exact ten-asset prerelease; public module and go.mod sums are
-`h1:aChpRT/e2DH7SC+FzL06FPzJxqLQ/jYQDP+xpXWlctI=` and
-`h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Current preview.7 authority
+`h1:XgNwiSCrnwh+iDxi3RJX8pbRTTpdL7NDiMedE861U6g=` and
+`h1:nezzFkAq9TDdavVL5sYJm2nOKNWAu1p9VTz3XFihgUg=`. Current preview.8 authority
 advances only Toolchain's own next distribution version for the reviewed
-product line through `73d2189ee512c4988f1a223aa0b6afdf10bfb260`; TUI remains
+product line through `9568be77a3dcb7ebdf61c5510cc1475e9cffe002`; TUI remains
 pinned to preview.4 and every Agent, provider, coding-tools, and Coding policy
 remains unchanged. The immutable Spice preview.3 tag-only attempt failed
 candidate bootstrap before rendering, attestation, or deployment and produced

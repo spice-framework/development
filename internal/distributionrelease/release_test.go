@@ -91,10 +91,10 @@ func TestRenderToolchainRepositoryKeyedDistribution(t *testing.T) {
 	}
 	wantFiles := []string{
 		"checksums.txt",
-		"toolchain_0.1.0-preview.7_linux_amd64.tar.gz",
-		"toolchain_0.1.0-preview.7_release.json",
-		"toolchain_0.1.0-preview.7_sbom.spdx.json",
-		"toolchain_0.1.0-preview.7_windows_amd64.zip",
+		"toolchain_0.1.0-preview.8_linux_amd64.tar.gz",
+		"toolchain_0.1.0-preview.8_release.json",
+		"toolchain_0.1.0-preview.8_sbom.spdx.json",
+		"toolchain_0.1.0-preview.8_windows_amd64.zip",
 	}
 	if result.Commit != fixture.commit || !slices.Equal(result.Files, wantFiles) {
 		t.Fatalf("Render(Toolchain) = %#v, want files %v", result, wantFiles)
@@ -108,7 +108,7 @@ func TestRenderToolchainRepositoryKeyedDistribution(t *testing.T) {
 		t.Fatal(err)
 	}
 	if metadata.Repository != "toolchain" || metadata.Module != "github.com/spice-framework/toolchain" ||
-		metadata.Version != "v0.1.0-preview.7" || len(metadata.Targets) != 2 || len(metadata.Payloads) != 2 ||
+		metadata.Version != "v0.1.0-preview.8" || len(metadata.Targets) != 2 || len(metadata.Payloads) != 2 ||
 		metadata.Build.Identity.VersionSymbol != "github.com/spice-framework/toolchain/internal/cli.Version" ||
 		metadata.Build.Identity.CommitSymbol != "github.com/spice-framework/toolchain/internal/cli.Commit" ||
 		metadata.Build.Identity.CommitValue != fixture.commit {
@@ -116,13 +116,13 @@ func TestRenderToolchainRepositoryKeyedDistribution(t *testing.T) {
 	}
 }
 
-func TestToolchainPreviewSevenDistributionRequiresPublishedFoundation(t *testing.T) {
+func TestToolchainPreviewEightDistributionRequiresPublishedFoundation(t *testing.T) {
 	t.Parallel()
 	value, err := catalog.Default()
 	if err != nil {
 		t.Fatal(err)
 	}
-	repository, err := selectRepository(value, "toolchain", "v0.1.0-preview.7")
+	repository, err := selectRepository(value, "toolchain", "v0.1.0-preview.8")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestToolchainPreviewSevenDistributionRequiresPublishedFoundation(t *testing
 		Version: "v0.1.0-preview.4",
 	}}
 	if !slices.Equal(repository.Release.RequiredModules, want) {
-		t.Fatalf("Toolchain preview.7 foundation = %#v, want %#v", repository.Release.RequiredModules, want)
+		t.Fatalf("Toolchain preview.8 foundation = %#v, want %#v", repository.Release.RequiredModules, want)
 	}
 }
 
@@ -150,6 +150,7 @@ func TestRenderRejectsUntrustedDistributionInputs(t *testing.T) {
 		{name: "stale Toolchain preview four version", fixture: fixtureOptions{repositoryName: "toolchain"}, mutate: func(value *distributionFixture) { value.options.Version = "v0.1.0-preview.4" }, want: "does not match catalog"},
 		{name: "stale Toolchain preview five version", fixture: fixtureOptions{repositoryName: "toolchain"}, mutate: func(value *distributionFixture) { value.options.Version = "v0.1.0-preview.5" }, want: "does not match catalog"},
 		{name: "stale Toolchain preview six version", fixture: fixtureOptions{repositoryName: "toolchain"}, mutate: func(value *distributionFixture) { value.options.Version = "v0.1.0-preview.6" }, want: "does not match catalog"},
+		{name: "stale Toolchain preview seven version", fixture: fixtureOptions{repositoryName: "toolchain"}, mutate: func(value *distributionFixture) { value.options.Version = "v0.1.0-preview.7" }, want: "does not match catalog"},
 		{name: "dirty checkout", mutate: func(value *distributionFixture) { writeTestFile(t, filepath.Join(value.root, "dirty"), "dirty") }, want: "must be clean"},
 		{name: "missing tag", mutate: func(value *distributionFixture) { git(t, value.root, "tag", "-d", value.options.Version) }, want: "resolve distribution tag"},
 		{name: "unknown metadata", fixture: fixtureOptions{unknownMetadata: true}, want: "unknown field"},
@@ -844,9 +845,9 @@ func assertToolchainTarDistribution(t *testing.T, name string, commit string) {
 	defer gzipReader.Close()
 	reader := tar.NewReader(gzipReader)
 	want := map[string]bool{
-		"toolchain_0.1.0-preview.7_linux_amd64/spice":     false,
-		"toolchain_0.1.0-preview.7_linux_amd64/LICENSE":   false,
-		"toolchain_0.1.0-preview.7_linux_amd64/README.md": false,
+		"toolchain_0.1.0-preview.8_linux_amd64/spice":     false,
+		"toolchain_0.1.0-preview.8_linux_amd64/LICENSE":   false,
+		"toolchain_0.1.0-preview.8_linux_amd64/README.md": false,
 	}
 	for {
 		header, readErr := reader.Next()
@@ -864,7 +865,7 @@ func assertToolchainTarDistribution(t *testing.T, name string, commit string) {
 			content, readErr := io.ReadAll(reader)
 			if readErr != nil || header.Mode != 0o755 || len(content) < 4 ||
 				!bytes.Equal(content[:4], []byte{0x7f, 'E', 'L', 'F'}) ||
-				!bytes.Contains(content, []byte("0.1.0-preview.7")) ||
+				!bytes.Contains(content, []byte("0.1.0-preview.8")) ||
 				!bytes.Contains(content, []byte(commit)) {
 				t.Fatalf("Toolchain binary identity or format is invalid: mode=%o error=%v", header.Mode, readErr)
 			}
